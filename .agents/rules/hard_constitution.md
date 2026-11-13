@@ -7,6 +7,7 @@ Chữ hiển thị trên giao diện, comment trong mã, tài liệu và báo c�
 
 ## Điều 2. Không bước build
 - Không npm, không bundler, không TypeScript, không ES module cần build. Mã front-end là `<script>` thường, gắn hàm/biến dùng chung vào `window`.
+- Ngoại lệ duy nhất (AD-003): `tools/build_export_bundle.py` (chỉ dùng thư viện chuẩn Python) sinh `js/export_bundle.js` để export chạy được khi mở `file://`. Tệp sinh ra được commit, KHÔNG sửa tay; sửa bất kỳ tệp nào trong danh sách bundle thì phải chạy lại `py tools/build_export_bundle.py` (pytest `test_export_bundle_fresh` báo nếu quên). Không thêm bước sinh tệp nào khác khi chưa có AD mới.
 - Thư viện ngoài chỉ nạp qua CDN, ghi **phiên bản cố định** (vd `qrcode@1.5.3`). Không thêm thư viện khi tự viết được dưới ~50 dòng.
 - Backend chỉ dùng các gói trong `server/requirements.txt`. Thêm gói mới phải được duyệt trong kế hoạch.
 

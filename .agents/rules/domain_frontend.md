@@ -35,4 +35,4 @@ Thứ tự nạp: `state.js` → `api.js` → `runtime.js` → `sections/*.js` �
 `window.api.available === false` (mở `file://` hoặc server không phản hồi `/api/health`): ẩn/khoá nút Xuất bản, upload dùng base64, form RSVP/lời chúc hiện toast "Chỉ hoạt động trên thiệp đã xuất bản".
 
 ## 5. Export HTML tĩnh
-Export = 1 tệp HTML tự chứa: inline `css/app.css`, `js/state.js`, `js/api.js`, `js/runtime.js`, `js/sections/*.js`, `js/render.js` (đọc bằng `fetch` khi chạy qua server; khi `file://` báo toast hướng dẫn mở qua server và không export) + `window.__CARD_STATE__` JSON, render với `mode: 'export'`. Chuỗi `</script>` trong nội dung inline phải được thoát.
+Export = 1 tệp HTML tự chứa: inline `css/app.css`, `js/state.js`, `js/api.js`, `js/runtime.js`, `js/sections/*.js`, `js/render.js` (đọc bằng `fetch` khi chạy qua server; khi `file://` hoặc fetch lỗi thì lấy từ `window.__EXPORT_SOURCES` do `js/export_bundle.js` cung cấp — AD-003; thiếu cả hai mới báo toast) + `window.__CARD_STATE__` JSON, render với `mode: 'export'`. Chuỗi `</script>` trong nội dung inline phải được thoát.
