@@ -341,7 +341,7 @@ function renderWeddingCanvas() {
     cardDecorClasses(g).split(' ').forEach(cl => frame.classList.add(cl));
     document.getElementById('floatingMusicBtn').style.backgroundColor = g.primaryColor;
 
-    const ctx = { appState: appState, mode: 'editor', guestName: '', slug: null };
+    const ctx = { appState: appState, mode: appState.isPreviewMode ? 'preview' : 'editor', guestName: '', slug: null };
     viewport.innerHTML = renderCardHtml(appState, ctx);
 
     // Runtime dùng chung (T4) nếu đã có; chưa có thì giữ cách cũ

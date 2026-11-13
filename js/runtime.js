@@ -176,7 +176,7 @@ let countdownInterval = null;
             span.className = 'petal';
             span.textContent = symbols[i % symbols.length];
             span.style.left = (Math.random() * 92) + '%';
-            span.style.fontSize = (10 + Math.random() * 8) + 'px';
+            span.style.fontSize = (14 + Math.random() * 8) + 'px';
             span.style.animationDuration = (6 + Math.random() * 7) + 's';
             span.style.animationDelay = (Math.random() * 5) + 's';
             container.appendChild(span);
@@ -247,6 +247,17 @@ let countdownInterval = null;
     // CSS (app.css) ẩn `.reveal-on .reveal-x:not(.is-visible)`; runtime thêm .reveal-on lên gốc rồi .is-visible khi cuộn tới
     const REVEAL_SEL = '.reveal-fade-up, .reveal-zoom, .reveal-slide';
 
+    // Tổ tiên gần nhất có thể cuộn dọc (overflow-y auto/scroll); không có thì null
+    function findScrollParent(el) {
+        let p = el && el.parentElement;
+        while (p && p !== document.body && p !== document.documentElement) {
+            const oy = window.getComputedStyle(p).overflowY;
+            if (oy === 'auto' || oy === 'scroll') return p;
+            p = p.parentElement;
+        }
+        return null;
+    }
+
     function setupReveal(root) {
         const items = root.querySelectorAll(REVEAL_SEL);
         if (!items.length) return;
@@ -263,7 +274,7 @@ let countdownInterval = null;
                     _observer.unobserve(en.target);
                 }
             });
-        }, { threshold: 0.12 });
+        }, { threshold: 0.12, root: (_ctx && _ctx.mode === 'preview') ? findScrollParent(root) : null });
         items.forEach(function (el) { _observer.observe(el); });
     }
 
@@ -419,10 +430,17 @@ let countdownInterval = null;
     let _introTimer = null;
     let _prevOverflow = null;
 
+    let _lockedScroller = null;   // preview: phần tử cuộn của canvas bị khoá tạm khi intro hiện
+    let _prevScrollerOverflow = '';
+
     function unlockScroll() {
         if (_prevOverflow !== null) {
             document.body.style.overflow = _prevOverflow;
             _prevOverflow = null;
+        }
+        if (_lockedScroller) {
+            _lockedScroller.style.overflowY = _prevScrollerOverflow;
+            _lockedScroller = null;
         }
     }
 
@@ -439,7 +457,8 @@ let countdownInterval = null;
         return (v === 'envelope' || v === 'curtain') ? v : 'none';          // none hoặc giá trị lạ
     }
 
-    function setupIntro(style, g, guestName) {
+    // frameEl: nếu có (mode preview) thì gắn gọn trong khung điện thoại, không đụng body
+    function setupIntro(style, g, guestName, frameEl) {
         if (style === 'none') return;
         const primary = (typeof safeColor === 'function' && g) ? safeColor(g.primaryColor, '#8c6239') : '#8c6239';
         const bg = (typeof safeColor === 'function' && g) ? safeColor(g.bgColor, '#fdfbf7') : '#fdfbf7';
@@ -483,9 +502,27 @@ let countdownInterval = null;
         stage.appendChild(btn);
         el.appendChild(stage);
 
-        _prevOverflow = document.body.style.overflow;
-        document.body.style.overflow = 'hidden';
-        document.body.appendChild(el);
+        if (frameEl) {
+            el.classList.add('intro-in-frame');
+            el.setAttribute('aria-modal', 'false');
+            const scroller = findScrollParent(frameEl);
+            if (scroller) {
+                scroller.scrollTop = 0;
+                // Phủ đúng phần khung đang nhìn thấy (khung cao hơn vùng cuộn)
+                const room = scroller.getBoundingClientRect().bottom - frameEl.getBoundingClientRect().top - 6;
+                const h = Math.max(240, Math.min(frameEl.clientHeight, Math.round(room)));
+                el.style.bottom = 'auto';
+                el.style.height = h + 'px';
+                _prevScrollerOverflow = scroller.style.overflowY;
+                scroller.style.overflowY = 'hidden';
+                _lockedScroller = scroller;
+            }
+            frameEl.appendChild(el);
+        } else {
+            _prevOverflow = document.body.style.overflow;
+            document.body.style.overflow = 'hidden';
+            document.body.appendChild(el);
+        }
         _introEl = el;
 
         let opened = false;
@@ -516,6 +553,31 @@ let countdownInterval = null;
         removeIntro();
         _cleanups.forEach(function (fn) { try { fn(); } catch (e) { /* bỏ qua */ } });
         _cleanups = [];
+    }
+
+    // Chỉ ở mode 'preview': dựng lại intro, reset reveal, cuộn khung về đầu
+    function replayIntro() {
+        if (!_ctx || _ctx.mode !== 'preview' || !_root || !_root.querySelectorAll) return;
+        const frame = byId('weddingCardFrame');
+        if (!frame) return;
+        removeIntro();
+        if (_observer) { _observer.disconnect(); _observer = null; }
+        _root.classList.remove('reveal-on');
+        _root.querySelectorAll(REVEAL_SEL).forEach(function (el) { el.classList.remove('is-visible'); });
+        const scroller = findScrollParent(frame);
+        if (scroller) scroller.scrollTop = 0;
+        const audio = byId('weddingAudio');
+        if (audio && !audio.paused) {
+            audio.pause();
+            const btn = byId('floatingMusicBtn');
+            const icon = byId('musicIcon');
+            if (btn) btn.classList.remove('spin-music');
+            if (icon) icon.className = 'fa-solid fa-music text-sm';
+        }
+        const st = getState();
+        const g = st && st.globalStyle ? st.globalStyle : null;
+        setupReveal(_root);
+        setupIntro(resolveIntroStyle(g), g, _ctx.guestName, frame);
     }
 
     function init(rootEl, state, ctx) {
@@ -559,7 +621,7 @@ let countdownInterval = null;
             if (g && _fallKey !== g.fallingEffect) buildFalling(g.fallingEffect);
             replaceGuestPlaceholder(_root, _ctx.guestName);
             setupReveal(_root);
-            setupIntro(resolveIntroStyle(g), g, _ctx.guestName);
+            setupIntro(resolveIntroStyle(g), g, _ctx.guestName, mode === 'preview' ? byId('weddingCardFrame') : null);
         } else if (_fallKey === null) {
             // Editor: chỉ dựng hiệu ứng rơi lần đầu; đổi hiệu ứng đã có initFallingEffect()
             initFallingEffect();
@@ -612,7 +674,7 @@ let countdownInterval = null;
 
     window.cardPageTitle = cardPageTitle;
     window.cardCalendarEvent = cardCalendarEvent;
-    window.CardRuntime = { init: init, destroy: destroy };
+    window.CardRuntime = { init: init, destroy: destroy, replayIntro: replayIntro };
     window.showToast = showToast;
     window.startCountdownTimer = startCountdownTimer;
     window.updateCountdownDisplay = updateCountdownDisplay;

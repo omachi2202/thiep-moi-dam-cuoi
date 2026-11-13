@@ -208,26 +208,43 @@ function updateBankInfo(side, field, value) {
 // 8. CHẾ ĐỘ XEM THỰC TẾ (PREVIEW) & KHÔI PHỤC MẶC ĐỊNH
 function setPreviewMode(isPreview) {
     appState.isPreviewMode = isPreview;
-    renderWeddingCanvas(); // để fieldAttr bỏ/bật contenteditable
     const left = document.getElementById('leftSidebar');
     const right = document.getElementById('rightSidebar');
     const card = document.getElementById('weddingCardFrame');
     const btnEdit = document.getElementById('btnModeEdit');
     const btnPreview = document.getElementById('btnModePreview');
+    const btnReplay = document.getElementById('btnReplayIntro');
+    if (btnReplay) {
+        btnReplay.classList.toggle('hidden', !isPreview);
+        btnReplay.classList.toggle('flex', !!isPreview);
+    }
 
     if (isPreview) {
         left.classList.add('hidden');
         right.classList.add('hidden');
         card.classList.remove('editor-mode');
-        btnPreview.className = "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-violet-600 text-white shadow transition";
-        btnEdit.className = "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 text-slate-300 hover:text-white transition";
+        btnPreview.className = "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 bg-violet-600 text-white shadow transition";
+        btnEdit.className = "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 text-slate-300 hover:text-white transition";
     } else {
         left.classList.remove('hidden');
         right.classList.remove('hidden');
         card.classList.add('editor-mode');
-        btnEdit.className = "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-violet-600 text-white shadow transition";
-        btnPreview.className = "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 text-slate-300 hover:text-white transition";
+        btnEdit.className = "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 bg-violet-600 text-white shadow transition";
+        btnPreview.className = "px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 text-slate-300 hover:text-white transition";
     }
+
+    // Về Thiết kế: dừng nhạc nền đang phát (toggleAudioPlayback đồng bộ nút/icon nhạc)
+    if (!isPreview) {
+        const audio = document.getElementById('weddingAudio');
+        if (audio && !audio.paused && typeof toggleAudioPlayback === 'function') toggleAudioPlayback();
+    }
+
+    // Render canvas SAU khi sidebar/editor-mode đã đổi để intro đo đúng khung; cũng để fieldAttr bỏ/bật contenteditable
+    renderWeddingCanvas();
+}
+
+function replayInviteIntro() {
+    if (window.CardRuntime && typeof CardRuntime.replayIntro === 'function') CardRuntime.replayIntro();
 }
 
 function resetToDefault() {

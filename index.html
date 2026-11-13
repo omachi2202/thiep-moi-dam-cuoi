@@ -33,7 +33,7 @@
                 <div class="flex items-center gap-2">
                     <span class="font-bold tracking-wide text-sm">ZiuStudio</span>
                     <span
-                        class="text-[10px] uppercase px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-400/30 rounded-full font-semibold">Canva
+                        class="hidden xl:inline-block whitespace-nowrap text-[10px] uppercase px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-400/30 rounded-full font-semibold">Canva
                         Wedding Builder</span>
                 </div>
                 <p class="hidden 2xl:block text-[11px] text-slate-400 whitespace-nowrap">Mẫu chuẩn: ziuwedding.site/mm03 (Tùy biến toàn diện)</p>
@@ -44,11 +44,16 @@
         <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
             <button id="btnModeEdit" onclick="setPreviewMode(false)"
                 class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 bg-violet-600 text-white shadow transition">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Thiết kế (Canva Mode)
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Thiết kế
             </button>
             <button id="btnModePreview" onclick="setPreviewMode(true)"
                 class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 text-slate-300 hover:text-white transition">
                 <i class="fa-solid fa-mobile-screen-button"></i> Xem thực tế
+            </button>
+            <button id="btnReplayIntro" onclick="replayInviteIntro()" type="button"
+                class="hidden px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap items-center text-slate-300 hover:text-white hover:bg-slate-700 transition"
+                title="Xem lại hiệu ứng mở thiệp (phong bì, rèm)" aria-label="Xem lại hiệu ứng mở thiệp">
+                <i class="fa-solid fa-envelope-open-text"></i>
             </button>
         </div>
 

@@ -277,11 +277,16 @@
         const t = new Date(Number(lsGet(isPrev ? PREV_AT_KEY : DRAFT_AT_KEY)) || Date.now());
         const hhmm = pad2(t.getHours()) + ':' + pad2(t.getMinutes());
         const span = document.createElement('span');
-        span.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-amber-100 text-amber-900 border border-amber-300';
+        span.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs whitespace-nowrap max-w-[260px] shrink-0 bg-amber-100 text-amber-900 border border-amber-300';
+        span.title = isPrev
+            ? 'Bản nháp trước (' + hhmm + ') đã được giữ'
+            : 'Có bản nháp lúc ' + hhmm;
         const msg = document.createElement('span');
-        msg.textContent = isPrev
-            ? 'Bản nháp trước (' + hhmm + ') đã được giữ —'
-            : 'Có bản nháp lúc ' + hhmm + ' —';
+        msg.className = 'flex items-center gap-1.5';
+        const ic = document.createElement('i');
+        ic.className = 'fa-solid fa-clock-rotate-left';
+        msg.appendChild(ic);
+        msg.appendChild(document.createTextNode('Có bản nháp'));
         const bRestore = document.createElement('button');
         bRestore.type = 'button';
         bRestore.className = 'font-semibold underline';

@@ -30,7 +30,7 @@ py -m pytest server/tests -q
 
 ## Section registry
 
-Each section type is exactly one file `js/sections/<type>.js` calling `registerSection({type, label, icon, defaults, renderCanvas(sec, ctx), renderInspector(sec), mount?(root, sec, ctx), migrate?(data), pageTitle?(sec), calendarEvent?(sec)})`. `ctx = {appState, mode, guestName, slug}`, `mode` is `editor | invite | export`. `renderCanvas` is pure (no fetch/side effects, no `contenteditable` outside editor mode).
+Each section type is exactly one file `js/sections/<type>.js` calling `registerSection({type, label, icon, defaults, renderCanvas(sec, ctx), renderInspector(sec), mount?(root, sec, ctx), migrate?(data), pageTitle?(sec), calendarEvent?(sec)})`. `ctx = {appState, mode, guestName, slug}`, `mode` is `editor | preview | invite | export` (`preview` = editor's "Xem thực tế": rendered like the guest page; compare `mode === 'editor'` rather than listing other modes). `renderCanvas` is pure (no fetch/side effects, no `contenteditable` outside editor mode).
 
 Optional hooks: `pageTitle(sec)` gives the page title (page, export, slug suggestion); `calendarEvent(sec)` returns `{title, location, iso}` (calendar buttons). Runtime/editor/invite read them via `cardPageTitle(state)` / `cardCalendarEvent(state)` in `runtime.js` — the correct way to pull info from sections without comparing `type`. Need new per-type info outside a section file? Add another optional hook (see `.agents/rules/domain_sections.md` §1).
 
@@ -44,7 +44,7 @@ All mutations go through a mutator ending in `commitState(label)` (undo snapshot
 
 ## Shared runtime
 
-`js/runtime.js` exposes `CardRuntime.init(rootEl, state, ctx)` / `CardRuntime.destroy()`: countdown, music, falling effect, envelope/curtain intro, gift modal + QR, scroll-reveal, calendar buttons, then each section's `mount()`. The editor calls `destroy()` before every re-`init`. In editor mode there is no intro, no scroll-reveal, no autoplay. Interactive logic is written once here — never copy it into template strings.
+`js/runtime.js` exposes `CardRuntime.init(rootEl, state, ctx)` / `CardRuntime.destroy()`: countdown, music, falling effect, envelope/curtain intro, gift modal + QR, scroll-reveal, calendar buttons, then each section's `mount()`. The editor calls `destroy()` before every re-`init`. In editor mode there is no intro, no scroll-reveal, no autoplay. In `preview` mode the intro/reveal/falling effect run like the guest page, but the intro overlay lives inside `#weddingCardFrame` (no body scroll lock); `CardRuntime.replayIntro()` replays it. Intro + calendar-button CSS live in `css/app.css` (shared by editor, guest page and export). Interactive logic is written once here — never copy it into template strings.
 
 ## Guest page and export
 
