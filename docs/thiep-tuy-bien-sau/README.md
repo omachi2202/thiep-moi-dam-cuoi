@@ -10,7 +10,7 @@
 | L1–L7 | Luật, agents, skill, hồ sơ | `.agents/`, `.claude/`, `docs/` | phiên chính | 0 | — | — | xong |
 | T1 | Tách index.html thành css/js (không đổi hành vi) | index.html, css/, js/ (tách) | frontend-ui | 2 | không | có | xong |
 | T2 | Backend FastAPI + Excel store | `server/app.py`, `server/excel_store.py`, `server/requirements.txt` | py-backend | 2 | không | có | xong |
-| T3 | Registry section + chuyển 6 loại cũ + migrate | `js/render.js`, `js/state.js`, `js/sections/{hero,family,events,countdown,rsvp,album}.js` | frontend-ui | 3 | T1 | có | chờ |
+| T3 | Registry section + chuyển 6 loại cũ + migrate | `js/render.js`, `js/state.js`, `js/sections/{hero,family,events,countdown,rsvp,album}.js` | frontend-ui | 3 | T1 | có | xong (T3.1 đang sửa) |
 | T4 | CardRuntime dùng chung + export không nhân đôi | `js/runtime.js`, `js/editor.js` | frontend-ui | 3 | T1 | không | xong |
 | T5 | Test API pytest | `server/tests/test_api.py` | py-backend | 3 | T2 | không | xong |
 | T6 | commitState, undo/redo, autosave, JSON, upload | `js/store.js`, `js/editor.js` | frontend-ui | 4 | T3, T4 | có | chờ |
@@ -34,3 +34,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T4 + T4.1** (2026-11-13): lần đầu `node --check js/editor.js` LỖI (regex chứa ký tự U+2028/2029 thô). T4.1 sửa lỗi này và thêm `js/api.js` vào export. Sau sửa: node --check đạt, `_exportJson` thoát đúng `</script>`, U+2028, U+2029. Chưa kiểm tích hợp với T3 (export, CardRuntime.init) — kiểm sau khi T3 xong.
 - **T5** (2026-11-13): `py -m pytest server/tests -q` cho 27 passed (warning chỉ là DeprecationWarning của thư viện), không tạo `data/` trong repo. Chưa phủ: 503 PermissionError, rate limit GET wishes/upload.
 - **T2.2** (2026-11-13): chỉ cách ly xlsx khi thật sự hỏng; OSError trả 503 và không đổi tên tệp; tên tệp cách ly thêm 4 hex. pytest: 29 passed. reviewer-code: ĐẠT.
+- **T3** (2026-11-13): kiểm bằng vm: đủ 6 loại theo hợp đồng, migrate idempotent, XSS cơ bản bị chặn. Ảnh chụp headless editor sau T3 giống hệt mốc trước T1. reviewer-code: ĐẠT, có 4 mục NÊN SỬA (N1 injection qua id trong onclick, N2 CSS injection, N3 focusout ghi lại khi không sửa/IN HOA, N4 render không chịu lỗi), giao phiếu T3.1 sửa trước đợt 4.

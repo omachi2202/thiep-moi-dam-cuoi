@@ -1,5 +1,6 @@
 // 1. DỮ LIỆU GỐC (MÔ PHỎNG CHUẨN ZIUWEDDING.SITE/MM03 - TÙNG & NGỌC)
 const DEFAULT_STATE = {
+    schemaVersion: 2,
     selectedSectionId: 'hero',
     isPreviewMode: false,
     globalStyle: {
@@ -19,6 +20,8 @@ const DEFAULT_STATE = {
     sections: [
         {
             id: 'hero',
+            type: 'hero',
+            style: {},
             name: '1. Trang Bìa (Save The Date)',
             icon: 'fa-heart',
             visible: true,
@@ -35,6 +38,8 @@ const DEFAULT_STATE = {
         },
         {
             id: 'family',
+            type: 'family',
+            style: {},
             name: '2. Thông Tin Gia Đình & Lời Mời',
             icon: 'fa-users',
             visible: true,
@@ -55,6 +60,8 @@ const DEFAULT_STATE = {
         },
         {
             id: 'events',
+            type: 'events',
+            style: {},
             name: '3. Lịch Trình & Chỉ Đường',
             icon: 'fa-location-dot',
             visible: true,
@@ -78,6 +85,8 @@ const DEFAULT_STATE = {
         },
         {
             id: 'countdown',
+            type: 'countdown',
+            style: {},
             name: '4. Lịch Tháng & Đếm Ngược',
             icon: 'fa-calendar-check',
             visible: true,
@@ -93,6 +102,8 @@ const DEFAULT_STATE = {
         },
         {
             id: 'rsvp',
+            type: 'rsvp',
+            style: {},
             name: '5. Xác Nhận Tham Dự & Mừng Cưới',
             icon: 'fa-envelope-open-text',
             visible: true,
@@ -107,6 +118,8 @@ const DEFAULT_STATE = {
         },
         {
             id: 'album',
+            type: 'album',
+            style: {},
             name: '6. Album Ảnh & Lời Cảm Ơn',
             icon: 'fa-images',
             visible: true,
@@ -181,3 +194,96 @@ const THEME_PRESETS = {
         textColor: "#1e293b"
     }
 };
+
+// 2. REGISTRY SECTION, TIỆN ÍCH CHUNG & MIGRATE (giao kèo G2/G4)
+const SCHEMA_VERSION = 2;
+window.SECTION_TYPES = {};
+
+// Mỗi tệp js/sections/<type>.js gọi đúng một lần để tự đăng ký
+function registerSection(def) {
+    if (!def || !def.type) return;
+    window.SECTION_TYPES[def.type] = def;
+}
+
+// Escape dữ liệu người dùng trước khi chèn vào HTML (nội dung và thuộc tính)
+function escapeHtml(s) {
+    return String(s === undefined || s === null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+// Chỉ cho http(s), data:image/ và /uploads/; còn lại trả chuỗi rỗng
+function safeUrl(u) {
+    const s = String(u === undefined || u === null ? '' : u).trim();
+    if (/^https?:\/\//i.test(s) || /^data:image\//i.test(s) || /^\/uploads\//.test(s)) return s;
+    return '';
+}
+
+// Biến dùng chung cho renderCanvas của các section (giá trị đã escape, dùng được trong thuộc tính style)
+function sectionVars(sec, ctx) {
+    const g = ctx.appState.globalStyle;
+    return {
+        g: g,
+        pc: escapeHtml(g.primaryColor),
+        secFont: escapeHtml(sec.customFont || g.headingFont),
+        scriptFont: escapeHtml(sec.customFont || g.scriptFont),
+        globalScriptFont: escapeHtml(g.scriptFont),
+        secColor: escapeHtml(sec.customTextColor || g.textColor),
+        titleSize: sec.customTitleSize ? `${escapeHtml(sec.customTitleSize)}px` : '28px'
+    };
+}
+
+// Thuộc tính cho trường sửa inline: chỉ có ở mode editor
+function fieldAttr(ctx, key) {
+    return ctx.mode === 'editor' ? `data-field="${key}" contenteditable="true"` : '';
+}
+
+function defaultSectionStyle() {
+    return { bgColor: '', bgImage: '', bgOverlayOpacity: 0, paddingY: '', align: '', animation: '', ornament: '' };
+}
+
+// Chuẩn hoá state cũ/mới về schema hiện tại. Idempotent, sửa trực tiếp và trả về chính state.
+function migrate(state) {
+    if (!state || typeof state !== 'object') return state;
+
+    state.globalStyle = Object.assign({}, DEFAULT_STATE.globalStyle, state.globalStyle || {});
+
+    const bank = state.bankInfo || {};
+    state.bankInfo = {
+        groom: Object.assign({}, DEFAULT_STATE.bankInfo.groom, bank.groom || {}),
+        bride: Object.assign({}, DEFAULT_STATE.bankInfo.bride, bank.bride || {})
+    };
+
+    if (!Array.isArray(state.sections)) state.sections = [];
+    state.sections.forEach(sec => {
+        if (!sec.type) sec.type = sec.id;
+        if (sec.visible === undefined) sec.visible = true;
+        if (sec.customFont === undefined) sec.customFont = '';
+        if (sec.customTitleSize === undefined) sec.customTitleSize = '28';
+        if (sec.customTextColor === undefined) sec.customTextColor = '';
+        sec.style = Object.assign(defaultSectionStyle(), sec.style || {});
+        if (!sec.data || typeof sec.data !== 'object') sec.data = {};
+
+        const def = window.SECTION_TYPES[sec.type];
+        if (!def) return; // loại lạ: giữ nguyên, không render
+        if (!sec.name) sec.name = def.label;
+        if (!sec.icon) sec.icon = def.icon;
+        if (typeof def.defaults === 'function') {
+            const d = def.defaults();
+            Object.keys(d).forEach(k => {
+                if (sec.data[k] === undefined) sec.data[k] = d[k];
+            });
+        }
+        if (typeof def.migrate === 'function') {
+            const out = def.migrate(sec.data);
+            if (out) sec.data = out;
+        }
+    });
+
+    if (!state.selectedSectionId && state.sections.length) state.selectedSectionId = state.sections[0].id;
+    state.schemaVersion = SCHEMA_VERSION;
+    return state;
+}
