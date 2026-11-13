@@ -18,6 +18,7 @@
 
 - **Bổ sung sau T3 (Điều 3):** `editor.js` còn tra cứu cứng `s.id === 'countdown'` (`updateWeddingDateTime`), `s.id === 'album'` (`updateAlbumPhoto`), `s.id === 'hero'` (export title). Đổi `updateWeddingDateTime(secId, iso)` và `updateAlbumPhoto(secId, idx, url)` sang nhận `secId`; vì `renderInspector` của countdown.js/album.js gọi hai hàm này, được phép sửa đúng dòng gọi trong `js/sections/countdown.js` và `js/sections/album.js` (ngoại lệ có ghi nhận). Tiêu đề export lấy section đầu tiên có `type === 'hero'` qua helper chung, không theo id.
 - `resetToDefault` và nhập JSON phải gọi `migrate`.
+- `setPreviewMode` gọi `renderWeddingCanvas()` sau khi đổi cờ (để `fieldAttr` bỏ/bật contenteditable — phát hiện ở T3.2).
 
 ## Tiêu chí đạt
 - Sửa 3 lần → Ctrl+Z 3 lần về trạng thái đầu; reload → banner khôi phục đúng.

@@ -5,6 +5,8 @@
     const LAST_SLUG = 'thiep:lastSlug';
     const QR_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
 
+    const QR_SRI = 'sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==';
+
     const NO_BACKEND = 'Chưa kết nối máy chủ. Hãy chạy backend và mở trang qua http://localhost:8000.';
 
     function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
@@ -15,16 +17,27 @@
     }
 
     // Đọc phản hồi; lỗi -> Error(detail tiếng Việt)
-    async function request(url, opts) {
+    async function request(url, opts, timeoutMs) {
         if (!api.available) throw new Error(NO_BACKEND);
+        const ctrl = new AbortController();
+        let timedOut = false;
+        const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, timeoutMs || 30000);
         let res;
-        try {
-            res = await fetch(url, opts);
-        } catch (e) {
-            throw new Error('Không kết nối được máy chủ. Vui lòng thử lại.');
-        }
         let body = null;
-        try { body = await res.json(); } catch (e) { body = null; }
+        try {
+            try {
+                res = await fetch(url, Object.assign({}, opts, { signal: ctrl.signal }));
+            } catch (e) {
+                if (timedOut) throw new Error('Máy chủ phản hồi quá chậm, vui lòng thử lại.');
+                throw new Error('Không kết nối được máy chủ. Vui lòng thử lại.');
+            }
+            try { body = await res.json(); } catch (e) {
+                if (timedOut) throw new Error('Máy chủ phản hồi quá chậm, vui lòng thử lại.');
+                body = null;
+            }
+        } finally {
+            clearTimeout(timer);
+        }
         if (!res.ok) {
             let msg = body && body.detail;
             if (Array.isArray(msg)) msg = 'Dữ liệu gửi lên không hợp lệ.';
@@ -66,7 +79,7 @@
         uploadFile(file) {
             const fd = new FormData();
             fd.append('file', file);
-            return request('/api/upload', { method: 'POST', body: fd }).then(j => j.url);
+            return request('/api/upload', { method: 'POST', body: fd }, 60000).then(j => j.url);
         },
 
         // Trả {url, editKey?}; editKey chỉ có ở lần tạo đầu tiên
@@ -80,7 +93,7 @@
             const headers = {};
             const key = lsGet(KEY_PREFIX + slug);
             if (key) headers['X-Edit-Key'] = key;
-            const j = await request('/api/cards/' + encodeURIComponent(slug), jsonOpts('PUT', copy, headers));
+            const j = await request('/api/cards/' + encodeURIComponent(slug), jsonOpts('PUT', copy, headers), 60000);
             if (j && j.editKey) lsSet(KEY_PREFIX + slug, j.editKey);
             lsSet(LAST_SLUG, slug);
             return { url: location.origin + '/c/' + slug, editKey: (j && j.editKey) || undefined };
@@ -124,6 +137,9 @@
         qrLoading = new Promise((resolve, reject) => {
             const sc = document.createElement('script');
             sc.src = QR_SRC;
+            sc.integrity = QR_SRI;
+            sc.crossOrigin = 'anonymous';
+            sc.referrerPolicy = 'no-referrer';
             sc.onload = () => resolve();
             sc.onerror = () => { qrLoading = null; reject(new Error('Không tải được thư viện QR.')); };
             document.head.appendChild(sc);
@@ -164,10 +180,16 @@
     function copyFrom(id) {
         const el = $(id);
         const done = () => toast('Đã sao chép!');
+        const fail = () => { el.focus(); el.select(); toast('Hãy bôi đen và sao chép thủ công'); };
+        const legacy = () => {
+            let ok = false;
+            try { el.focus(); el.select(); ok = document.execCommand('copy'); } catch (e) { ok = false; }
+            if (ok) done(); else fail();
+        };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(el.value).then(done, () => { el.select(); document.execCommand('copy'); done(); });
+            navigator.clipboard.writeText(el.value).then(done, legacy);
         } else {
-            el.select(); document.execCommand('copy'); done();
+            legacy();
         }
     }
 
@@ -186,6 +208,8 @@
         const qrEl = $('publishQr');
         qrEl.innerHTML = '';
         loadQrLib().then(() => {
+            qrEl.innerHTML = '';
+            if (publishedSlug !== slug || $('publishLink').value !== res.url) return;
             new window.QRCode(qrEl, { text: res.url, width: 160, height: 160 });
         }).catch(e => { qrEl.textContent = e.message; });
     }
@@ -205,7 +229,11 @@
         }
     }
 
-    function openPublishModal() {
+    async function openPublishModal() {
+        if (!api.available) {
+            await api.checkHealth();
+            applyAvailability();
+        }
         if (!api.available) { toast(NO_BACKEND); return; }
         const input = $('publishSlugInput');
         input.value = lsGet(LAST_SLUG) || suggestSlug();
@@ -215,7 +243,10 @@
         $('publishModal').classList.remove('hidden');
         input.focus();
     }
-    function closePublishModal() { $('publishModal').classList.add('hidden'); }
+    function closePublishModal() {
+        $('publishModal').classList.add('hidden');
+        $('publishEditKey').value = '';
+    }
 
     window.openPublishModal = openPublishModal;
     window.closePublishModal = closePublishModal;
@@ -228,12 +259,16 @@
     function applyAvailability() {
         const btn = $('btnPublish');
         if (!btn) return;
-        btn.disabled = !api.available;
+        // Không dùng disabled thật khi mở qua http(s) để người dùng bấm lại kiểm tra backend
+        const web = location.protocol === 'http:' || location.protocol === 'https:';
+        btn.disabled = !api.available && !web;
         btn.classList.toggle('opacity-50', !api.available);
-        btn.classList.toggle('cursor-not-allowed', !api.available);
+        btn.classList.toggle('cursor-not-allowed', !api.available && !web);
         btn.title = api.available
             ? 'Xuất bản thiệp lên máy chủ để gửi link cho khách'
-            : 'Cần chạy backend và mở trang qua http://localhost:8000 để xuất bản (đang mở bằng file:// hoặc chưa có máy chủ).';
+            : (web
+                ? 'Chạy backend rồi tải lại trang hoặc bấm lại'
+                : 'Cần chạy backend và mở trang qua http://localhost:8000 để xuất bản (đang mở bằng file://).');
     }
 
     function boot() {
