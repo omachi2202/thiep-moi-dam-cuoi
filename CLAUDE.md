@@ -1,29 +1,61 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) in this repository.
 
 ## Project goal
 
-A web app for customizing wedding invitations (thiệp cưới online), in the spirit of ziuwedding.site (the default content mirrors its "MM03" template) and Canva's section-based editor. UI text and code comments are in Vietnamese — keep new UI copy in Vietnamese.
+Web app for customizing wedding invitations (thiệp cưới online), in the spirit of ziuwedding.site (default content mirrors its "MM03" template) and Canva's section-based editor. Editor + publishable guest page + RSVP/wishes stored in Excel. UI text and code comments are in Vietnamese — keep new UI copy in Vietnamese.
 
 ## Running
 
-No build, package manager, lint, or tests. The whole app is a single file, `index.html`, using CDN Tailwind (`cdn.tailwindcss.com`), Font Awesome 6.5.1, and Google Fonts. Open it directly in a browser or serve the folder statically:
+No build step, no npm, no bundler (Hiến pháp Điều 2). Front-end is plain `<script>` files; libs (Tailwind, Font Awesome, Google Fonts, pinned versions) load from CDN. Backend is FastAPI. From the repo root:
 
 ```bash
-python -m http.server 8000
+py -m pip install -r server/requirements.txt
+py -m uvicorn server.app:app --reload --port 8000   # editor: http://localhost:8000/
+py -m pytest server/tests -q
 ```
 
-## Architecture (`index.html`)
+`python` on this machine is the Microsoft Store alias — always use `py`. Opening `index.html` via `file://` still edits (base64 images, JSON import/export, local draft) but publish, upload, HTML export and RSVP/wishes submit are disabled (check `window.api.available`).
 
-Three-pane editor: left sidebar (section list + global style/bank/audio controls), center phone-width canvas (`#weddingCardFrame` → `#sectionsViewport`), right inspector for the selected section.
+## File layout and script order
 
-**State-driven re-render.** A single `appState` (deep copy of `DEFAULT_STATE`) holds everything: `globalStyle` (fonts, colors, falling effect, audio URL), `bankInfo` (groom/bride), and an ordered `sections` array. Each section has `id`, `name`, `icon`, `visible`, per-section overrides (`customFont`, `customTitleSize`, `customTextColor`), and a `data` object of editable fields. UI is regenerated from state as HTML template strings:
-- `renderAll()` = `renderSectionListSidebar()` + `renderWeddingCanvas()` + `renderRightInspector()`.
-- `renderWeddingCanvas()` and `renderRightInspector()` each branch on `sec.id` (`hero`, `family`, `events`, `countdown`, `rsvp`, `album`). Adding a section type means adding a `DEFAULT_STATE.sections` entry **and** a branch in both renderers.
-- Mutations go through `updateSectionField` / `updateSectionStyle` / `updateGlobalStyle` / `updateBankInfo`, which mutate `appState` then re-render. Canvas text is inline-editable via `contenteditable` + `onblur="updateSectionField(...)"`; `fromInspector=true` skips re-rendering the inspector so the input being typed in keeps focus.
-- Left-sidebar form controls are static HTML synced from state by `syncLeftControlsWithState()` (call it after replacing `appState`, e.g. in `resetToDefault`).
+- `index.html` — editor shell (3 panes: sidebar, phone canvas, inspector). `invite.html` — guest page served at `/c/<slug>`.
+- `css/app.css` (editor + card), `css/invite.css` (guest page).
+- `js/` (all globals on `window`, load order matters, same in `index.html` and `invite.html`):
+  `state.js` (DEFAULT_STATE, `migrate`, `SCHEMA_VERSION`, `escapeHtml/safeUrl/safeColor/safeFont`, `sectionVars`, `fieldAttr`) → `api.js` (`window.api`) → `runtime.js` (`CardRuntime`) → `sections/*.js` → `render.js` → editor-only: `store.js`, `section_ops.js`, `editor.js`.
+  `invite.html` stops after `render.js` and has its own boot script.
+- `js/sections/`: hero, family, events, countdown, rsvp, album, story, video, map, dresscode, wishes, gift, thanks.
+- `server/app.py` (routes), `server/excel_store.py` (all xlsx I/O), `server/tests/` (pytest). Runtime data in `data/` (git-ignored): `guests.xlsx`, `cards/<slug>.json`, `uploads/`.
 
-**Export.** `openExportModal()` clones the rendered `#sectionsViewport`, strips editor-only artifacts (`.section-badge`, `contenteditable`, `onblur`, `onclick`, `selected-section`), and wraps it in a standalone HTML string with its own minimal `<script>` (countdown, audio toggle, gift modal, RSVP). Runtime behavior therefore exists twice — in the editor script and inside the export template string (note the escaped `<\/script>`). Changes to interactive behavior or the font list must be mirrored in both.
+## Section registry
 
-**Limitations to be aware of:** no persistence (no localStorage/backend — state is lost on reload); uploaded images are stored as base64 data URLs in state; RSVP submit only shows a toast.
+Each section type is exactly one file `js/sections/<type>.js` calling `registerSection({type, label, icon, defaults, renderCanvas(sec, ctx), renderInspector(sec), mount?(root, sec, ctx), migrate?(data)})`. `ctx = {appState, mode, guestName, slug}`, `mode` is `editor | invite | export`. `renderCanvas` is pure (no fetch/side effects, no `contenteditable` outside editor mode).
+
+Adding a type = create the file + add a `<script>` tag in **both** `index.html` and `invite.html`. Never branch on `sec.id`/`sec.type` in `render.js`, `editor.js`, `runtime.js`. In sections use `sectionVars(sec, ctx)` for per-section style, `fieldAttr(ctx, key)` for inline-editable fields (`data-field`), and sanitize every user value with `escapeHtml`, URLs with `safeUrl`, colors with `safeColor`, fonts with `safeFont`.
+
+## State, migrate, undo
+
+`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 3) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
+
+All mutations go through a mutator ending in `commitState(label)` (undo snapshot, autosave to localStorage `thiep:draft`, re-render). Never assign `appState` from UI code. Undo stack is capped (50 entries / ~30M chars).
+
+## Shared runtime
+
+`js/runtime.js` exposes `CardRuntime.init(rootEl, state, ctx)` / `CardRuntime.destroy()`: countdown, music, falling effect, envelope/curtain intro, gift modal + QR, scroll-reveal, calendar buttons, then each section's `mount()`. The editor calls `destroy()` before every re-`init`. In editor mode there is no intro, no scroll-reveal, no autoplay. Interactive logic is written once here — never copy it into template strings.
+
+## Guest page and export
+
+- Guest page `/c/<slug>?khach=<tên>`: `invite.html` fetches `GET /api/cards/<slug>`, `migrate`, renders `mode:'invite'`; guest name is decoded, cut to 60 chars, escaped, replaces `{khach}`.
+- Export HTML (`openExportModal` in `editor.js`) builds a self-contained file by inlining CSS + `state/api/runtime/sections/render` JS + `window.__CARD_STATE__` + a bootstrap that reuses the same runtime. It fetches those files, so it needs the server (not `file://`).
+- RSVP/wishes post only via `window.api.postRsvp/postWish/getWishes`.
+
+## Backend
+
+Routes: `GET /api/health`; `GET|PUT /api/cards/{slug}` (first PUT creates and returns `editKey`; later PUTs need `X-Edit-Key`, compared with `secrets.compare_digest`); `POST /api/upload` (≤10MB, image/audio, server-generated name); `POST /api/cards/{slug}/rsvp`, `POST|GET .../wishes`; `GET .../export.xlsx` (edit key); `GET /c/{slug}`; static files (never `data/`, `server/`, `.agents/`, `.claude/`). Slug `^[a-z0-9-]{3,50}$`. The editor keeps edit keys in localStorage (`thiep:editKey:<slug>`).
+
+Guest data lives in `data/guests.xlsx` (sheets `RSVP`, `LoiChuc`, `KhachMoi`); all I/O via `excel_store.py` under a module `threading.Lock`, append-only, atomic temp file + `os.replace`; never rename/remove columns. Card JSON is written atomically too. Locks are in-process, so **run a single uvicorn worker** (no `--workers N`).
+
+## Workflow docs
+
+Rules live in `.agents/rules/` (start with `hard_constitution.md`; then `domain_frontend.md`, `domain_sections.md`, `domain_runtime_invite.md`, `domain_backend.md`, `domain_security_storage.md`, `domain_workflow_testing.md`, `domain_subagents_workflow.md`). Agent roster and routing: `.agents/AGENTS.md`; orchestration skill `/dieu-phoi`. Architecture decisions: `docs/quyet_dinh.md`; remaining work: `docs/backlog.md`; current spec: `docs/thiep-tuy-bien-sau/`. The main session only coordinates; code edits go through sub-agents per ticket.
