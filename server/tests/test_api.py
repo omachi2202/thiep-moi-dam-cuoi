@@ -23,7 +23,7 @@ def rows(data_dir, sheet):
 
 # ---- Thiệp: tạo / sửa / đọc ----
 def test_health(client):
-    assert client.get("/api/health").json() == {"ok": True}
+    assert client.get("/api/health").json() == {"ok": True, "needCreateCode": False}
 
 
 def test_create_returns_edit_key(client):

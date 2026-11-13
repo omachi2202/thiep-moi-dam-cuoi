@@ -127,15 +127,33 @@ const MAX_BASE64_BYTES = 1.5 * 1024 * 1024;
 
 async function uploadOrDataUrl(file) {
     let apiFailed = false;
+    let failStatus = 0;
+    let failMsg = '';
     if (window.api && window.api.available) {
         try {
             const url = await window.api.uploadFile(file);
             if (url) return url;
         } catch (err) {
             apiFailed = true;
+            failStatus = (err && err.status) || 0;
+            failMsg = (err && err.message) || '';
         }
     }
     // Fallback base64 làm phình state/nháp: từ chối tệp lớn (một toast duy nhất)
+    if (apiFailed && (failStatus === 403 || failStatus === 507) && file.size <= MAX_BASE64_BYTES) {
+        showToast(failStatus === 403
+            ? 'Chưa có quyền tải lên máy chủ: nhập Mã tạo thiệp trong mục Xuất bản. Tạm nhúng ảnh vào thiệp.'
+            : (failMsg || 'Máy chủ đã hết dung lượng lưu tệp.') + ' Tạm nhúng tệp vào thiệp.');
+        return readFileAsDataUrl(file);
+    }
+    if (apiFailed && (failStatus === 403 || failStatus === 507) && file.size > MAX_BASE64_BYTES) {
+        showToast((failStatus === 403
+            ? 'Chưa có quyền tải lên máy chủ: nhập Mã tạo thiệp trong mục Xuất bản.'
+            : (failMsg || 'Máy chủ đã hết dung lượng lưu tệp.')) + ' Tệp quá lớn để nhúng trực tiếp (tối đa 1,5MB).');
+        const err = new Error('Tệp quá lớn');
+        err.handled = true;
+        throw err;
+    }
     if (file.size > MAX_BASE64_BYTES) {
         showToast((apiFailed ? 'Tải lên máy chủ thất bại và tệp quá lớn để nhúng trực tiếp (tối đa 1,5MB). ' : 'Tệp quá lớn để nhúng trực tiếp (tối đa 1,5MB). ') + 'Hãy thử lại khi backend hoạt động hoặc nén nhỏ tệp trước.');
         const err = new Error('Tệp quá lớn');

@@ -532,6 +532,27 @@
                     <p class="text-slate-500 mt-1">Xuất bản lại cùng đường dẫn sẽ cập nhật thiệp (dùng khoá chỉnh sửa đã lưu trên máy này).</p>
                 </div>
 
+                <div id="publishCodeBox" class="hidden">
+                    <label class="block font-semibold text-slate-700 mb-1" for="publishCodeInput">Mã tạo thiệp</label>
+                    <input id="publishCodeInput" type="password" maxlength="100" autocomplete="off"
+                        placeholder="Nhập mã tạo thiệp"
+                        class="w-full min-h-[44px] px-3 py-2 rounded-lg border border-slate-300 focus:border-violet-600 focus:outline-none select-text">
+                    <p class="text-slate-500 mt-1">Chưa có mã? Liên hệ người quản lý trang.</p>
+                </div>
+
+                <div id="openCardBox" class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                    <p class="font-bold text-slate-700"><i class="fa-solid fa-folder-open mr-1"></i> Mở thiệp đã xuất bản để sửa</p>
+                    <label class="block font-semibold text-slate-700" for="openCardSlug">Đường dẫn thiệp (slug)</label>
+                    <input id="openCardSlug" type="text" maxlength="50" autocomplete="off"
+                        class="w-full min-h-[44px] px-3 py-2 rounded-lg border border-slate-300 focus:border-violet-600 focus:outline-none select-text">
+                    <label class="block font-semibold text-slate-700" for="openCardKey">Khoá chỉnh sửa</label>
+                    <input id="openCardKey" type="password" maxlength="200" autocomplete="off"
+                        class="w-full min-h-[44px] px-3 py-2 rounded-lg border border-slate-300 focus:border-violet-600 focus:outline-none select-text">
+                    <button id="openCardBtn" onclick="openPublishedCard()"
+                        class="w-full min-h-[44px] px-4 py-2 rounded-lg font-semibold bg-slate-700 hover:bg-slate-800 text-white transition">Mở để sửa</button>
+                    <p class="text-slate-500">Thiệp hiện tại trên màn hình sẽ được thay bằng thiệp đã xuất bản (có thể hoàn tác).</p>
+                </div>
+
                 <div id="publishResult" class="hidden space-y-4">
                     <div id="publishKeyBox" class="hidden p-3 rounded-xl bg-amber-50 border border-amber-300">
                         <p class="font-bold text-amber-800 mb-1"><i class="fa-solid fa-key mr-1"></i> Khoá chỉnh sửa của bạn</p>

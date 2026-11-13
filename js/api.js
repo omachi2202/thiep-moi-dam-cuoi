@@ -3,6 +3,7 @@
     const SLUG_RE = /^[a-z0-9-]{3,50}$/;
     const KEY_PREFIX = 'thiep:editKey:';
     const LAST_SLUG = 'thiep:lastSlug';
+    const CODE_KEY = 'thiep:createCode';
     const QR_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
 
     const QR_SRI = 'sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSQX0FslNhTDadL4O5SAGapGt4FodqL8My0mA==';
@@ -58,6 +59,7 @@
 
     const api = {
         available: false,
+        needCreateCode: false,
 
         async checkHealth() {
             const proto = location.protocol;
@@ -68,8 +70,10 @@
                 const res = await fetch('/api/health', { signal: ctrl.signal });
                 const j = await res.json();
                 api.available = !!(res.ok && j && j.ok === true);
+                api.needCreateCode = api.available && j.needCreateCode === true;
             } catch (e) {
                 api.available = false;
+                api.needCreateCode = false;
             } finally {
                 clearTimeout(timer);
             }
@@ -79,11 +83,37 @@
         uploadFile(file) {
             const fd = new FormData();
             fd.append('file', file);
-            return request('/api/upload', { method: 'POST', body: fd }, 60000).then(j => j.url);
+            const headers = {};
+            const code = lsGet(CODE_KEY);
+            if (code) headers['X-Create-Code'] = code;
+            // Quyền dự phòng (G2): chỉ khi server cần mã và máy chưa có mã
+            if (api.needCreateCode && !code) {
+                const last = lsGet(LAST_SLUG);
+                const key = SLUG_RE.test(last) ? lsGet(KEY_PREFIX + last) : '';
+                if (key) {
+                    headers['X-Card-Slug'] = last;
+                    headers['X-Edit-Key'] = key;
+                }
+            }
+            return request('/api/upload', { method: 'POST', body: fd, headers }, 60000).then(j => j.url);
+        },
+
+        // true | ném Error (.status)
+        async verifyKey(slug, key) {
+            if (!SLUG_RE.test(slug || '')) {
+                throw new Error('Đường dẫn chỉ gồm chữ thường không dấu, số, dấu gạch ngang (3–50 ký tự).');
+            }
+            await request('/api/cards/' + encodeURIComponent(slug) + '/verify-key',
+                { method: 'POST', headers: { 'X-Edit-Key': key || '' } });
+            return true;
+        },
+
+        getCard(slug) {
+            return request('/api/cards/' + encodeURIComponent(slug));
         },
 
         // Trả {url, editKey?}; editKey chỉ có ở lần tạo đầu tiên
-        async publishCard(slug, state) {
+        async publishCard(slug, state, createCode) {
             if (!SLUG_RE.test(slug || '')) {
                 throw new Error('Đường dẫn chỉ gồm chữ thường không dấu, số, dấu gạch ngang (3–50 ký tự).');
             }
@@ -93,6 +123,8 @@
             const headers = {};
             const key = lsGet(KEY_PREFIX + slug);
             if (key) headers['X-Edit-Key'] = key;
+            const code = createCode || lsGet(CODE_KEY);
+            if (code) headers['X-Create-Code'] = code;
             const j = await request('/api/cards/' + encodeURIComponent(slug), jsonOpts('PUT', copy, headers), 60000);
             if (j && j.editKey) lsSet(KEY_PREFIX + slug, j.editKey);
             lsSet(LAST_SLUG, slug);
@@ -169,10 +201,22 @@
         b.classList.toggle('opacity-60', busy);
     }
 
+    // Ô mã tạo thiệp: chỉ hiện khi server bật mã và slug đang nhập chưa có khoá trên máy
+    let forceCodeBox = false; // bật khi server trả 403 lúc xuất bản
+    function refreshCodeBox() {
+        const box = $('publishCodeBox');
+        if (!box) return;
+        const v = $('publishSlugInput').value;
+        const show = api.needCreateCode &&
+            (forceCodeBox || !(SLUG_RE.test(v) && lsGet(KEY_PREFIX + v)));
+        box.classList.toggle('hidden', !show);
+    }
+
     function validateSlugUi() {
         const v = $('publishSlugInput').value;
         const ok = SLUG_RE.test(v);
         $('publishSlugError').classList.toggle('hidden', ok || v === '');
+        refreshCodeBox();
         return ok;
     }
 
@@ -216,12 +260,22 @@
     async function submitPublish() {
         if (!validateSlugUi()) { toast('Đường dẫn chưa hợp lệ.'); return; }
         const slug = $('publishSlugInput').value;
+        const codeBox = $('publishCodeBox');
+        const typed = ($('publishCodeInput').value || '').trim();
+        const useTyped = !!(codeBox && !codeBox.classList.contains('hidden') && typed);
         setBusy(true);
         try {
-            const res = await api.publishCard(slug, appState);
+            const res = await api.publishCard(slug, appState, useTyped ? typed : '');
+            if (useTyped) lsSet(CODE_KEY, typed); // chỉ lưu sau khi thành công
+            forceCodeBox = false;
             showResult(res, slug);
+            refreshCodeBox();
             toast('Đã xuất bản thiệp!');
         } catch (e) {
+            if (e && e.status === 403 && api.needCreateCode) {
+                forceCodeBox = true;
+                refreshCodeBox();
+            }
             toast(e.message || 'Xuất bản thất bại.');
         } finally {
             setBusy(false);
@@ -238,6 +292,10 @@
         input.value = lsGet(LAST_SLUG) || suggestSlug();
         $('publishResult').classList.add('hidden');
         $('publishGuestName').value = '';
+        $('publishCodeInput').value = lsGet(CODE_KEY);
+        $('openCardSlug').value = '';
+        $('openCardKey').value = '';
+        forceCodeBox = false;
         validateSlugUi();
         $('publishModal').classList.remove('hidden');
         input.focus();
@@ -245,7 +303,42 @@
     function closePublishModal() {
         $('publishModal').classList.add('hidden');
         $('publishEditKey').value = '';
+        $('openCardKey').value = '';
+        $('publishCodeInput').value = '';
     }
+
+    // Mở thiệp đã xuất bản để sửa: verifyKey -> getCard -> replaceState
+    async function openPublishedCard() {
+        const slug = ($('openCardSlug').value || '').trim();
+        const key = ($('openCardKey').value || '').trim();
+        if (!SLUG_RE.test(slug)) { toast('Đường dẫn chưa hợp lệ.'); return; }
+        if (!key) { toast('Hãy nhập khoá chỉnh sửa.'); return; }
+        const btn = $('openCardBtn');
+        btn.disabled = true;
+        btn.classList.add('opacity-60');
+        try {
+            await api.verifyKey(slug, key);
+            const st = await api.getCard(slug);
+            if (typeof window.replaceState !== 'function' || !window.replaceState(st)) {
+                toast('Dữ liệu thiệp không hợp lệ.');
+                return;
+            }
+            lsSet(KEY_PREFIX + slug, key);
+            lsSet(LAST_SLUG, slug);
+            $('publishSlugInput').value = slug;
+            refreshCodeBox();
+            toast('Đã mở thiệp ' + slug + ' để chỉnh sửa.');
+            closePublishModal();
+        } catch (e) {
+            if (e && e.status === 403) toast('Khoá chỉnh sửa không đúng.');
+            else if (e && e.status === 404) toast('Không tìm thấy thiệp.');
+            else toast((e && e.message) || 'Không mở được thiệp.');
+        } finally {
+            btn.disabled = false;
+            btn.classList.remove('opacity-60');
+        }
+    }
+    window.openPublishedCard = openPublishedCard;
 
     window.openPublishModal = openPublishModal;
     window.closePublishModal = closePublishModal;
