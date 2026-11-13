@@ -24,7 +24,8 @@ registerSection({
     renderCanvas(sec, ctx) {
         const v = sectionVars(sec, ctx);
         const d = sec.data;
-        const photosGrid = d.photos.map((url, idx) => `
+        const photos = Array.isArray(d.photos) ? d.photos : [];
+        const photosGrid = photos.map((url, idx) => `
                     <div class="overflow-hidden rounded-xl shadow-sm border border-white aspect-[3/4] bg-slate-100 group">
                         <img src="${escapeHtml(safeUrl(url))}" alt="Album ${idx + 1}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" onerror="this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Wedding+Photo'">
                     </div>
@@ -56,7 +57,7 @@ registerSection({
     renderInspector(sec) {
         const d = sec.data;
         const id = escapeHtml(sec.id);
-        const photoInputs = d.photos.map((url, i) => `
+        const photoInputs = (Array.isArray(d.photos) ? d.photos : []).map((url, i) => `
             <div class="flex items-center gap-1.5">
                 <span class="text-[10px] font-bold text-slate-400 w-4">#${i + 1}</span>
                 <input type="text" value="${escapeHtml(url)}" oninput="updateAlbumPhoto(${i}, this.value)" class="flex-1 px-2 py-1.5 rounded border border-slate-300 text-[11px]">

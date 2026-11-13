@@ -223,22 +223,55 @@ function safeUrl(u) {
 }
 
 // Biến dùng chung cho renderCanvas của các section (giá trị đã escape, dùng được trong thuộc tính style)
+// Whitelist giá trị state trước khi chèn vào thuộc tính style= (chống CSS injection)
+// Màu: chỉ #rgb/#rrggbb/#rrggbbaa; sai trả fallback
+function safeColor(c, fallback) {
+    const s = String(c === undefined || c === null ? '' : c).trim();
+    return /^#[0-9a-f]{3,8}$/i.test(s) ? s : (fallback === undefined ? '' : fallback);
+}
+
+// Font: phải thuộc FONT_OPTIONS, THEME_PRESETS hoặc font mặc định của globalStyle; sai trả fallback. Kết quả đã escape.
+function safeFont(f, fallback) {
+    const allowed = new Set();
+    FONT_OPTIONS.forEach(o => { if (o.value) allowed.add(o.value); });
+    Object.keys(THEME_PRESETS).forEach(k => {
+        const p = THEME_PRESETS[k];
+        [p.scriptFont, p.headingFont, p.bodyFont].forEach(v => { if (v) allowed.add(v); });
+    });
+    const gd = DEFAULT_STATE.globalStyle;
+    [gd.scriptFont, gd.headingFont, gd.bodyFont].forEach(v => allowed.add(v));
+    return allowed.has(f) ? escapeHtml(f) : escapeHtml(fallback === undefined ? '' : fallback);
+}
+
+// Cỡ chữ: số, kẹp 12-72; rỗng/không phải số trả fallback (mặc định 28)
+function safeSize(n, fallback) {
+    const fb = fallback === undefined ? 28 : fallback;
+    if (n === '' || n === null || n === undefined) return fb;
+    const x = Number(n);
+    if (!isFinite(x)) return fb;
+    return Math.min(72, Math.max(12, x));
+}
+window.safeColor = safeColor;
+window.safeFont = safeFont;
+window.safeSize = safeSize;
+
 function sectionVars(sec, ctx) {
     const g = ctx.appState.globalStyle;
+    const gd = DEFAULT_STATE.globalStyle;
     return {
         g: g,
-        pc: escapeHtml(g.primaryColor),
-        secFont: escapeHtml(sec.customFont || g.headingFont),
-        scriptFont: escapeHtml(sec.customFont || g.scriptFont),
-        globalScriptFont: escapeHtml(g.scriptFont),
-        secColor: escapeHtml(sec.customTextColor || g.textColor),
-        titleSize: sec.customTitleSize ? `${escapeHtml(sec.customTitleSize)}px` : '28px'
+        pc: safeColor(g.primaryColor, gd.primaryColor),
+        secFont: safeFont(sec.customFont, '') || safeFont(g.headingFont, gd.headingFont),
+        scriptFont: safeFont(sec.customFont, '') || safeFont(g.scriptFont, gd.scriptFont),
+        globalScriptFont: safeFont(g.scriptFont, gd.scriptFont),
+        secColor: safeColor(sec.customTextColor, '') || safeColor(g.textColor, gd.textColor),
+        titleSize: `${safeSize(sec.customTitleSize, 28)}px`
     };
 }
 
 // Thuộc tính cho trường sửa inline: chỉ có ở mode editor
 function fieldAttr(ctx, key) {
-    return ctx.mode === 'editor' ? `data-field="${key}" contenteditable="true"` : '';
+    return ctx.mode === 'editor' ? `data-field="${escapeHtml(key)}" contenteditable="true"` : '';
 }
 
 function defaultSectionStyle() {
@@ -258,14 +291,45 @@ function migrate(state) {
     };
 
     if (!Array.isArray(state.sections)) state.sections = [];
+    state.sections = state.sections.filter(sec => sec && typeof sec === 'object' && !Array.isArray(sec));
+
+    // Chuẩn hoá id: chuỗi khớp ^[a-z0-9_-]{1,40}$, duy nhất; sai/trùng/thiếu thì sinh <type>-<n>
+    const ID_RE = /^[a-z0-9_-]{1,40}$/;
+    const seen = new Set();
+    const bad = [];
     state.sections.forEach(sec => {
-        if (!sec.type) sec.type = sec.id;
+        if (!sec.type) sec.type = (typeof sec.id === 'string') ? sec.id : '';
+        if (typeof sec.id === 'string' && ID_RE.test(sec.id) && !seen.has(sec.id)) {
+            seen.add(sec.id);
+        } else {
+            bad.push(sec);
+        }
+    });
+    const idMap = {};
+    bad.forEach(sec => {
+        const base = (typeof sec.type === 'string' && /^[a-z]{1,30}$/.test(sec.type)) ? sec.type : 'section';
+        let n = 1;
+        while (seen.has(`${base}-${n}`)) n++;
+        const newId = `${base}-${n}`;
+        seen.add(newId);
+        if (typeof sec.id === 'string' && !(sec.id in idMap)) idMap[sec.id] = newId;
+        sec.id = newId;
+    });
+    if (typeof state.selectedSectionId === 'string' && Object.prototype.hasOwnProperty.call(idMap, state.selectedSectionId)) {
+        state.selectedSectionId = idMap[state.selectedSectionId];
+    }
+    if (state.sections.length && !seen.has(state.selectedSectionId)) {
+        state.selectedSectionId = state.sections[0].id;
+    }
+
+    state.sections.forEach(sec => {
         if (sec.visible === undefined) sec.visible = true;
         if (sec.customFont === undefined) sec.customFont = '';
         if (sec.customTitleSize === undefined) sec.customTitleSize = '28';
         if (sec.customTextColor === undefined) sec.customTextColor = '';
-        sec.style = Object.assign(defaultSectionStyle(), sec.style || {});
-        if (!sec.data || typeof sec.data !== 'object') sec.data = {};
+        const plain = o => o && typeof o === 'object' && !Array.isArray(o);
+        sec.style = Object.assign(defaultSectionStyle(), plain(sec.style) ? sec.style : {});
+        if (!plain(sec.data)) sec.data = {};
 
         const def = window.SECTION_TYPES[sec.type];
         if (!def) return; // loại lạ: giữ nguyên, không render
@@ -283,7 +347,11 @@ function migrate(state) {
         }
     });
 
-    if (!state.selectedSectionId && state.sections.length) state.selectedSectionId = state.sections[0].id;
-    state.schemaVersion = SCHEMA_VERSION;
+    // Không hạ schemaVersion khi state mới hơn mã hiện tại
+    if (typeof state.schemaVersion === 'number' && state.schemaVersion > SCHEMA_VERSION) {
+        console.warn('migrate: state có schemaVersion ' + state.schemaVersion + ' mới hơn mã hiện tại (' + SCHEMA_VERSION + '), giữ nguyên.');
+    } else {
+        state.schemaVersion = SCHEMA_VERSION;
+    }
     return state;
 }

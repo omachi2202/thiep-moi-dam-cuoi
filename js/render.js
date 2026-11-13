@@ -71,7 +71,8 @@ function selectSection(secId) {
     });
 
     // Cuộn mượt tới section đó
-    const targetEl = document.querySelector(`.wedding-section[data-section-id="${secId}"]`);
+    const esc = (typeof CSS !== 'undefined' && CSS.escape) ? CSS.escape(secId) : String(secId).replace(/["\\\]]/g, '\\$&');
+    const targetEl = document.querySelector(`.wedding-section[data-section-id="${esc}"]`);
     if (targetEl) {
         targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -80,13 +81,24 @@ function selectSection(secId) {
 // 4. VẼ KHUNG THIỆP CƯỚI (DÙNG CHUNG CHO EDITOR / TRANG KHÁCH / EXPORT)
 // Trả về HTML các section đang hiển thị. Ngoài mode 'editor' không có badge, onclick, contenteditable.
 function renderCardHtml(state, ctx) {
+    // State schema cũ/lạ: chuẩn hoá trên bản sao, không sửa state gốc
+    if (state.schemaVersion !== SCHEMA_VERSION) {
+        state = migrate(JSON.parse(JSON.stringify(state)));
+    }
     const c = Object.assign({ mode: 'invite', guestName: '', slug: null }, ctx || {}, { appState: state });
     const isEditor = c.mode === 'editor';
 
     return state.sections
         .filter(sec => sec.visible && SECTION_TYPES[sec.type])
         .map(sec => {
-            const innerHtml = SECTION_TYPES[sec.type].renderCanvas(sec, c);
+            let innerHtml;
+            try {
+                innerHtml = SECTION_TYPES[sec.type].renderCanvas(sec, c);
+            } catch (err) {
+                console.error('renderCanvas lỗi ở section', sec.id, err);
+                if (!isEditor) return '';
+                innerHtml = `<div class="m-3 p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-700 text-xs">Không hiển thị được phần "${escapeHtml(sec.name)}". Kiểm tra lại dữ liệu của phần này.</div>`;
+            }
             if (!isEditor) {
                 return `
             <section data-section-id="${escapeHtml(sec.id)}" class="wedding-section">
@@ -129,16 +141,49 @@ function renderWeddingCanvas() {
 }
 
 // Listener chung cho mọi trường sửa inline [data-field] (giao kèo G4)
-document.addEventListener('focusout', function (e) {
+// Đọc văn bản của phần tử contenteditable: <br> và khối (div/p/li) thành \n, dùng textContent (không bị text-transform ảnh hưởng)
+function readEditableText(el) {
+    let out = '';
+    (function walk(node) {
+        node.childNodes.forEach(c => {
+            if (c.nodeType === 3) {
+                out += c.textContent;
+            } else if (c.nodeType === 1) {
+                if (c.tagName === 'BR') { out += '\n'; return; }
+                if (/^(DIV|P|LI)$/.test(c.tagName) && out && !out.endsWith('\n')) out += '\n';
+                walk(c);
+            }
+        });
+    })(el);
+    return out.replace(/\n+$/, '').trim();
+}
+
+const __fieldOrigText = new WeakMap();
+
+function __editableFieldOf(e) {
     const el = e.target;
-    if (!el || !el.closest) return;
+    if (!el || !el.closest) return null;
     const field = el.closest('[data-field]');
-    if (!field) return;
+    if (!field) return null;
     const viewport = document.getElementById('sectionsViewport');
-    if (!viewport || !viewport.contains(field)) return;
+    if (!viewport || !viewport.contains(field)) return null;
+    return field;
+}
+
+document.addEventListener('focusin', function (e) {
+    const field = __editableFieldOf(e);
+    if (field) __fieldOrigText.set(field, readEditableText(field));
+});
+
+document.addEventListener('focusout', function (e) {
+    const field = __editableFieldOf(e);
+    if (!field) return;
+    if (appState.isPreviewMode) return;
     const secEl = field.closest('[data-section-id]');
     if (!secEl) return;
-    updateSectionField(secEl.dataset.sectionId, field.dataset.field, field.innerText);
+    const value = readEditableText(field);
+    if (__fieldOrigText.has(field) && __fieldOrigText.get(field) === value) return;
+    updateSectionField(secEl.dataset.sectionId, field.dataset.field, value);
 });
 
 // 5. BẢNG THUỘC TÍNH BÊN PHẢI (CONTEXTUAL INSPECTOR CHO TỪNG SECTION)

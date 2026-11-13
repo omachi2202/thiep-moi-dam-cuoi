@@ -20,6 +20,16 @@ registerSection({
     renderCanvas(sec, ctx) {
         const v = sectionVars(sec, ctx);
         const d = sec.data;
+        // Nút chỉ đường chỉ nhận http(s); URL rỗng/không hợp lệ thì ẩn nút
+        const mapBtn = (n) => {
+            const url = safeUrl(d[`event${n}MapUrl`]);
+            if (!/^https?:\/\//i.test(url)) return '';
+            return `<div class="pt-2">
+                            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold text-white shadow transition hover:opacity-90" style="background-color: ${v.pc};">
+                                <i class="fa-solid fa-location-dot"></i> XEM CHỈ ĐƯỜNG
+                            </a>
+                        </div>`;
+        };
         const block = (n) => `
                     <div class="bg-white/90 rounded-2xl p-6 shadow-sm border border-amber-900/10 space-y-2.5">
                         <h3 class="font-bold tracking-widest uppercase" style="font-family: ${v.secFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${fieldAttr(ctx, `event${n}Title`)}>${escapeHtml(d[`event${n}Title`])}</h3>
@@ -28,11 +38,7 @@ registerSection({
                         <p class="text-2xl font-bold tracking-wider" style="color: ${v.pc}; font-family: ${v.secFont};" ${fieldAttr(ctx, `event${n}Date`)}>${escapeHtml(d[`event${n}Date`])}</p>
                         <p class="text-xs italic opacity-75" ${fieldAttr(ctx, `event${n}Lunar`)}>${escapeHtml(d[`event${n}Lunar`])}</p>
                         <p class="text-xs font-medium pt-1" ${fieldAttr(ctx, `event${n}Venue`)}>${escapeHtml(d[`event${n}Venue`])}</p>
-                        <div class="pt-2">
-                            <a href="${escapeHtml(safeUrl(d[`event${n}MapUrl`]))}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold text-white shadow transition hover:opacity-90" style="background-color: ${v.pc};">
-                                <i class="fa-solid fa-location-dot"></i> XEM CHỈ ĐƯỜNG
-                            </a>
-                        </div>
+                        ${mapBtn(n)}
                     </div>`;
         return `
                 <div class="py-10 px-6 text-center space-y-6 bg-black/[0.02]" style="color: ${v.secColor};">
