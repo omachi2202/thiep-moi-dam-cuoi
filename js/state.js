@@ -1,6 +1,6 @@
 // 1. DỮ LIỆU GỐC (MÔ PHỎNG CHUẨN ZIUWEDDING.SITE/MM03 - TÙNG & NGỌC)
 const DEFAULT_STATE = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     selectedSectionId: 'hero',
     isPreviewMode: false,
     globalStyle: {
@@ -16,6 +16,9 @@ const DEFAULT_STATE = {
         cornerOrnament: "none",
         revealAnimation: "fade-up",
         introStyle: "envelope",
+        bgImage: "",
+        bgImageOverlay: 0,
+        bgImageFit: "cover",
         audioUrl: "https://media.vocaroo.com/mp3/15iKnK2wEfyY"
     },
     bankInfo: {
@@ -261,11 +264,25 @@ const THEME_PRESETS = {
         bgTexture: "none",
         frameStyle: "none",
         cornerOrnament: "none"
+    },
+    moss: {
+        label: 'Xanh rêu & vàng',
+        desc: 'Sang trọng & Cổ điển',
+        scriptFont: "'Great Vibes', cursive",
+        headingFont: "'Cormorant Garamond', serif",
+        bodyFont: "'Cormorant Garamond', serif",
+        primaryColor: "#1f3d2b",
+        bgColor: "#f5f0e6",
+        textColor: "#2a2f27",
+        fallingEffect: "none",
+        bgTexture: "paper",
+        frameStyle: "none",
+        cornerOrnament: "leaf"
     }
 };
 
 // 2. REGISTRY SECTION, TIỆN ÍCH CHUNG & MIGRATE (giao kèo G2/G4)
-const SCHEMA_VERSION = 4;
+const SCHEMA_VERSION = 5;
 window.SECTION_TYPES = Object.create(null);
 
 // Whitelist giá trị G5 của globalStyle (giá trị đầu tiên không phải mặc định; mặc định lấy từ DEFAULT_STATE)
@@ -275,7 +292,8 @@ const G5_OPTIONS = {
     cornerOrnament: ['none', 'leaf', 'rose'],
     revealAnimation: ['none', 'fade-up', 'zoom', 'slide'],
     fallingEffect: ['none', 'hearts', 'sparkles', 'petals', 'snow', 'stars'],
-    introStyle: ['none', 'envelope', 'curtain']
+    introStyle: ['none', 'envelope', 'curtain'],
+    bgImageFit: ['cover', 'repeat']
 };
 window.G5_OPTIONS = G5_OPTIONS;
 
@@ -381,6 +399,39 @@ function fieldAttr(ctx, key) {
     return `data-field="${escapeHtml(key)}" contenteditable="true"`;
 }
 
+// Ảnh nền chỉ vào CSS url("...") khi qua safeUrl và không có ký tự phá chuỗi CSS
+function safeCssImageUrl(u) {
+    const s = safeUrl(u);
+    if (!s || /["')\\\s\r\n]/.test(s)) return '';
+    return s;
+}
+window.safeCssImageUrl = safeCssImageUrl;
+
+// Biến CSS nền cho #weddingCardFrame; mọi giá trị đã sạch. g thiếu/sai kiểu dùng globalStyle mặc định.
+function cardBgVars(g) {
+    if (!g || typeof g !== 'object' || Array.isArray(g)) g = DEFAULT_STATE.globalStyle;
+    const img = safeCssImageUrl(g.bgImage);
+    let op = parseFloat(g.bgImageOverlay);
+    if (!isFinite(op)) op = 0;
+    op = img ? Math.min(0.9, Math.max(0, op)) : 0;
+    const repeat = g.bgImageFit === 'repeat';
+    return {
+        '--card-bg-image': img ? 'url("' + img + '")' : 'none',
+        '--card-bg-veil': 'rgba(255,255,255,' + op + ')',
+        // 'cover' (giá trị lưu giữ nguyên) = phủ theo bề ngang, lặp dọc: tránh phóng quá mức trên thiệp rất cao
+        '--card-bg-size': repeat ? 'auto' : '100% auto',
+        '--card-bg-repeat': repeat ? 'repeat' : 'repeat-y'
+    };
+}
+window.cardBgVars = cardBgVars;
+
+// Chuỗi style= cho HTML; người gọi vẫn escapeHtml khi đưa vào thuộc tính
+function cardBgStyleText(g) {
+    const v = cardBgVars(g);
+    return Object.keys(v).map(k => k + ':' + v[k]).join(';');
+}
+window.cardBgStyleText = cardBgStyleText;
+
 function defaultSectionStyle() {
     return { bgColor: '', bgImage: '', bgOverlayOpacity: 0, paddingY: '', align: '', animation: '', ornament: '' };
 }
@@ -394,6 +445,11 @@ function migrate(state) {
     Object.keys(G5_OPTIONS).forEach(k => {
         if (G5_OPTIONS[k].indexOf(state.globalStyle[k]) < 0) state.globalStyle[k] = DEFAULT_STATE.globalStyle[k];
     });
+    // Hình nền toàn thiệp (v5): bgImage là chuỗi, bgImageOverlay là số trong [0, 0.9]
+    if (typeof state.globalStyle.bgImage !== 'string') state.globalStyle.bgImage = '';
+    let ov = parseFloat(state.globalStyle.bgImageOverlay);
+    if (!isFinite(ov)) ov = 0;
+    state.globalStyle.bgImageOverlay = Math.min(0.9, Math.max(0, ov));
 
     const bank = state.bankInfo || {};
     state.bankInfo = {

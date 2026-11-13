@@ -31,6 +31,12 @@ Thứ tự nạp: `state.js` → `api.js` → `runtime.js` → `sections/*.js` �
 - Vùng chạm ≥ 44px trên mobile; tương phản chữ/nền đủ đọc.
 - Chữ giao diện tiếng Việt, có dấu đầy đủ.
 
+### Nền toàn thiệp
+- Thứ tự chồng lớp, dưới → trên: màu nền (`globalStyle.bgColor`), ảnh nền (`globalStyle.bgImage`), lớp phủ trắng (`bgImageOverlay`), texture `tex-*`, nền riêng của section (`style.bgColor/bgImage` trên `.wedding-section`).
+- Nền khung `#weddingCardFrame` chỉ được áp qua `cardBgVars(g)` / `cardBgStyleText(g)` (`js/state.js`) ở cả editor, `invite.html` và export; không tự ghép `url()` ở nơi khác.
+- Cấm chèn `url()` vào CSS khi chưa qua `safeCssImageUrl`.
+- Ô ảnh (nhập URL) trong inspector luôn kèm nút "Tải ảnh từ máy tính" dùng `uploadOrDataUrl`.
+
 ## 4. Chạy không backend
 `window.api.available === false` (mở `file://` hoặc server không phản hồi `/api/health`): ẩn/khoá nút Xuất bản, upload dùng base64, form RSVP/lời chúc hiện toast "Chỉ hoạt động trên thiệp đã xuất bản".
 

@@ -58,10 +58,16 @@ function syncLeftControlsWithState() {
     document.getElementById('inputBgColor').value = appState.globalStyle.bgColor;
     document.getElementById('inputTextColor').value = appState.globalStyle.textColor;
     document.getElementById('selectFallingEffect').value = appState.globalStyle.fallingEffect;
-    ['bgTexture', 'frameStyle', 'cornerOrnament', 'revealAnimation', 'introStyle'].forEach(k => {
+    ['bgTexture', 'frameStyle', 'cornerOrnament', 'revealAnimation', 'introStyle', 'bgImageFit'].forEach(k => {
         const el = document.getElementById('select_' + k);
         if (el) el.value = appState.globalStyle[k];
     });
+    const bgImgEl = document.getElementById('inputBgImage');
+    if (bgImgEl) bgImgEl.value = appState.globalStyle.bgImage || '';
+    const ovEl = document.getElementById('inputBgImageOverlay');
+    if (ovEl) ovEl.value = appState.globalStyle.bgImageOverlay || 0;
+    const ovLbl = document.getElementById('bgImageOverlayLabel');
+    if (ovLbl) ovLbl.textContent = Math.round((Number(appState.globalStyle.bgImageOverlay) || 0) * 100) + '%';
     document.getElementById('inputAudioUrl').value = appState.globalStyle.audioUrl;
 
     document.getElementById('groomBankName').value = appState.bankInfo.groom.bank;
@@ -151,6 +157,38 @@ async function handleLocalImageUpload(event, secId, fieldKey) {
         if (!err || !err.handled) showToast("Không tải được ảnh, vui lòng thử lại.");
     }
 }
+
+// Hình nền toàn thiệp (G4)
+async function handleGlobalBgUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+        const url = await uploadOrDataUrl(file);
+        updateGlobalStyle('bgImage', url);
+        showToast("Đã đặt hình nền thiệp!");
+    } catch (err) {
+        if (!err || !err.handled) showToast("Không tải được ảnh, vui lòng thử lại.");
+    } finally {
+        event.target.value = '';
+    }
+}
+
+// Ảnh nền riêng của một section (gọi từ inspector do render.js sinh)
+async function handleSectionBgUpload(event, secId) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+        const url = await uploadOrDataUrl(file);
+        setSectionDecor(secId, 'bgImage', url);
+        showToast("Đã đặt ảnh nền cho phần này!");
+    } catch (err) {
+        if (!err || !err.handled) showToast("Không tải được ảnh, vui lòng thử lại.");
+    } finally {
+        event.target.value = '';
+    }
+}
+window.handleGlobalBgUpload = handleGlobalBgUpload;
+window.handleSectionBgUpload = handleSectionBgUpload;
 
 // secId tuỳ chọn: inspector luôn hiển thị section đang chọn nên mặc định lấy selectedSectionId
 async function handleAlbumFileUpload(event, idx, secId) {
@@ -367,7 +405,7 @@ ${_exportInlineCss(css)}
     </style>
 </head>
 <body class="min-h-screen flex justify-center">
-    <div id="weddingCardFrame" class="w-full max-w-[430px] min-h-screen shadow-2xl relative overflow-hidden" style="background-color: ${_exportEsc(g.bgColor)}; color: ${_exportEsc(g.textColor)}; font-family: ${safeFont(g.bodyFont, DEFAULT_STATE.globalStyle.bodyFont)};">
+    <div id="weddingCardFrame" class="w-full max-w-[430px] min-h-screen shadow-2xl relative overflow-hidden ${_exportEsc(cardDecorClasses(g))}" style="background-color: ${_exportEsc(g.bgColor)}; color: ${_exportEsc(g.textColor)}; font-family: ${safeFont(g.bodyFont, DEFAULT_STATE.globalStyle.bodyFont)}; ${_exportEsc(cardBgStyleText(g))};">
         <div id="fallingContainer" class="inset-0 pointer-events-none overflow-hidden sticky top-0 h-0 z-40"></div>
 
         <button id="floatingMusicBtn" onclick="toggleAudioPlayback()" class="fixed bottom-5 left-5 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center text-white" style="background-color: ${_exportEsc(g.primaryColor)};" title="Bật/Tắt nhạc cưới">

@@ -177,6 +177,9 @@
                         var g = state.globalStyle || {};
                         var frame = $('weddingCardFrame');
                         frame.style.backgroundColor = safeColor(g.bgColor, '#fdfbf7');
+                        var bgVars = cardBgVars(g);
+                        Object.keys(bgVars).forEach(function (k) { frame.style.setProperty(k, bgVars[k]); });
+                        cardDecorClasses(g).split(' ').forEach(function (cl) { frame.classList.add(cl); });
                         frame.style.color = safeColor(g.textColor, '#3d312a');
                         frame.style.fontFamily = safeFontCss(g.bodyFont, "'Noto Serif', serif");   // chuỗi không escape cho CSSOM
 

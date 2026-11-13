@@ -182,13 +182,6 @@ function cardDecorClasses(g) {
     return 'tex-' + g5Value(g, 'bgTexture') + ' frame-' + g5Value(g, 'frameStyle') + ' orn-' + g5Value(g, 'cornerOrnament');
 }
 
-// Ảnh nền chỉ vào CSS url("...") khi qua safeUrl và không có ký tự phá chuỗi CSS
-function safeCssImageUrl(u) {
-    const s = safeUrl(u);
-    if (!s || /["')\\\s\r\n]/.test(s)) return '';
-    return s;
-}
-
 // Trả { cls, style } cho wrapper section từ sec.style (G5); style đã sạch, vẫn phải escapeHtml khi đưa vào thuộc tính
 function sectionDecor(sec, g) {
     const st = (sec && sec.style && typeof sec.style === 'object') ? sec.style : {};
@@ -254,8 +247,15 @@ function renderDecorInspectorHtml(sec) {
                     </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ảnh nền (đường dẫn https://... hoặc /uploads/...)</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ảnh nền (dán link hoặc tải ảnh)</label>
                     <input type="text" value="${escapeHtml(st.bgImage || '')}" onchange="setSectionDecor('${sid}', 'bgImage', this.value.trim())" class="w-full px-2.5 py-2 rounded-lg border border-slate-300" placeholder="https://...">
+                    <div class="flex items-center gap-2 mt-1.5">
+                        <label class="min-h-[36px] px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer inline-flex items-center gap-1.5">
+                            <i class="fa-solid fa-upload"></i> Tải ảnh từ máy tính
+                            <input type="file" accept="image/*" class="hidden" onchange="handleSectionBgUpload(event, '${sid}')">
+                        </label>
+                        ${st.bgImage ? `<button onclick="setSectionDecor('${sid}', 'bgImage', '')" class="min-h-[36px] px-2 text-[11px] text-slate-500 underline">Bỏ ảnh</button>` : ''}
+                    </div>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-700 mb-1">Lớp phủ sáng trên ảnh (${Math.round(op * 100)}%)</label>
@@ -334,6 +334,8 @@ function renderWeddingCanvas() {
     const g = appState.globalStyle;
 
     frame.style.backgroundColor = g.bgColor;
+    const bgVars = cardBgVars(g);
+    Object.keys(bgVars).forEach(k => frame.style.setProperty(k, bgVars[k]));
     frame.style.color = g.textColor;
     frame.style.fontFamily = safeFontCss(g.bodyFont, DEFAULT_STATE.globalStyle.bodyFont);
     // Áp lớp G5 lên khung (giữ các lớp khác của frame, chỉ thay tex-/frame-/orn-)
