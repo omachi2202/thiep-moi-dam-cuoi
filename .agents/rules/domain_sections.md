@@ -20,7 +20,7 @@ registerSection({
 
 - Code ngoài tệp section cần thông tin "của một loại cụ thể" phải đọc qua hook và helper chung `cardPageTitle(state)` / `cardCalendarEvent(state)` (runtime.js), KHÔNG so sánh `sec.type`/`sec.id` (Hiến pháp Điều 3). Thêm nhu cầu mới thì thêm hook tuỳ chọn mới ở đây.
 
-- `ctx = { appState, mode, guestName, slug }`, `mode ∈ 'editor' | 'invite' | 'export'`.
+- `ctx = { appState, mode, guestName, slug }`, `mode ∈ 'editor' | 'preview' | 'invite' | 'export'` ('preview' = editor bật "Xem thực tế": hiển thị như khách, không sửa inline; section nên so sánh `mode === 'editor'` thay vì liệt kê các mode khác).
 - `renderCanvas` thuần (không side-effect, không fetch). Trong `mode !== 'editor'` không sinh `contenteditable`, `onblur`, badge.
 - Trường sửa inline dùng `data-field="<key>"` + handler chung của `render.js`; không viết `onblur` riêng lẻ trong section mới.
 - Mọi giá trị người dùng chèn vào HTML qua `escapeHtml()` (trừ trường được phép HTML, phải ghi chú rõ).

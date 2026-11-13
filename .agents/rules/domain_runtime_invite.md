@@ -5,6 +5,7 @@
 - `init` gắn: countdown, nút nhạc, hiệu ứng rơi (`hearts|petals|snow|stars|none`), modal mừng cưới + copy STK, intro phong bì/rèm, scroll-reveal, nút thêm vào lịch, rồi gọi `mount()` của từng section.
 - `destroy` gỡ interval, observer, listener — editor gọi trước mỗi lần `init` lại để không rò rỉ timer.
 - Trong `mode: 'editor'`: không chạy intro, không scroll-reveal (hiện đủ nội dung để chỉnh), không tự phát nhạc.
+- `mode: 'preview'` (editor bật "Xem thực tế", `appState.isPreviewMode`): chạy như `invite` — intro phong bì/rèm, scroll-reveal, hiệu ứng rơi, thay `{khach}` bằng "Quý khách" — nhưng intro nằm GỌN TRONG khung điện thoại `#weddingCardFrame` (position absolute, không gắn vào body, không khoá cuộn body), nhạc chỉ phát sau khi bấm mở. `CardRuntime.replayIntro()` dựng lại intro (nút "Xem lại hiệu ứng mở"). Không có slug → form RSVP/lời chúc chỉ toast như export.
 - Không đọc DOM editor (sidebar, inspector); chỉ làm việc trong `rootEl`.
 
 ## 2. Trang khách
