@@ -9,7 +9,7 @@
 |---|---|---|---|---|---|---|---|
 | L1–L7 | Luật, agents, skill, hồ sơ | `.agents/`, `.claude/`, `docs/` | phiên chính | 0 | — | — | xong |
 | T1 | Tách index.html thành css/js (không đổi hành vi) | index.html, css/, js/ (tách) | frontend-ui | 2 | không | có | xong |
-| T2 | Backend FastAPI + Excel store | `server/app.py`, `server/excel_store.py`, `server/requirements.txt` | py-backend | 2 | không | có | chờ |
+| T2 | Backend FastAPI + Excel store | `server/app.py`, `server/excel_store.py`, `server/requirements.txt` | py-backend | 2 | không | có | xong |
 | T3 | Registry section + chuyển 6 loại cũ + migrate | `js/render.js`, `js/state.js`, `js/sections/{hero,family,events,countdown,rsvp,album}.js` | frontend-ui | 3 | T1 | có | chờ |
 | T4 | CardRuntime dùng chung + export không nhân đôi | `js/runtime.js`, `js/editor.js` | frontend-ui | 3 | T1 | không | chờ |
 | T5 | Test API pytest | `server/tests/test_api.py` | py-backend | 3 | T2 | không | chờ |
@@ -30,3 +30,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 
 ## Nhật ký nghiệm thu
 - **T1** (2026-11-13): ĐẠT. Phiên chính so sánh từng dòng với `master:index.html`: CSS trùng khớp; tập hàm trùng khớp; chỉ khác ở `THEME_PRESETS`, các stub, comment và thẻ script. `node --check` mọi tệp JS đạt. reviewer-code: ĐẠT, không có mục CHẶN/NÊN SỬA (thứ tự nạp, onload, handler toàn cục, #editorToolbar, export). Chưa kiểm trên trình duyệt (chờ kiểm tay sau T3).
+- **T2 + T2.1** (2026-11-13): review lần 1 CHƯA ĐẠT (CHẶN: PUT đọc trọn body trước khi kiểm 2MB) cùng 6 mục NÊN SỬA, sau đó làm phiếu sửa T2.1 (9 mục, thêm quyết định trả 404 khi thiệp chưa tồn tại). Re-review: ĐẠT. Smoke test bằng TestClient trên thư mục tạm: health, edit key, chặn traversal, 413/422/404/429, SVG bị chặn, /docs tắt. Còn lại T2.2 (chỉ bắt các lỗi hỏng tệp thực sự khi đổi tên xlsx, stamp chống trùng), làm sau T5.
