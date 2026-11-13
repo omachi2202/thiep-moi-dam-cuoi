@@ -20,13 +20,19 @@
 ## Bảng task
 | Mã | Việc | Tệp | Sub-agent | Đợt | Phụ thuộc | Review | Trạng thái |
 |---|---|---|---|---|---|---|---|
-| T31 | AD-004 + luật + backlog | `docs/quyet_dinh.md`, `.agents/rules/domain_backend.md`, `.agents/rules/domain_security_storage.md`, `docs/backlog.md` | memoryer | 1 | không | không | chờ |
-| T32 | Backend nhiều người dùng + test | `server/app.py`, `server/tests/test_nhieu_nguoi_dung.py` (+ `server/tests/conftest.py` nếu cần) | py-backend | 1 | G1 | có | chờ |
-| T33 | Front-end mã tạo thiệp + mở thiệp để sửa + 403 upload | `js/api.js`, `index.html`, `js/editor.js` | frontend-ui | 1 | G1, G2 | có | chờ |
-| T34 | Dockerfile, .dockerignore, docs/deploy.md | `Dockerfile`, `.dockerignore`, `docs/deploy.md` | py-backend | 1 | G3 | có | chờ |
-| T35 | Chạy thật docker build + container tạm | (không sửa tệp) | autotest | 2 | T32–T34 | — | chờ |
-| T36 | Gắn vào portal + DNS (ĐIỂM DỪNG: chờ tên miền) | ngoài repo | phiên chính | 3 | T35 | — | chờ |
+| T31 | AD-004 + luật + backlog | `docs/quyet_dinh.md`, `.agents/rules/domain_backend.md`, `.agents/rules/domain_security_storage.md`, `docs/backlog.md` | memoryer | 1 | không | không | xong (+T31.1) |
+| T32 | Backend nhiều người dùng + test | `server/app.py`, `server/tests/test_nhieu_nguoi_dung.py` (+ `server/tests/conftest.py` nếu cần) | py-backend | 1 | G1 | có | xong (+T32.1, T32.2) |
+| T33 | Front-end mã tạo thiệp + mở thiệp để sửa + 403 upload | `js/api.js`, `index.html`, `js/editor.js` | frontend-ui | 1 | G1, G2 | có | xong (+T33.1) |
+| T34 | Dockerfile, .dockerignore, docs/deploy.md | `Dockerfile`, `.dockerignore`, `docs/deploy.md` | py-backend | 1 | G3 | có | xong (+T34.1) |
+| T35 | Chạy thật docker build + container tạm | (không sửa tệp) | autotest | 2 | T32–T34 | — | xong |
+| T36 | Gắn vào portal + DNS (ĐIỂM DỪNG: chờ tên miền) | ngoài repo | phiên chính | 3 | T35 | — | CHỜ tên miền |
 
 Ngoại lệ: T31 sửa 4 tệp tài liệu. Sau đợt 1 phiên chính chạy `py tools/build_export_bundle.py` (`js/api.js` thuộc bundle).
 
 ## Nhật ký nghiệm thu
+- **T31 + T31.1** (memoryer): AD-004, luật backend/bảo mật, backlog. T31.1 sửa quy trình cấp lại khoá (ghi hash SHA-256 vào `.key`, không xoá `.key` — phiên chính kiểm `check_key` trả 403 khi thiếu `.key`).
+- **T32 + T32.1 + T32.2** (py-backend): review ĐẠT, không chặn. T32.1 sửa `test_health` cũ. T32.2 theo review: rate limit trước khi so mã tạo thiệp (10/300s), validate `CF-Connecting-IP` bằng `ipaddress`, cửa sổ theo khoá, rate limit PUT cập nhật 30/phút, compare_digest trên bytes. pytest 49 passed.
+- **T33 + T33.1** (frontend-ui): review ĐẠT, không chặn. T33.1: luôn gửi mã khi có + hiện ô mã khi 403, chỉ lưu mã sau thành công, uploadFile chỉ gửi slug+khoá khi cần, toast tệp lớn 403/507. node --check OK.
+- **T34 + T34.1** (py-backend): review ĐẠT. T34.1: cảnh báo Tunnel portal ngắt khi khởi động lại, sao lưu + `tunnel ingress validate` trước, bắt buộc đặt mã khi công khai, `.dockerignore` thêm `.env*`, `*.xlsx`.
+- **T35** (autotest): docker build OK; image chỉ có css/js/server/index/invite + `/app/data` rỗng; container healthy; 11/11 kiểm HTTP đạt (health needCreateCode, 403 không mã, tạo có mã, verify-key, upload ghi ra bind mount bằng uid 10001, /c/<slug>); đã dọn container/image. Không đụng portal.
+- Bundle sinh lại; `CLAUDE.md` mục Backend cập nhật chế độ nhiều người dùng.
