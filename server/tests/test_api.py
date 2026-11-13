@@ -218,6 +218,44 @@ def test_corrupt_xlsx_recovers(data_dir):
     assert len(rows(data_dir, "RSVP")) == 1
 
 
+def test_oserror_on_load_does_not_quarantine_good_file(data_dir, monkeypatch):
+    from fastapi.testclient import TestClient
+    from server import excel_store
+    from server.app import create_app
+
+    app = create_app(data_dir, rate_limit=1000)
+    with TestClient(app) as c:
+        make_card(c)
+        assert c.post(f"/api/cards/{SLUG}/rsvp", json={"ten": "An"}).status_code == 200
+
+        def boom(*a, **k):
+            raise OSError("loi I/O thoang qua")
+
+        monkeypatch.setattr(excel_store, "load_workbook", boom)
+        r = c.post(f"/api/cards/{SLUG}/rsvp", json={"ten": "Binh"})
+        assert r.status_code == 503
+        monkeypatch.undo()
+        # tệp gốc còn nguyên, không bị đổi tên, dữ liệu cũ vẫn đọc được
+        assert (data_dir / "guests.xlsx").exists()
+        assert not list(data_dir.glob("guests.corrupt-*.xlsx"))
+        assert len(rows(data_dir, "RSVP")) == 1
+        assert c.post(f"/api/cards/{SLUG}/rsvp", json={"ten": "Binh"}).status_code == 200
+        assert len(rows(data_dir, "RSVP")) == 2
+
+
+def test_corrupt_quarantine_name_has_random_suffix(data_dir):
+    import re
+    from fastapi.testclient import TestClient
+    from server.app import create_app
+
+    (data_dir / "guests.xlsx").write_bytes(b"hong")
+    with TestClient(create_app(data_dir, rate_limit=1000)):
+        pass
+    names = [p.name for p in data_dir.glob("guests.corrupt-*.xlsx")]
+    assert len(names) == 1
+    assert re.fullmatch(r"guests\.corrupt-\d{14}-[0-9a-f]{4}\.xlsx", names[0])
+
+
 # ---- Export ----
 def test_export_xlsx_slug_and_key(client):
     ka = make_card(client, "thiep-a")

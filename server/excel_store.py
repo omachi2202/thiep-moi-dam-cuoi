@@ -6,15 +6,20 @@ LƯU Ý: khoá chỉ có hiệu lực trong một tiến trình, nên chỉ ch�
 import io
 import logging
 import os
+import secrets
 import tempfile
+import zipfile
 import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+from openpyxl.utils.exceptions import InvalidFileException
 
 log = logging.getLogger("thiep.excel_store")
+
+_CORRUPT_ERRORS = (zipfile.BadZipFile, InvalidFileException, KeyError, ValueError, EOFError)
 
 
 class StoreBusyError(Exception):
@@ -89,17 +94,18 @@ def _load() -> Workbook:
         try:
             wb = load_workbook(_XLSX_PATH)
             _ensure_sheets(wb)
-        except PermissionError:
-            raise StoreBusyError()
-        except Exception as e:  # BadZipFile, KeyError, InvalidFileException...
+        except _CORRUPT_ERRORS as e:  # chỉ các lỗi hỏng tệp thật sự mới cách ly
             stamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            bad = _XLSX_PATH.with_name(f"guests.corrupt-{stamp}.xlsx")
+            bad = _XLSX_PATH.with_name(f"guests.corrupt-{stamp}-{secrets.token_hex(2)}.xlsx")
             try:
                 os.replace(_XLSX_PATH, bad)
-            except PermissionError:
+            except OSError:
                 raise StoreBusyError()
             log.warning("guests.xlsx hỏng (%s), đã đổi tên thành %s", type(e).__name__, bad.name)
             wb = None
+        except OSError:
+            # lỗi I/O thoáng qua (khoá tệp, v.v.): không đụng tới tệp gốc, app trả 503
+            raise StoreBusyError()
     if wb is None:
         wb = Workbook()
         _ensure_sheets(wb)

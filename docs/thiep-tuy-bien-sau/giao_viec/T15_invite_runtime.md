@@ -14,6 +14,8 @@
 - runtime: intro envelope/curtain (CSS ở invite.css) bấm mở + phát nhạc; thay `{khach}` trên text node; điền nút Google Calendar + tải `.ics` vào `[data-slot="calendar-actions"]`; IntersectionObserver thêm `.is-visible`; hiệu ứng rơi petals/snow/stars.
 - Export (mode export) cũng chạy intro/reveal như invite.
 
+- **Bổ sung sau T3 (Điều 3):** `runtime.js` còn `s.id === 'countdown'` trong `updateCountdownDisplay` — đổi sang lấy section theo slot `[data-slot="countdown"]` và `data-section-id` của phần tử đó.
+
 ## Tiêu chí đạt
 - `/c/<slug>?khach=Anh%20Nam`: intro, nhạc, tên khách, .ics mở được bằng lịch, reveal mượt ở 390px.
 
