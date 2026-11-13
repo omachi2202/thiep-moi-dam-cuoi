@@ -418,8 +418,9 @@ function cardBgVars(g) {
     return {
         '--card-bg-image': img ? 'url("' + img + '")' : 'none',
         '--card-bg-veil': 'rgba(255,255,255,' + op + ')',
-        '--card-bg-size': repeat ? 'auto' : 'cover',
-        '--card-bg-repeat': repeat ? 'repeat' : 'no-repeat'
+        // 'cover' (giá trị lưu giữ nguyên) = phủ theo bề ngang, lặp dọc: tránh phóng quá mức trên thiệp rất cao
+        '--card-bg-size': repeat ? 'auto' : '100% auto',
+        '--card-bg-repeat': repeat ? 'repeat' : 'repeat-y'
     };
 }
 window.cardBgVars = cardBgVars;
