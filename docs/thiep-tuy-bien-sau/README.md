@@ -22,7 +22,7 @@
 | T12 | Section thanks + nâng cấp RSVP | `js/sections/thanks.js`, `js/sections/rsvp.js` | frontend-ui | 5 | T7, T8 | có | xong |
 | T13 | Style toàn thiệp mới: state + điều khiển | `js/state.js`, `index.html`, `js/editor.js` | frontend-ui | 6 | đợt 5 | có | xong |
 | T14 | Áp texture/khung/ornament/reveal + override nền section | `js/render.js`, `css/app.css` | frontend-ui | 6 | đợt 5 | không | xong |
-| T15 | Trang khách invite.html + intro, {khach}, lịch, reveal, hiệu ứng rơi | `invite.html`, `js/runtime.js`, `css/invite.css` | frontend-ui | 6 | đợt 5 | có | chờ |
+| T15 | Trang khách invite.html + intro, {khach}, lịch, reveal, hiệu ứng rơi | `invite.html`, `js/runtime.js`, `css/invite.css` | frontend-ui | 6 | đợt 5 | có | xong (T15.1 đang sửa) |
 | T16 | Rà thẩm mỹ desktop + 390px | (chỉ đọc) | ui-aesthetic-reviewer | 7 | T13–T15 | — | chờ |
 | T17 | Cập nhật CLAUDE.md + biên bản | `CLAUDE.md`, `docs/thiep-tuy-bien-sau/README.md` | memoryer | 7 | T15 | không | chờ |
 
@@ -47,3 +47,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T14** (2026-11-13): kiểm bằng vm: chèn `;position:fixed`, `"><img`, `javascript:`, `");` vào globalStyle và sec.style đều bị chặn; ảnh nền https hợp lệ được giữ; đủ các lớp G5 (card-root, frame-double, reveal-*, sec-orn-both); giá trị lạ trả về mặc định.
 - **T6.1 + T6.2** (2026-11-13): không còn mất nháp ngầm (giữ ở thiep:draft:prev), không gộp undo cho thao tác cấu trúc, xử lý quota, chặn base64 > 1.5MB, giới hạn byte stack undo, chặn import > 10MB hoặc > 100 section. T6.1 gây hồi quy (gõ trong ô global/bank thành 1 bước mỗi ký tự), T6.2 sửa bằng mergeKey. Kiểm bằng vm: gộp/tách đúng. Re-review vòng 2: ĐẠT.
 - **T13** (2026-11-13): schema v3 với 5 khoá G5, migrate theo whitelist, safeAudioUrl, preset có G5, menu Tệp, header gọn trên một dòng (ảnh `moc/editor_1440_sau_T13.png`). Các bộ test cũ vẫn đạt; CDP ở 1440px: không lỗi JS, preset royal áp đúng lớp. reviewer-code: ĐẠT, có 1 NÊN SỬA (preset không dựng lại hiệu ứng rơi ở editor), giao T13.1.
+- **T15** (2026-11-13): E2E qua CDP Chrome headless ở 390px với thiệp đủ 13 loại: intro envelope mở được, {khach} được thay bằng Anh Nam, có 2 nút lịch, không tràn ngang, không lỗi JS; RSVP và lời chúc qua form thật ghi đúng 1 dòng mỗi loại vào guests.xlsx; lời chúc chứa <script>/<img onerror> hiển thị dạng chữ (ảnh `moc/khach_390_*.png`). reviewer-code: ĐẠT, không tìm thấy XSS đang khai thác được; có 5 NÊN SỬA (N1 innerHTML chứa primaryColor, N2 modal QR chưa có whitelist, N3 font thân bị bỏ qua, N4 safeAudioUrl, N5 ICS chứa ), giao T15.1. Ngoài kế hoạch (báo người dùng khi bàn giao): CSP + bỏ handler inline (N6), tách origin trang khách khỏi editor để bảo vệ editKey.

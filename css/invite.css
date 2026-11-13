@@ -1,1 +1,241 @@
-/* Style riêng cho trang khách (phong bì, rèm) — T15 bổ sung. */
+/* Style riêng cho trang khách và bản export: intro phong bì / rèm, nút lịch, trang lỗi. */
+
+/* ---------- Nút thêm vào lịch (điền vào [data-slot="calendar-actions"]) ---------- */
+.cal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 14px;
+}
+
+.cal-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 8px 14px;
+    border: 1.5px solid currentColor;
+    border-radius: 9999px;
+    background: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-decoration: none;
+    cursor: pointer;
+    transition: opacity .2s ease, transform .2s ease;
+}
+
+.cal-btn:hover { opacity: .85; }
+.cal-btn:active { transform: scale(.97); }
+
+/* ---------- Intro dùng chung ---------- */
+.intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--intro-bg, #fdfbf7);
+    color: var(--intro-color, #8c6239);
+    text-align: center;
+    transition: opacity .5s ease .5s;
+}
+
+.intro-overlay.is-opening {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.intro-stage {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 430px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: opacity .35s ease, transform .5s ease;
+}
+
+.intro-to {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    opacity: .75;
+}
+
+.intro-name {
+    margin: 0 0 14px;
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.intro-btn {
+    min-height: 48px;
+    padding: 12px 28px;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--intro-color, #8c6239);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .18);
+    animation: introPulse 1.8s ease-in-out infinite;
+}
+
+.intro-btn:focus-visible {
+    outline: 3px solid var(--intro-color, #8c6239);
+    outline-offset: 3px;
+}
+
+@keyframes introPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+/* ---------- Phong bì ---------- */
+.intro-env {
+    position: relative;
+    width: 240px;
+    height: 160px;
+    margin-bottom: 22px;
+    perspective: 700px;
+}
+
+.intro-env-back,
+.intro-env-front,
+.intro-env-card,
+.intro-env-flap {
+    position: absolute;
+    left: 0;
+    right: 0;
+}
+
+.intro-env-back {
+    inset: 0;
+    border-radius: 6px;
+    background: var(--intro-color, #8c6239);
+    filter: brightness(.88);
+}
+
+.intro-env-card {
+    top: 10px;
+    bottom: 10px;
+    left: 12px;
+    right: 12px;
+    border-radius: 4px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+    transition: transform .6s ease .35s;
+}
+
+.intro-env-front {
+    bottom: 0;
+    height: 100%;
+    border-radius: 6px;
+    background: var(--intro-color, #8c6239);
+    clip-path: polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%);
+}
+
+.intro-env-flap {
+    top: 0;
+    height: 60%;
+    background: var(--intro-color, #8c6239);
+    filter: brightness(1.08);
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+    transform-origin: top center;
+    transition: transform .6s ease;
+}
+
+.intro-env-seal {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 38px;
+    height: 38px;
+    margin: -19px 0 0 -19px;
+    border-radius: 50%;
+    background: #fff;
+    color: #e11d48;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
+    z-index: 3;
+    transition: opacity .3s ease;
+}
+
+.is-opening .intro-env-flap { transform: rotateX(180deg); }
+.is-opening .intro-env-seal { opacity: 0; }
+.is-opening .intro-env-card { transform: translateY(-46px); }
+.is-opening .intro-stage { opacity: 0; transform: scale(1.12); transition-delay: .45s; }
+
+/* ---------- Rèm ---------- */
+.intro-curtain-panel {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    z-index: 1;
+    background: repeating-linear-gradient(90deg,
+        var(--intro-color, #8c6239) 0, var(--intro-color, #8c6239) 18px,
+        rgba(0, 0, 0, .18) 18px, rgba(0, 0, 0, .18) 20px);
+    transition: transform .9s cubic-bezier(.65, 0, .35, 1);
+}
+
+.intro-curtain-l { left: 0; }
+.intro-curtain-r { right: 0; }
+
+.intro-curtain { background: transparent; }
+.intro-curtain .intro-stage {
+    color: #fff;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, .45);
+}
+
+.intro-curtain .intro-btn {
+    background: #fff;
+    color: var(--intro-color, #8c6239);
+    text-shadow: none;
+}
+
+.intro-curtain.is-opening .intro-curtain-l { transform: translateX(-100%); }
+.intro-curtain.is-opening .intro-curtain-r { transform: translateX(100%); }
+.intro-curtain.is-opening .intro-stage { opacity: 0; transform: none; transition-delay: 0s; }
+
+/* ---------- Trang lỗi / đang tải của invite.html ---------- */
+.invite-state {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 24px;
+    text-align: center;
+    color: #475569;
+}
+
+.invite-state h1 { font-size: 20px; font-weight: 700; color: #1e293b; margin: 0; }
+.invite-state p { font-size: 14px; margin: 0; max-width: 320px; line-height: 1.5; }
+.invite-state[hidden] { display: none; }
+
+/* ---------- Giảm chuyển động ---------- */
+@media (prefers-reduced-motion: reduce) {
+    .intro-btn { animation: none; }
+    .intro-overlay,
+    .intro-stage,
+    .intro-env-card,
+    .intro-env-flap,
+    .intro-curtain-panel { transition-duration: .01s; transition-delay: 0s; }
+    .petal { display: none; }
+}

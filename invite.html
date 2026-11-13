@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thiệp Cưới Online</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts (giống editor) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Slab:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+
+    <!-- Đường dẫn tuyệt đối vì URL trang là /c/<slug> -->
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/invite.css">
+    <style>
+        body { background-color: #e2e8f0; margin: 0; padding: 0; }
+    </style>
+</head>
+
+<body class="min-h-screen flex justify-center font-['Montserrat']">
+
+    <!-- Đang tải -->
+    <div id="inviteLoading" class="invite-state">
+        <i class="fa-solid fa-heart text-3xl text-rose-400"></i>
+        <p>Đang mở thiệp mời...</p>
+    </div>
+
+    <!-- Lỗi / không tìm thấy (nội dung do script điền bằng textContent) -->
+    <div id="inviteError" class="invite-state" hidden>
+        <i class="fa-regular fa-face-frown text-4xl text-slate-400"></i>
+        <h1 id="inviteErrorTitle">Không mở được thiệp</h1>
+        <p id="inviteErrorMsg"></p>
+    </div>
+
+    <div id="weddingCardFrame" class="w-full max-w-[430px] min-h-screen shadow-2xl relative overflow-hidden" hidden
+        style="background-color: #fdfbf7; color: #3d312a;">
+        <div id="fallingContainer" class="inset-0 pointer-events-none overflow-hidden sticky top-0 h-0 z-40"></div>
+
+        <button id="floatingMusicBtn" onclick="toggleAudioPlayback()"
+            class="fixed bottom-5 left-5 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center text-white"
+            style="background-color: #8c6239;" title="Bật/Tắt nhạc cưới" aria-label="Bật/Tắt nhạc cưới">
+            <i id="musicIcon" class="fa-solid fa-music text-sm"></i>
+        </button>
+        <audio id="weddingAudio" loop preload="auto"></audio>
+
+        <div id="sectionsViewport" class="reveal-on"></div>
+
+        <!-- Popup QR Mừng Cưới -->
+        <div id="giftModal"
+            class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl relative">
+                <button onclick="closeGiftModal()"
+                    class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600"
+                    aria-label="Đóng">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+                <div id="giftModalBadge"
+                    class="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center text-white shadow"
+                    style="background-color: #8c6239;">
+                    <i class="fa-solid fa-gift text-lg"></i>
+                </div>
+                <h4 id="giftModalTitle" class="text-lg font-bold text-slate-800 mb-1">Gửi Mừng Cưới</h4>
+                <p class="text-xs text-slate-500 mb-4">Quét mã QR ngân hàng bên dưới để gửi lời chúc phúc</p>
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 inline-block mb-3">
+                    <img id="giftModalQrImg" src="" alt="VietQR" class="w-48 h-48 object-contain mx-auto rounded-lg"
+                        onerror="this.src='https://placehold.co/250x250/f8fafc/64748b?text=VietQR'">
+                </div>
+                <div class="text-xs space-y-1 text-slate-700 bg-amber-50/70 p-3 rounded-xl border border-amber-200/70">
+                    <p>Ngân hàng: <strong id="giftModalBank"></strong></p>
+                    <p>Số TK: <strong id="giftModalAcc" class="text-sm tracking-wider"></strong></p>
+                    <p>Chủ TK: <strong id="giftModalOwner"></strong></p>
+                </div>
+                <button id="giftModalCopyBtn" onclick="copyBankAccount()"
+                    class="mt-4 w-full py-2.5 rounded-xl text-xs font-semibold text-white shadow transition"
+                    style="background-color: #8c6239;">
+                    <i class="fa-regular fa-copy mr-1"></i> Sao chép Số Tài Khoản
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toastNotification"
+        class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 border border-slate-700">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- Thứ tự nạp theo giao kèo G1 (không nạp store / section_ops / editor) -->
+    <script src="/js/state.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/runtime.js"></script>
+    <script src="/js/sections/hero.js"></script>
+    <script src="/js/sections/family.js"></script>
+    <script src="/js/sections/events.js"></script>
+    <script src="/js/sections/countdown.js"></script>
+    <script src="/js/sections/rsvp.js"></script>
+    <script src="/js/sections/album.js"></script>
+    <script src="/js/sections/story.js"></script>
+    <script src="/js/sections/video.js"></script>
+    <script src="/js/sections/map.js"></script>
+    <script src="/js/sections/dresscode.js"></script>
+    <script src="/js/sections/wishes.js"></script>
+    <script src="/js/sections/gift.js"></script>
+    <script src="/js/sections/thanks.js"></script>
+    <script src="/js/render.js"></script>
+
+    <script>
+        (function () {
+            var SLUG_RE = /^[a-z0-9-]{3,50}$/;
+
+            function $(id) { return document.getElementById(id); }
+
+            // Trang báo lỗi thân thiện, không lộ chi tiết kỹ thuật
+            function showError(title, msg) {
+                $('inviteLoading').hidden = true;
+                $('weddingCardFrame').hidden = true;
+                $('inviteErrorTitle').textContent = title;
+                $('inviteErrorMsg').textContent = msg;
+                $('inviteError').hidden = false;
+            }
+
+            function getSlug() {
+                var m = /^\/c\/([^\/]+)\/?$/.exec(location.pathname);
+                if (!m) return '';
+                var s = m[1];
+                try { s = decodeURIComponent(s); } catch (e) { return ''; }
+                return SLUG_RE.test(s) ? s : '';
+            }
+
+            // ?khach=<tên>: giải mã, bỏ ký tự điều khiển, cắt 60 ký tự. Chỉ đưa vào text node / value, không vào innerHTML.
+            function getGuestName() {
+                var m = /[?&]khach=([^&#]*)/.exec(location.search);
+                if (!m) return '';
+                var raw = m[1].replace(/\+/g, ' ');
+                var s;
+                try { s = decodeURIComponent(raw); } catch (e) { s = raw; }
+                s = s.replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim();
+                return Array.from(s).slice(0, 60).join('');
+            }
+
+            function boot() {
+                var slug = getSlug();
+                if (!slug) {
+                    showError('Không tìm thấy thiệp', 'Đường dẫn thiệp mời không hợp lệ. Vui lòng kiểm tra lại link bạn nhận được.');
+                    return;
+                }
+                var guestName = getGuestName();
+
+                fetch('/api/cards/' + encodeURIComponent(slug), { cache: 'no-store' })
+                    .then(function (res) {
+                        if (res.status === 404) { var e = new Error('nf'); e.notFound = true; throw e; }
+                        if (!res.ok) throw new Error('http');
+                        return res.json();
+                    })
+                    .then(function (state) {
+                        if (!state || typeof state !== 'object' || !Array.isArray(state.sections)) throw new Error('bad');
+
+                        // Có phản hồi từ backend: cho phép gửi RSVP/lời chúc qua window.api
+                        if (window.api) window.api.available = true;
+
+                        state = migrate(state);
+                        appState = state;   // biến toàn cục của state.js: runtime và section đọc từ đây
+                        window.__stateMigrated = true;
+
+                        var g = state.globalStyle || {};
+                        var frame = $('weddingCardFrame');
+                        frame.style.backgroundColor = safeColor(g.bgColor, '#fdfbf7');
+                        frame.style.color = safeColor(g.textColor, '#3d312a');
+                        frame.style.fontFamily = safeFont(g.bodyFont, "'Noto Serif', serif");
+
+                        var hero = state.sections.filter(function (s) { return s.type === 'hero' && s.data; })[0];
+                        if (hero && hero.data.coupleShortName) {
+                            document.title = 'Thiệp Cưới ' + String(hero.data.coupleShortName);
+                        }
+
+                        var ctx = { appState: state, mode: 'invite', guestName: guestName, slug: slug };
+                        var vp = $('sectionsViewport');
+                        vp.classList.add('reveal-on');
+                        vp.innerHTML = renderCardHtml(state, ctx);
+
+                        frame.hidden = false;
+                        $('inviteLoading').hidden = true;
+                        window.CardRuntime.init(vp, state, ctx);
+                    })
+                    .catch(function (err) {
+                        if (err && err.notFound) {
+                            showError('Không tìm thấy thiệp', 'Thiệp mời này không tồn tại hoặc đã được gỡ. Vui lòng liên hệ người gửi để nhận lại đường dẫn.');
+                        } else {
+                            if (window.console) console.error('Mở thiệp lỗi:', err);
+                            showError('Không mở được thiệp', 'Hiện chưa thể mở thiệp mời. Vui lòng tải lại trang sau ít phút.');
+                        }
+                    });
+            }
+
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+            else boot();
+        })();
+    </script>
+</body>
+
+</html>
