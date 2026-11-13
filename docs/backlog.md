@@ -46,3 +46,4 @@ Trạng thái: `master` = `cb640f4` (đã push GitHub `omachi2202/thiep-moi-dam-
 - Khoá `globalStyle.bgImageFit = 'cover'` nay nghĩa là "phủ theo bề ngang, lặp dọc" (T30) — lệch nghĩa tên khoá; nếu đổi tên phải kèm migrate — Thấp.
 - Upload: mã tạo thiệp cũ/sai trong localStorage làm upload 403 dù có khoá thiệp hợp lệ — thử lại bằng slug+khoá khi mã bị từ chối (inspector nhánh triển khai) — Thấp.
 - `export.xlsx` còn nhận khoá qua `?key=` — bỏ, chỉ nhận header (khoá có thể lọt log proxy) — Trung bình.
+- T36 — gắn thiệp vào portal (compose service `thiep_cuoi`, ingress Tunnel, `cloudflared tunnel route dns`, `C:/dev/thiep_data`) theo `docs/deploy.md` — chờ người dùng gửi tên miền riêng — Cao.
