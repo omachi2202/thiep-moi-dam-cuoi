@@ -60,7 +60,7 @@ registerSection({
         const photoInputs = (Array.isArray(d.photos) ? d.photos : []).map((url, i) => `
             <div class="flex items-center gap-1.5">
                 <span class="text-[10px] font-bold text-slate-400 w-4">#${i + 1}</span>
-                <input type="text" value="${escapeHtml(url)}" oninput="updateAlbumPhoto(${i}, this.value)" class="flex-1 px-2 py-1.5 rounded border border-slate-300 text-[11px]">
+                <input type="text" value="${escapeHtml(url)}" oninput="updateAlbumPhoto('${id}', ${i}, this.value)" class="flex-1 px-2 py-1.5 rounded border border-slate-300 text-[11px]">
                 <label class="px-2 py-1.5 rounded bg-slate-100 hover:bg-slate-200 cursor-pointer text-slate-600" title="Tải ảnh lên">
                     <i class="fa-solid fa-upload"></i>
                     <input type="file" accept="image/*" class="hidden" onchange="handleAlbumFileUpload(event, ${i})">

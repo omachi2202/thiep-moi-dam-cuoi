@@ -85,7 +85,7 @@ registerSection({
         return `
             <div>
                 <label class="block font-semibold text-slate-700 mb-1">Ngày & Giờ Cưới (Tự động vẽ Lịch & Đếm ngược)</label>
-                <input type="datetime-local" value="${escapeHtml(d.weddingIsoDate)}" onchange="updateWeddingDateTime(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                <input type="datetime-local" value="${escapeHtml(d.weddingIsoDate)}" onchange="updateWeddingDateTime('${id}', this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
             </div>
             <div>
                 <label class="block font-semibold text-slate-700 mb-1">Tiêu đề Tháng hiển thị</label>

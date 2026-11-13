@@ -2,6 +2,7 @@
 window.onload = function () {
     syncLeftControlsWithState();
     renderAll();
+    if (typeof initStore === 'function') initStore();
     initFallingEffect();
     startCountdownTimer();
 };
@@ -30,62 +31,95 @@ function updateSectionStyle(secId, prop, value) {
     const sec = appState.sections.find(s => s.id === secId);
     if (!sec) return;
     sec[prop] = value;
-    renderWeddingCanvas();
-    renderRightInspector();
+    commitState('style:' + prop, { secId: secId });
 }
 
 function updateSectionField(secId, fieldKey, value, fromInspector = false) {
     const sec = appState.sections.find(s => s.id === secId);
     if (!sec) return;
     sec.data[fieldKey] = value;
-    renderWeddingCanvas();
-    if (!fromInspector) {
-        renderRightInspector();
-    }
+    commitState('field:' + fieldKey, { secId: secId, skipInspector: !!fromInspector });
 }
 
-function updateWeddingDateTime(isoVal) {
-    const sec = appState.sections.find(s => s.id === 'countdown');
+function updateWeddingDateTime(secId, isoVal) {
+    const sec = appState.sections.find(s => s.id === secId);
     if (!sec) return;
     sec.data.weddingIsoDate = isoVal;
     const d = new Date(isoVal);
     if (!isNaN(d.getTime())) {
         sec.data.calendarTitle = `THÁNG ${d.getMonth() + 1} / ${d.getFullYear()}`;
     }
-    renderWeddingCanvas();
-    renderRightInspector();
+    commitState('datetime', { secId: secId });
     showToast("Đã cập nhật Lịch tháng & Đồng hồ đếm ngược!");
 }
 
-function updateAlbumPhoto(index, url) {
-    const sec = appState.sections.find(s => s.id === 'album');
-    if (sec) {
-        sec.data.photos[index] = url;
-        renderWeddingCanvas();
+function updateAlbumPhoto(secId, index, url, skipInspector = true) {
+    const sec = appState.sections.find(s => s.id === secId);
+    if (!sec || !sec.data || !Array.isArray(sec.data.photos)) return;
+    sec.data.photos[index] = url;
+    commitState('photo:' + index, { secId: secId, skipInspector: skipInspector });
+}
+
+// Upload: có backend thì gửi lên máy chủ (lỗi -> base64), không thì base64 như cũ
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('Không đọc được tệp.'));
+        reader.readAsDataURL(file);
+    });
+}
+
+async function uploadOrDataUrl(file) {
+    if (window.api && window.api.available) {
+        try {
+            const url = await window.api.uploadFile(file);
+            if (url) return url;
+        } catch (err) {
+            showToast('Tải lên máy chủ thất bại, dùng bản nhúng tạm trong thiệp.');
+        }
+    }
+    return readFileAsDataUrl(file);
+}
+
+async function handleLocalImageUpload(event, secId, fieldKey) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+        const url = await uploadOrDataUrl(file);
+        updateSectionField(secId, fieldKey, url, false);
+        showToast("Đã tải ảnh lên thành công!");
+    } catch (err) {
+        showToast("Không tải được ảnh, vui lòng thử lại.");
     }
 }
 
-function handleLocalImageUpload(event, secId, fieldKey) {
+// secId tuỳ chọn: inspector luôn hiển thị section đang chọn nên mặc định lấy selectedSectionId
+async function handleAlbumFileUpload(event, idx, secId) {
     const file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        updateSectionField(secId, fieldKey, e.target.result, false);
-        showToast("Đã tải ảnh lên thành công!");
-    };
-    reader.readAsDataURL(file);
+    const sid = secId || appState.selectedSectionId;
+    try {
+        const url = await uploadOrDataUrl(file);
+        updateAlbumPhoto(sid, idx, url, false);
+        showToast(`Đã cập nhật ảnh Album #${idx + 1}!`);
+    } catch (err) {
+        showToast("Không tải được ảnh, vui lòng thử lại.");
+    }
 }
 
-function handleAlbumFileUpload(event, idx) {
+async function handleAudioFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        updateAlbumPhoto(idx, e.target.result);
-        renderRightInspector();
-        showToast(`Đã cập nhật ảnh Album #${idx + 1}!`);
-    };
-    reader.readAsDataURL(file);
+    try {
+        const url = await uploadOrDataUrl(file);
+        const input = document.getElementById('inputAudioUrl');
+        if (input) input.value = url;
+        updateGlobalStyle('audioUrl', url);
+        showToast("Đã đổi nhạc nền thiệp cưới!");
+    } catch (err) {
+        showToast("Không tải được nhạc, vui lòng thử lại.");
+    }
 }
 
 function updateGlobalStyle(key, val) {
@@ -97,7 +131,7 @@ function updateGlobalStyle(key, val) {
     if (key === 'fallingEffect') {
         initFallingEffect();
     }
-    renderWeddingCanvas();
+    commitState('global:' + key, { skipInspector: true });
 }
 
 function selectPresetAudio(url) {
@@ -108,11 +142,18 @@ function selectPresetAudio(url) {
 
 function updateBankInfo(side, field, value) {
     appState.bankInfo[side][field] = value;
+    commitState('bank:' + side + ':' + field, { skipInspector: true });
+}
+
+// Section đầu tiên theo type (không tra theo id)
+function getFirstSectionOfType(state, type) {
+    return ((state && state.sections) || []).find(s => s && s.type === type) || null;
 }
 
 // 8. CHẾ ĐỘ XEM THỰC TẾ (PREVIEW) & KHÔI PHỤC MẶC ĐỊNH
 function setPreviewMode(isPreview) {
     appState.isPreviewMode = isPreview;
+    renderWeddingCanvas(); // để fieldAttr bỏ/bật contenteditable
     const left = document.getElementById('leftSidebar');
     const right = document.getElementById('rightSidebar');
     const card = document.getElementById('weddingCardFrame');
@@ -135,10 +176,8 @@ function setPreviewMode(isPreview) {
 }
 
 function resetToDefault() {
-    appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
-    syncLeftControlsWithState();
-    renderAll();
-    initFallingEffect();
+    // replaceState: migrate + đẩy vào lịch sử undo + đồng bộ UI + autosave
+    replaceState(JSON.parse(JSON.stringify(DEFAULT_STATE)));
     showToast("Đã khôi phục về mẫu gốc MM03!");
 }
 
@@ -204,7 +243,7 @@ async function openExportModal() {
     state.isPreviewMode = false;
 
     const g = state.globalStyle || {};
-    const heroSec = (state.sections || []).find(s => s.id === 'hero');
+    const heroSec = getFirstSectionOfType(state, 'hero');
     const pageTitle = heroSec && heroSec.data && heroSec.data.coupleShortName
         ? `Thiệp Cưới ${heroSec.data.coupleShortName}` : 'Thiệp Cưới Online';
     const audioSrc = (typeof safeUrl === 'function' ? safeUrl(g.audioUrl) : g.audioUrl) || '';

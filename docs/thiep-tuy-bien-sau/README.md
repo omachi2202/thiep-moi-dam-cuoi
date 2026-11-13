@@ -13,7 +13,7 @@
 | T3 | Registry section + chuyển 6 loại cũ + migrate | `js/render.js`, `js/state.js`, `js/sections/{hero,family,events,countdown,rsvp,album}.js` | frontend-ui | 3 | T1 | có | xong |
 | T4 | CardRuntime dùng chung + export không nhân đôi | `js/runtime.js`, `js/editor.js` | frontend-ui | 3 | T1 | không | xong |
 | T5 | Test API pytest | `server/tests/test_api.py` | py-backend | 3 | T2 | không | xong |
-| T6 | commitState, undo/redo, autosave, JSON, upload | `js/store.js`, `js/editor.js` | frontend-ui | 4 | T3, T4 | có | chờ |
+| T6 | commitState, undo/redo, autosave, JSON, upload | `js/store.js`, `js/editor.js` | frontend-ui | 4 | T3, T4 | có | xong (T6.1 đang sửa) |
 | T7 | Thêm/nhân bản/xoá section + preset toàn thiệp | `js/section_ops.js`, `js/render.js`, `js/state.js` | frontend-ui | 4 | T3 | không | xong |
 | T8 | Client API + modal Xuất bản | `js/api.js`, `index.html` | frontend-ui | 4 | T2, T3 | có | xong (T8.1 đang sửa) |
 | T9 | Section story + video | `js/sections/story.js`, `js/sections/video.js` | frontend-ui | 5 | T7 | không | chờ |
@@ -40,3 +40,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T8.1** (2026-11-13): thêm timeout AbortController, chống race QR, SRI cho qrcodejs, copyFrom báo đúng kết quả, xoá edit key khi đóng modal, gọi lại checkHealth. Chạy lại tích hợp với backend: đạt. Re-review: ĐẠT.
 - **T3.2** (2026-11-13): thêm Roboto Slab/Tinos/Open Sans vào FONT_OPTIONS, SECTION_TYPES dùng Object.create(null) kèm getSectionDef, inspector chịu lỗi, preview không cho sửa. Kiểm bằng vm: Roboto Slab hiển thị, type 'constructor' an toàn, các kiểm của T3.1 vẫn đạt. Re-review vòng 2: ĐẠT.
 - **T7** (2026-11-13): kiểm bằng vm: thêm 3 loại hợp lệ có id <type>-<n> duy nhất và hợp lệ, loại lạ bị từ chối, nhân bản deep copy với id mới, 6 preset áp dụng được với font nằm trong FONT_OPTIONS, preset 'constructor' bị bỏ qua, mọi thao tác gọi commitState. Mở rộng fallingEffect của preset giao sang T13.
+- **T6** (2026-11-13): kiểm bằng vm: undo 3 lần về đúng trạng thái đầu, redo đúng, updateWeddingDateTime/updateAlbumPhoto theo secId, import đi qua migrate, JSON sai bị bỏ qua. Headless Chrome không có lỗi console (ảnh `moc/sau_dot4.png`). reviewer-code: ĐẠT, có 4 NÊN SỬA (mất nháp ngầm, gộp nhầm undo khi thao tác cấu trúc, quota, base64 lớn), giao T6.1.
