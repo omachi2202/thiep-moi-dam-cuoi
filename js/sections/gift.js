@@ -19,6 +19,11 @@
             '-compact2.png?accountName=' + encodeURIComponent(i.owner);
     }
 
+    // Dùng lại được ở nơi khác (vd runtime): trả '' nếu bank/acc không qua whitelist
+    window.buildVietQrUrl = function (bank, acc, owner) {
+        return qrUrl(cleanInfo({ bank: bank, acc: acc, owner: owner }));
+    };
+
     registerSection({
         type: 'gift',
         label: 'Mừng cưới (QR)',

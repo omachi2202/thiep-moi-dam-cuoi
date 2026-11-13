@@ -53,7 +53,10 @@ registerSection({
         if (!form || !nameEl || !textEl || !btn || !wall) return;
 
         const slug = ctx && ctx.slug;
-        const live = !!(slug && ctx.mode !== 'editor' && window.api && window.api.available);
+        const isEditor = !!(ctx && ctx.mode === 'editor');
+        // live theo slug + mode, không theo api.available lúc mount (health có thể chưa xong)
+        const live = !!(slug && !isEditor);
+        const seen = new Set();
         const KEY = 'thiep:wished:' + slug;
         let disposed = false;
 
@@ -63,6 +66,9 @@ registerSection({
 
         // Dựng 1 thẻ lời chúc bằng textContent (không innerHTML)
         function addItem(name, text, atTop) {
+            const dk = String(name || '') + '\u0000' + String(text || '');
+            if (seen.has(dk)) return;
+            seen.add(dk);
             const box = document.createElement('div');
             box.className = 'bg-white rounded-xl border border-amber-900/10 p-3 shadow-sm';
             const n = document.createElement('div');
@@ -76,9 +82,13 @@ registerSection({
             if (atTop && wall.firstChild) wall.insertBefore(box, wall.firstChild);
             else wall.appendChild(box);
         }
+        function clearNotes() {
+            wall.querySelectorAll('p[data-note]').forEach(p => p.remove());
+        }
         function setNote(msg) {
-            wall.textContent = '';
+            clearNotes();
             const p = document.createElement('p');
+            p.setAttribute('data-note', '1');
             p.className = 'text-center opacity-70';
             p.textContent = msg;
             wall.appendChild(p);
@@ -87,11 +97,16 @@ registerSection({
         if (ctx && ctx.guestName && !nameEl.value) nameEl.value = String(ctx.guestName).slice(0, 80);
 
         if (!live) {
-            [
-                ['Minh Anh', 'Chúc hai bạn trăm năm hạnh phúc, sớm có tin vui nhé!'],
-                ['Gia đình bác Hùng', 'Chúc mừng hai cháu, mãi mãi yêu thương nhau.'],
-                ['Thu Hà', 'Chúc mừng đám cưới! Hạnh phúc ngập tràn nha cặp đôi.']
-            ].forEach(w => addItem(w[0], w[1], false));
+            if (isEditor) {
+                setNote('Ví dụ (lời chúc thật của khách sẽ hiện ở thiệp đã xuất bản)');
+                [
+                    ['Minh Anh', 'Chúc hai bạn trăm năm hạnh phúc, sớm có tin vui nhé!'],
+                    ['Gia đình bác Hùng', 'Chúc mừng hai cháu, mãi mãi yêu thương nhau.'],
+                    ['Thu Hà', 'Chúc mừng đám cưới! Hạnh phúc ngập tràn nha cặp đôi.']
+                ].forEach(w => addItem(w[0], w[1], false));
+            } else {
+                wall.style.display = 'none'; // export: không có tường giả
+            }
             const onSample = (e) => {
                 e.preventDefault();
                 toast('Chỉ hoạt động trên thiệp đã xuất bản');
@@ -108,12 +123,20 @@ registerSection({
         }
 
         setNote('Đang tải lời chúc...');
-        window.api.getWishes(slug).then(res => {
+        // api.js reject ngay khi !available: kiểm health một lần trước khi gọi
+        const ensureApi = async () => {
+            if (window.api && !window.api.available && typeof window.api.checkHealth === 'function') {
+                await window.api.checkHealth();
+            }
+            if (!window.api) throw new Error('Chưa kết nối máy chủ.');
+        };
+        ensureApi().then(() => window.api.getWishes(slug)).then(res => {
             if (disposed) return;
             const list = Array.isArray(res) ? res : (res && Array.isArray(res.items) ? res.items : []);
-            wall.textContent = '';
-            if (!list.length) { setNote('Hãy là người đầu tiên gửi lời chúc!'); return; }
+            clearNotes();
+            // gộp, bỏ trùng với lời chúc đã chèn cục bộ trong lúc chờ
             list.forEach(w => addItem(w && w.ten, w && w.loi_chuc, false));
+            if (!wall.firstChild) setNote('Hãy là người đầu tiên gửi lời chúc!');
         }).catch(err => {
             if (disposed) return;
             setNote((err && err.message) || 'Không tải được lời chúc.');
@@ -133,10 +156,11 @@ registerSection({
             btn.disabled = true;
             btn.classList.add('opacity-60');
             try {
+                await ensureApi();
                 await window.api.postWish(slug, { ten: ten, loi_chuc: loi });
                 lsSet(KEY, '1');
                 if (!disposed) {
-                    if (wall.querySelector('p')) wall.textContent = '';
+                    clearNotes();
                     addItem(ten, loi, true);
                     textEl.value = '';
                     btn.textContent = 'ĐÃ GỬI LỜI CHÚC';

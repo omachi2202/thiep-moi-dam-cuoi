@@ -126,6 +126,137 @@ function selectSection(secId) {
     }
 }
 
+// ---- Trang trí G5 (whitelist: tên lớp CSS được ghép từ giá trị nên giá trị lạ về mặc định) ----
+const G5_WL = {
+    bgTexture: ['none', 'paper', 'floral', 'silk'],
+    frameStyle: ['none', 'single', 'double', 'floral-corner'],
+    cornerOrnament: ['none', 'leaf', 'rose'],
+    revealAnimation: ['none', 'fade-up', 'zoom', 'slide']
+};
+const G5_DEFAULT = { bgTexture: 'none', frameStyle: 'none', cornerOrnament: 'none', revealAnimation: 'fade-up' };
+const SEC_STYLE_WL = {
+    paddingY: ['', 'sm', 'md', 'lg'],
+    align: ['', 'left', 'center', 'right'],
+    animation: ['', 'none', 'fade-up', 'zoom', 'slide'],
+    ornament: ['', 'top', 'bottom', 'both']
+};
+
+function g5Value(g, key) {
+    const v = g && typeof g[key] === 'string' ? g[key] : '';
+    return G5_WL[key].indexOf(v) >= 0 ? v : G5_DEFAULT[key];
+}
+
+function secStyleValue(st, key) {
+    const v = st && typeof st[key] === 'string' ? st[key] : '';
+    return SEC_STYLE_WL[key].indexOf(v) >= 0 ? v : '';
+}
+
+// Lớp toàn thiệp: tex-*, frame-*, orn-* (đặt trên .card-root và #weddingCardFrame)
+function cardDecorClasses(g) {
+    return 'tex-' + g5Value(g, 'bgTexture') + ' frame-' + g5Value(g, 'frameStyle') + ' orn-' + g5Value(g, 'cornerOrnament');
+}
+
+// Ảnh nền chỉ vào CSS url("...") khi qua safeUrl và không có ký tự phá chuỗi CSS
+function safeCssImageUrl(u) {
+    const s = safeUrl(u);
+    if (!s || /["')\\\s\r\n]/.test(s)) return '';
+    return s;
+}
+
+// Trả { cls, style } cho wrapper section từ sec.style (G5); style đã sạch, vẫn phải escapeHtml khi đưa vào thuộc tính
+function sectionDecor(sec, g) {
+    const st = (sec && sec.style && typeof sec.style === 'object') ? sec.style : {};
+    const cls = [];
+    const css = [];
+    const bg = safeColor(st.bgColor, '');
+    if (bg) css.push('background-color:' + bg);
+    const img = safeCssImageUrl(st.bgImage);
+    if (img) {
+        let op = parseFloat(st.bgOverlayOpacity);
+        if (!isFinite(op)) op = 0;
+        op = Math.min(0.9, Math.max(0, op));
+        const layers = [];
+        if (op > 0) layers.push('linear-gradient(rgba(255,255,255,' + op + '),rgba(255,255,255,' + op + '))');
+        layers.push('url("' + img + '")');
+        css.push('background-image:' + layers.join(','));
+        css.push('background-size:cover');
+        css.push('background-position:center');
+    }
+    const py = secStyleValue(st, 'paddingY');
+    if (py) cls.push('sec-py-' + py);
+    const al = secStyleValue(st, 'align');
+    if (al) cls.push('sec-align-' + al);
+    const orn = secStyleValue(st, 'ornament');
+    if (orn) cls.push('sec-orn-' + orn);
+    let anim = secStyleValue(st, 'animation');
+    if (anim === '') anim = g5Value(g, 'revealAnimation');
+    if (anim !== 'none') cls.push('reveal-' + anim);
+    return { cls: cls.join(' '), style: css.join(';') };
+}
+
+// Đổi một thuộc tính trong sec.style qua updateSectionStyle (→ commitState)
+function setSectionDecor(secId, prop, value) {
+    const sec = appState.sections.find(s => s.id === secId);
+    if (!sec) return;
+    const next = Object.assign({}, (sec.style && typeof sec.style === 'object') ? sec.style : {});
+    next[prop] = value;
+    updateSectionStyle(secId, 'style', next);
+}
+
+function renderDecorInspectorHtml(sec) {
+    const sid = escapeHtml(sec.id);
+    const st = (sec.style && typeof sec.style === 'object') ? sec.style : {};
+    const sel = (key, opts) => `<select onchange="setSectionDecor('${sid}', '${key}', this.value)" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white">${
+        opts.map(o => `<option value="${escapeHtml(o[0])}" ${secStyleValue(st, key) === o[0] ? 'selected' : ''}>${escapeHtml(o[1])}</option>`).join('')
+    }</select>`;
+    let op = parseFloat(st.bgOverlayOpacity);
+    if (!isFinite(op)) op = 0;
+    op = Math.min(0.9, Math.max(0, op));
+    const bgc = safeColor(st.bgColor, '');
+    const open = window.__decorOpen ? 'open' : '';
+    return `
+        <details ${open} ontoggle="window.__decorOpen = this.open" class="rounded-xl border border-slate-200 bg-white">
+            <summary class="p-3 cursor-pointer font-bold text-slate-700 flex items-center gap-1.5 min-h-[44px]">
+                <i class="fa-solid fa-wand-magic-sparkles text-violet-600"></i> Nền &amp; Trang trí
+            </summary>
+            <div class="p-3 pt-0 space-y-3">
+                <div>
+                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Màu nền phần này</label>
+                    <div class="flex items-center gap-1.5">
+                        <input type="color" value="${escapeHtml(bgc || '#ffffff')}" onchange="setSectionDecor('${sid}', 'bgColor', this.value)" class="w-8 h-7 rounded border border-slate-300 cursor-pointer">
+                        <button onclick="setSectionDecor('${sid}', 'bgColor', '')" class="text-[10px] text-slate-500 underline">Bỏ nền</button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Ảnh nền (đường dẫn https://... hoặc /uploads/...)</label>
+                    <input type="text" value="${escapeHtml(st.bgImage || '')}" onchange="setSectionDecor('${sid}', 'bgImage', this.value.trim())" class="w-full px-2.5 py-2 rounded-lg border border-slate-300" placeholder="https://...">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Lớp phủ sáng trên ảnh (${Math.round(op * 100)}%)</label>
+                    <input type="range" min="0" max="0.9" step="0.05" value="${op}" onchange="setSectionDecor('${sid}', 'bgOverlayOpacity', parseFloat(this.value))" class="w-full accent-violet-600">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Khoảng cách trên/dưới</label>
+                        ${sel('paddingY', [['', 'Mặc định'], ['sm', 'Nhỏ'], ['md', 'Vừa'], ['lg', 'Lớn']])}
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Căn chữ</label>
+                        ${sel('align', [['', 'Mặc định'], ['left', 'Trái'], ['center', 'Giữa'], ['right', 'Phải']])}
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Hiệu ứng xuất hiện</label>
+                        ${sel('animation', [['', 'Theo toàn thiệp'], ['none', 'Không'], ['fade-up', 'Hiện dần'], ['zoom', 'Phóng to'], ['slide', 'Trượt']])}
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Hoa văn viền phần</label>
+                        ${sel('ornament', [['', 'Không'], ['top', 'Phía trên'], ['bottom', 'Phía dưới'], ['both', 'Cả hai']])}
+                    </div>
+                </div>
+            </div>
+        </details>`;
+}
+
 // 4. VẼ KHUNG THIỆP CƯỚI (DÙNG CHUNG CHO EDITOR / TRANG KHÁCH / EXPORT)
 // Trả về HTML các section đang hiển thị. Ngoài mode 'editor' không có badge, onclick, contenteditable.
 function renderCardHtml(state, ctx) {
@@ -136,7 +267,8 @@ function renderCardHtml(state, ctx) {
     const c = Object.assign({ mode: 'invite', guestName: '', slug: null }, ctx || {}, { appState: state });
     const isEditor = c.mode === 'editor';
 
-    return state.sections
+    const gs = state.globalStyle || {};
+    const sectionsHtml = state.sections
         .filter(sec => sec.visible && getSectionDef(sec.type))
         .map(sec => {
             let innerHtml;
@@ -147,15 +279,17 @@ function renderCardHtml(state, ctx) {
                 if (!isEditor) return '';
                 innerHtml = `<div class="m-3 p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-700 text-xs">Không hiển thị được phần "${escapeHtml(sec.name)}". Kiểm tra lại dữ liệu của phần này.</div>`;
             }
+            const dec = sectionDecor(sec, gs);
+            const styleAttr = dec.style ? ` style="${escapeHtml(dec.style)}"` : '';
             if (!isEditor) {
                 return `
-            <section data-section-id="${escapeHtml(sec.id)}" class="wedding-section">
+            <section data-section-id="${escapeHtml(sec.id)}" class="wedding-section ${dec.cls}"${styleAttr}>
                 ${innerHtml}
             </section>`;
             }
             const isSelected = state.selectedSectionId === sec.id;
             return `
-            <section data-section-id="${escapeHtml(sec.id)}" onclick="selectSection('${escapeHtml(sec.id)}')" class="wedding-section ${isSelected ? 'selected-section' : ''}">
+            <section data-section-id="${escapeHtml(sec.id)}" onclick="selectSection('${escapeHtml(sec.id)}')" class="wedding-section ${dec.cls} ${isSelected ? 'selected-section' : ''}"${styleAttr}>
                 <!-- Nhãn công cụ nổi kiểu Canva khi di chuột vào Section -->
                 <div class="section-badge absolute top-2 right-2 z-30 items-center gap-1 bg-violet-600 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-md">
                     <i class="fa-solid fa-pen-ruler"></i>
@@ -164,6 +298,7 @@ function renderCardHtml(state, ctx) {
                 ${innerHtml}
             </section>`;
         }).join('');
+    return `<div class="card-root ${cardDecorClasses(gs)}">${sectionsHtml}</div>`;
 }
 
 function renderWeddingCanvas() {
@@ -174,6 +309,9 @@ function renderWeddingCanvas() {
     frame.style.backgroundColor = g.bgColor;
     frame.style.color = g.textColor;
     frame.style.fontFamily = g.bodyFont;
+    // Áp lớp G5 lên khung (giữ các lớp khác của frame, chỉ thay tex-/frame-/orn-)
+    Array.from(frame.classList).forEach(cl => { if (/^(tex|frame|orn)-/.test(cl)) frame.classList.remove(cl); });
+    cardDecorClasses(g).split(' ').forEach(cl => frame.classList.add(cl));
     document.getElementById('floatingMusicBtn').style.backgroundColor = g.primaryColor;
 
     const ctx = { appState: appState, mode: 'editor', guestName: '', slug: null };
@@ -286,6 +424,8 @@ function renderRightInspector() {
                 </div>
             </div>
         </div>
+
+        ${renderDecorInspectorHtml(sec)}
 
         <hr class="border-slate-200">
 

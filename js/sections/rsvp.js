@@ -103,16 +103,23 @@ registerSection({
             form.elements.ten.value = String(ctx.guestName).slice(0, 80);
         }
 
+        let disposed = false;
+        let curLabel = btnLabel;
+        // Đã gửi: vẫn bấm được để gửi lại
         const markSent = () => {
             if (!btn) return;
-            btn.disabled = true;
-            btn.classList.add('opacity-60', 'cursor-not-allowed');
-            btn.textContent = 'ĐÃ GỬI XÁC NHẬN';
+            curLabel = 'ĐÃ GỬI · GỬI LẠI';
+            btn.disabled = false;
+            btn.classList.remove('opacity-60', 'cursor-not-allowed');
+            btn.textContent = curLabel;
         };
         if (slug && lsGet(storeKey)) markSent();
 
         const syncCount = () => {
-            if (countWrap && attend) countWrap.classList.toggle('hidden', attend.value === 'khong');
+            if (!countWrap || !attend) return;
+            const hide = attend.value === 'khong';
+            countWrap.classList.toggle('hidden', hide);
+            if (form.elements.so_nguoi) form.elements.so_nguoi.disabled = hide;
         };
         syncCount();
         if (attend) attend.addEventListener('change', syncCount);
@@ -136,23 +143,29 @@ registerSection({
                 loi_nhan: String(form.elements.loi_nhan.value || '').trim().slice(0, 500)
             };
 
-            if (!(slug && window.api && window.api.available)) {
+            if (!slug || ctx.mode === 'editor') {
                 toast('Cảm ơn bạn đã gửi lời chúc & xác nhận tham dự!');
                 return;
             }
             if (btn) { btn.disabled = true; btn.classList.add('opacity-60'); }
             try {
+                if (!window.api) throw new Error('Chưa kết nối máy chủ, vui lòng thử lại.');
+                if (!window.api.available) await window.api.checkHealth();
+                if (disposed) return;
                 await window.api.postRsvp(slug, body);
+                if (disposed) return;
                 lsSet(storeKey, '1');
                 toast('Cảm ơn bạn đã gửi lời chúc & xác nhận tham dự!');
                 markSent();
             } catch (err) {
+                if (disposed) return;
                 toast((err && err.message) || 'Gửi xác nhận thất bại, vui lòng thử lại.');
-                if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); btn.innerHTML = btnLabel; }
+                if (btn) { btn.disabled = false; btn.classList.remove('opacity-60'); btn.innerHTML = curLabel; }
             }
         };
         form.addEventListener('submit', onSubmit);
         return () => {
+            disposed = true;
             form.removeEventListener('submit', onSubmit);
             if (attend) attend.removeEventListener('change', syncCount);
         };

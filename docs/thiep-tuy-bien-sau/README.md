@@ -18,10 +18,10 @@
 | T8 | Client API + modal Xuất bản | `js/api.js`, `index.html` | frontend-ui | 4 | T2, T3 | có | xong (T8.1 đang sửa) |
 | T9 | Section story + video | `js/sections/story.js`, `js/sections/video.js` | frontend-ui | 5 | T7 | không | xong |
 | T10 | Section map + dresscode | `js/sections/map.js`, `js/sections/dresscode.js` | frontend-ui | 5 | T7 | không | xong |
-| T11 | Section wishes + gift (VietQR) | `js/sections/wishes.js`, `js/sections/gift.js` | frontend-ui | 5 | T7, T8 | có | xong (sửa .1) |
-| T12 | Section thanks + nâng cấp RSVP | `js/sections/thanks.js`, `js/sections/rsvp.js` | frontend-ui | 5 | T7, T8 | có | xong (sửa .1) |
+| T11 | Section wishes + gift (VietQR) | `js/sections/wishes.js`, `js/sections/gift.js` | frontend-ui | 5 | T7, T8 | có | xong |
+| T12 | Section thanks + nâng cấp RSVP | `js/sections/thanks.js`, `js/sections/rsvp.js` | frontend-ui | 5 | T7, T8 | có | xong |
 | T13 | Style toàn thiệp mới: state + điều khiển | `js/state.js`, `index.html`, `js/editor.js` | frontend-ui | 6 | đợt 5 | có | chờ |
-| T14 | Áp texture/khung/ornament/reveal + override nền section | `js/render.js`, `css/app.css` | frontend-ui | 6 | đợt 5 | không | chờ |
+| T14 | Áp texture/khung/ornament/reveal + override nền section | `js/render.js`, `css/app.css` | frontend-ui | 6 | đợt 5 | không | xong |
 | T15 | Trang khách invite.html + intro, {khach}, lịch, reveal, hiệu ứng rơi | `invite.html`, `js/runtime.js`, `css/invite.css` | frontend-ui | 6 | đợt 5 | có | chờ |
 | T16 | Rà thẩm mỹ desktop + 390px | (chỉ đọc) | ui-aesthetic-reviewer | 7 | T13–T15 | — | chờ |
 | T17 | Cập nhật CLAUDE.md + biên bản | `CLAUDE.md`, `docs/thiep-tuy-bien-sau/README.md` | memoryer | 7 | T15 | không | chờ |
@@ -43,3 +43,5 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T6** (2026-11-13): kiểm bằng vm: undo 3 lần về đúng trạng thái đầu, redo đúng, updateWeddingDateTime/updateAlbumPhoto theo secId, import đi qua migrate, JSON sai bị bỏ qua. Headless Chrome không có lỗi console (ảnh `moc/sau_dot4.png`). reviewer-code: ĐẠT, có 4 NÊN SỬA (mất nháp ngầm, gộp nhầm undo khi thao tác cấu trúc, quota, base64 lớn), giao T6.1.
 - **T9, T10** (2026-11-13): fuzz cả 13 loại section (gài <img onerror>, javascript:, ;position:fixed vào mọi trường data/màu/font/cỡ) ở mode editor và invite: không lọt chỗ nào, không ném lỗi, invite không có contenteditable, migrate idempotent. Lưu ý: icon story fa-book-heart không có trong FA 6.5.1 free, giao T9 sửa một dòng.
 - **T11, T12** (2026-11-13): fuzz chèn mã độc không lọt. reviewer-code: cả hai ĐẠT, nhưng có NÊN SỬA về mất dữ liệu: khi còn chờ health check, wishes/rsvp coi là chưa xuất bản nên RSVP chỉ báo cảm ơn mà không gửi; race getWishes/postWish; ô số người bị ẩn vẫn chặn submit. Giao T11.1 và T12.1.
+- **T11.1, T12.1** (2026-11-13): live xác định theo slug (gọi checkHealth trước khi gọi API), không còn báo cảm ơn giả hay hiện lời chúc mẫu giả; chống race lời chúc; ô số người bị disabled khi ẩn; cho phép gửi lại RSVP. Fuzz vẫn sạch. Re-review: cả hai ĐẠT.
+- **T14** (2026-11-13): kiểm bằng vm: chèn `;position:fixed`, `"><img`, `javascript:`, `");` vào globalStyle và sec.style đều bị chặn; ảnh nền https hợp lệ được giữ; đủ các lớp G5 (card-root, frame-double, reveal-*, sec-orn-both); giá trị lạ trả về mặc định.

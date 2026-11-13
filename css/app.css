@@ -17,6 +17,162 @@
     background: #94a3b8;
 }
 
+/* ===== Trang trí toàn thiệp (G5): .card-root và #weddingCardFrame cùng nhận tex-*, frame-*, orn-* ===== */
+.card-root {
+    position: relative;
+}
+
+/* Texture (gradient / SVG data URI, không tệp ngoài); nhẹ để chữ vẫn đọc được */
+.tex-paper {
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
+        linear-gradient(rgba(120, 90, 50, 0.04), rgba(120, 90, 50, 0.04));
+}
+
+.tex-floral {
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cg fill='%23c9a27a' fill-opacity='0.16'%3E%3Ccircle cx='18' cy='18' r='4'/%3E%3Ccircle cx='18' cy='10' r='3'/%3E%3Ccircle cx='18' cy='26' r='3'/%3E%3Ccircle cx='10' cy='18' r='3'/%3E%3Ccircle cx='26' cy='18' r='3'/%3E%3Ccircle cx='54' cy='54' r='4'/%3E%3Ccircle cx='54' cy='46' r='3'/%3E%3Ccircle cx='54' cy='62' r='3'/%3E%3Ccircle cx='46' cy='54' r='3'/%3E%3Ccircle cx='62' cy='54' r='3'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 72px 72px;
+}
+
+.tex-silk {
+    background-image: linear-gradient(115deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 30%, rgba(160, 120, 80, 0.07) 55%, rgba(255, 255, 255, 0.3) 80%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* Khung viền + hoa góc: lớp phủ giả, không chặn thao tác */
+.frame-single::after,
+.frame-double::after,
+.frame-floral-corner::after,
+.orn-leaf::before,
+.orn-rose::before {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    z-index: 35;
+}
+
+.frame-single::after,
+.frame-double::after,
+.frame-floral-corner::after {
+    inset: 8px;
+    border-radius: 4px;
+}
+
+.frame-single::after {
+    border: 1px solid rgba(140, 98, 57, 0.55);
+}
+
+.frame-double::after {
+    border: 4px double rgba(140, 98, 57, 0.55);
+}
+
+.frame-floral-corner::after {
+    border: 1px solid rgba(140, 98, 57, 0.35);
+    background-repeat: no-repeat;
+    background-size: 56px 56px;
+    background-position: left top, right top, left bottom, right bottom;
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cg fill='none' stroke='%238c6239' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M4 52C4 24 24 4 52 4'/%3E%3Cpath d='M4 30c8 0 12-6 12-12'/%3E%3Cpath d='M30 4c0 8 6 12 12 12'/%3E%3C/g%3E%3Ccircle cx='10' cy='10' r='3' fill='%238c6239'/%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cg transform='translate(56 0) scale(-1 1)' fill='none' stroke='%238c6239' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M4 52C4 24 24 4 52 4'/%3E%3Cpath d='M4 30c8 0 12-6 12-12'/%3E%3Cpath d='M30 4c0 8 6 12 12 12'/%3E%3Ccircle cx='10' cy='10' r='3' fill='%238c6239' stroke='none'/%3E%3C/g%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cg transform='translate(0 56) scale(1 -1)' fill='none' stroke='%238c6239' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M4 52C4 24 24 4 52 4'/%3E%3Cpath d='M4 30c8 0 12-6 12-12'/%3E%3Cpath d='M30 4c0 8 6 12 12 12'/%3E%3Ccircle cx='10' cy='10' r='3' fill='%238c6239' stroke='none'/%3E%3C/g%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 56'%3E%3Cg transform='translate(56 56) scale(-1 -1)' fill='none' stroke='%238c6239' stroke-width='1.5' stroke-linecap='round'%3E%3Cpath d='M4 52C4 24 24 4 52 4'/%3E%3Cpath d='M4 30c8 0 12-6 12-12'/%3E%3Cpath d='M30 4c0 8 6 12 12 12'/%3E%3Ccircle cx='10' cy='10' r='3' fill='%238c6239' stroke='none'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Hoa văn góc trên-trái và dưới-phải */
+.orn-leaf::before,
+.orn-rose::before {
+    inset: 0;
+    background-repeat: no-repeat;
+    background-size: 72px 72px;
+    background-position: left top, right bottom;
+    opacity: 0.8;
+}
+
+.orn-leaf::before {
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cg fill='%237a9a6a' fill-opacity='0.55'%3E%3Cpath d='M4 4c24 0 40 14 40 34-22 0-40-10-40-34z'/%3E%3Cpath d='M4 4c4 20 14 32 30 40' fill='none' stroke='%23fff' stroke-opacity='0.7' stroke-width='1'/%3E%3Cpath d='M30 4c16 2 28 12 30 28-16-2-28-10-30-28z' fill-opacity='0.4'/%3E%3C/g%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cg transform='translate(72 72) scale(-1 -1)' fill='%237a9a6a' fill-opacity='0.55'%3E%3Cpath d='M4 4c24 0 40 14 40 34-22 0-40-10-40-34z'/%3E%3Cpath d='M30 4c16 2 28 12 30 28-16-2-28-10-30-28z' fill-opacity='0.4'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.orn-rose::before {
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cg fill='none' stroke='%23c0566b' stroke-opacity='0.7' stroke-width='1.5'%3E%3Ccircle cx='24' cy='24' r='5'/%3E%3Cpath d='M24 14c8 0 14 6 14 14s-6 12-14 12-14-6-14-14'/%3E%3Cpath d='M24 8c14 0 24 10 24 24'/%3E%3C/g%3E%3Cg fill='%237a9a6a' fill-opacity='0.5'%3E%3Cpath d='M44 44c10 2 18 8 22 18-10 0-20-6-22-18z'/%3E%3C/g%3E%3C/svg%3E"),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cg transform='translate(72 72) scale(-1 -1)'%3E%3Cg fill='none' stroke='%23c0566b' stroke-opacity='0.7' stroke-width='1.5'%3E%3Ccircle cx='24' cy='24' r='5'/%3E%3Cpath d='M24 14c8 0 14 6 14 14s-6 12-14 12-14-6-14-14'/%3E%3Cpath d='M24 8c14 0 24 10 24 24'/%3E%3C/g%3E%3Cg fill='%237a9a6a' fill-opacity='0.5'%3E%3Cpath d='M44 44c10 2 18 8 22 18-10 0-20-6-22-18z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+/* Trong editor, khung ngoài đã mang lớp; .card-root bên trong không vẽ lại để tránh chồng đôi */
+#weddingCardFrame .card-root {
+    background-image: none;
+}
+
+#weddingCardFrame .card-root::before,
+#weddingCardFrame .card-root::after {
+    content: none;
+}
+
+/* ===== Section: padding / căn chữ / hoa văn viền (G5 sec.style) ===== */
+.sec-py-sm { padding-top: 16px; padding-bottom: 16px; }
+.sec-py-md { padding-top: 36px; padding-bottom: 36px; }
+.sec-py-lg { padding-top: 64px; padding-bottom: 64px; }
+
+.sec-align-left,
+.sec-align-left * { text-align: left !important; }
+.sec-align-center,
+.sec-align-center * { text-align: center !important; }
+.sec-align-right,
+.sec-align-right * { text-align: right !important; }
+
+.sec-orn-top::before,
+.sec-orn-both::before,
+.sec-orn-bottom::after,
+.sec-orn-both::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    width: 140px;
+    max-width: 60%;
+    height: 14px;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 1;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 140 14'%3E%3Cg fill='none' stroke='%238c6239' stroke-opacity='0.7' stroke-width='1.2' stroke-linecap='round'%3E%3Cpath d='M4 7h50M86 7h50'/%3E%3Cpath d='M54 7c4-6 10-6 16 0 6-6 12-6 16 0-4 6-10 6-16 0-6 6-12 6-16 0z'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.sec-orn-top::before,
+.sec-orn-both::before { top: 4px; }
+
+.sec-orn-bottom::after,
+.sec-orn-both::after { bottom: 4px; }
+
+/* ===== Reveal: chỉ ẩn khi gốc có .reveal-on (runtime trang khách); editor không có lớp này nên luôn hiện ===== */
+.reveal-on .reveal-fade-up:not(.is-visible),
+.reveal-on .reveal-zoom:not(.is-visible),
+.reveal-on .reveal-slide:not(.is-visible) {
+    opacity: 0;
+}
+
+.reveal-on .reveal-fade-up:not(.is-visible) { transform: translateY(28px); }
+.reveal-on .reveal-zoom:not(.is-visible) { transform: scale(0.92); }
+.reveal-on .reveal-slide:not(.is-visible) { transform: translateX(-36px); }
+
+.reveal-on .reveal-fade-up,
+.reveal-on .reveal-zoom,
+.reveal-on .reveal-slide {
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal-on .reveal-fade-up:not(.is-visible),
+    .reveal-on .reveal-zoom:not(.is-visible),
+    .reveal-on .reveal-slide:not(.is-visible) {
+        opacity: 1;
+        transform: none;
+    }
+}
+
 /* Hiệu ứng chọn Section như Canva */
 .wedding-section {
     position: relative;
