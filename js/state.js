@@ -1,6 +1,6 @@
 // 1. DỮ LIỆU GỐC (MÔ PHỎNG CHUẨN ZIUWEDDING.SITE/MM03 - TÙNG & NGỌC)
 const DEFAULT_STATE = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     selectedSectionId: 'hero',
     isPreviewMode: false,
     globalStyle: {
@@ -11,6 +11,11 @@ const DEFAULT_STATE = {
         bgColor: "#fdfbf7",
         textColor: "#3d312a",
         fallingEffect: "hearts",
+        bgTexture: "none",
+        frameStyle: "none",
+        cornerOrnament: "none",
+        revealAnimation: "fade-up",
+        introStyle: "envelope",
         audioUrl: "https://media.vocaroo.com/mp3/15iKnK2wEfyY"
     },
     bankInfo: {
@@ -164,7 +169,7 @@ const FONT_OPTIONS = [
 
 // Bộ phối màu & font mẫu (chuyển từ biến cục bộ `presets` của applyThemePreset)
 // Mỗi mẫu: label/desc (hiển thị), màu, 3 font (đều nằm trong FONT_OPTIONS), fallingEffect.
-// Tuỳ chọn: bgTexture, frameStyle (khi T13 xong), sectionOrder (mảng id section; id không có trong state bị bỏ qua).
+// Tuỳ chọn: bgTexture, frameStyle, cornerOrnament, revealAnimation, introStyle (giá trị theo G5), sectionOrder (mảng id section; id không có trong state bị bỏ qua).
 // applyThemePreset chỉ ghi các khoá có mặt trong mẫu.
 const THEME_PRESETS = {
     classic: {
@@ -176,7 +181,10 @@ const THEME_PRESETS = {
         primaryColor: "#8c6239",
         bgColor: "#fdfbf7",
         textColor: "#3d312a",
-        fallingEffect: "hearts"
+        fallingEffect: "hearts",
+        bgTexture: "none",
+        frameStyle: "none",
+        cornerOrnament: "none"
     },
     blush: {
         label: 'Pastel hồng',
@@ -187,7 +195,10 @@ const THEME_PRESETS = {
         primaryColor: "#be185d",
         bgColor: "#fff9fb",
         textColor: "#4a1d32",
-        fallingEffect: "hearts"
+        fallingEffect: "petals",
+        bgTexture: "floral",
+        frameStyle: "none",
+        cornerOrnament: "rose"
     },
     sage: {
         label: 'Xanh sage',
@@ -198,7 +209,10 @@ const THEME_PRESETS = {
         primaryColor: "#3f6212",
         bgColor: "#f7faf7",
         textColor: "#263819",
-        fallingEffect: "sparkles"
+        fallingEffect: "sparkles",
+        bgTexture: "paper",
+        frameStyle: "single",
+        cornerOrnament: "leaf"
     },
     royal: {
         label: 'Xanh hoàng gia',
@@ -209,7 +223,10 @@ const THEME_PRESETS = {
         primaryColor: "#1e3a8a",
         bgColor: "#f8fafc",
         textColor: "#1e293b",
-        fallingEffect: "sparkles"
+        fallingEffect: "stars",
+        bgTexture: "silk",
+        frameStyle: "double",
+        cornerOrnament: "none"
     },
     redtrad: {
         label: 'Đỏ truyền thống',
@@ -220,7 +237,10 @@ const THEME_PRESETS = {
         primaryColor: "#b91c1c",
         bgColor: "#fffaf0",
         textColor: "#4a1212",
-        fallingEffect: "hearts"
+        fallingEffect: "hearts",
+        bgTexture: "paper",
+        frameStyle: "floral-corner",
+        cornerOrnament: "rose"
     },
     minimal: {
         label: 'Tối giản trắng đen',
@@ -231,13 +251,27 @@ const THEME_PRESETS = {
         primaryColor: "#111111",
         bgColor: "#ffffff",
         textColor: "#222222",
-        fallingEffect: "none"
+        fallingEffect: "none",
+        bgTexture: "none",
+        frameStyle: "none",
+        cornerOrnament: "none"
     }
 };
 
 // 2. REGISTRY SECTION, TIỆN ÍCH CHUNG & MIGRATE (giao kèo G2/G4)
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 window.SECTION_TYPES = Object.create(null);
+
+// Whitelist giá trị G5 của globalStyle (giá trị đầu tiên không phải mặc định; mặc định lấy từ DEFAULT_STATE)
+const G5_OPTIONS = {
+    bgTexture: ['none', 'paper', 'floral', 'silk'],
+    frameStyle: ['none', 'single', 'double', 'floral-corner'],
+    cornerOrnament: ['none', 'leaf', 'rose'],
+    revealAnimation: ['none', 'fade-up', 'zoom', 'slide'],
+    fallingEffect: ['none', 'hearts', 'sparkles', 'petals', 'snow', 'stars'],
+    introStyle: ['none', 'envelope', 'curtain']
+};
+window.G5_OPTIONS = G5_OPTIONS;
 
 // Tra registry an toàn: chỉ trả def hợp lệ (có renderCanvas là hàm), ngược lại null
 function getSectionDef(type) {
@@ -268,6 +302,14 @@ function safeUrl(u) {
     if (/^https?:\/\//i.test(s) || /^data:image\//i.test(s) || /^\/uploads\//.test(s)) return s;
     return '';
 }
+
+// Nhạc nền: chỉ cho http(s), data:audio/ và /uploads/; còn lại trả chuỗi rỗng
+function safeAudioUrl(u) {
+    const s = String(u === undefined || u === null ? '' : u).trim();
+    if (/^https?:\/\//i.test(s) || /^data:audio\//i.test(s) || /^\/uploads\//.test(s)) return s;
+    return '';
+}
+window.safeAudioUrl = safeAudioUrl;
 
 // Biến dùng chung cho renderCanvas của các section (giá trị đã escape, dùng được trong thuộc tính style)
 // Whitelist giá trị state trước khi chèn vào thuộc tính style= (chống CSS injection)
@@ -331,7 +373,11 @@ function defaultSectionStyle() {
 function migrate(state) {
     if (!state || typeof state !== 'object') return state;
 
-    state.globalStyle = Object.assign({}, DEFAULT_STATE.globalStyle, state.globalStyle || {});
+    state.globalStyle = Object.assign({}, DEFAULT_STATE.globalStyle, (state.globalStyle && typeof state.globalStyle === 'object' && !Array.isArray(state.globalStyle)) ? state.globalStyle : {});
+    // Khoá G5: giá trị ngoài whitelist về mặc định
+    Object.keys(G5_OPTIONS).forEach(k => {
+        if (G5_OPTIONS[k].indexOf(state.globalStyle[k]) < 0) state.globalStyle[k] = DEFAULT_STATE.globalStyle[k];
+    });
 
     const bank = state.bankInfo || {};
     state.bankInfo = {

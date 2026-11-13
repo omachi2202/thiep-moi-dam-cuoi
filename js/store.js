@@ -107,7 +107,7 @@
         if (typeof syncLeftControlsWithState === 'function') syncLeftControlsWithState();
         const audio = document.getElementById('weddingAudio');
         if (audio && appState.globalStyle) {
-            audio.src = (typeof safeUrl === 'function' ? safeUrl(appState.globalStyle.audioUrl) : appState.globalStyle.audioUrl) || '';
+            audio.src = (typeof safeAudioUrl === 'function' ? safeAudioUrl(appState.globalStyle.audioUrl) : (typeof safeUrl === 'function' ? safeUrl(appState.globalStyle.audioUrl) : appState.globalStyle.audioUrl)) || '';
         }
         renderAll();
         if (typeof initFallingEffect === 'function') initFallingEffect();

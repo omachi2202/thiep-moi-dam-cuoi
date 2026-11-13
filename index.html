@@ -36,39 +36,40 @@
                         class="text-[10px] uppercase px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-400/30 rounded-full font-semibold">Canva
                         Wedding Builder</span>
                 </div>
-                <p class="text-[11px] text-slate-400">Mẫu chuẩn: ziuwedding.site/mm03 (Tùy biến toàn diện)</p>
+                <p class="hidden 2xl:block text-[11px] text-slate-400 whitespace-nowrap">Mẫu chuẩn: ziuwedding.site/mm03 (Tùy biến toàn diện)</p>
             </div>
         </div>
 
         <!-- Center Mode Controls -->
         <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
             <button id="btnModeEdit" onclick="setPreviewMode(false)"
-                class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-violet-600 text-white shadow transition">
+                class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 bg-violet-600 text-white shadow transition">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Thiết kế (Canva Mode)
             </button>
             <button id="btnModePreview" onclick="setPreviewMode(true)"
-                class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 text-slate-300 hover:text-white transition">
+                class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap flex items-center gap-1.5 text-slate-300 hover:text-white transition">
                 <i class="fa-solid fa-mobile-screen-button"></i> Xem thực tế
             </button>
         </div>
 
         <!-- Right Action Buttons -->
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2 shrink-0">
             <!-- Chỗ chèn nút của thanh công cụ editor (T6): display:contents để không tạo khoảng trống khi rỗng -->
-            <div id="editorToolbar" class="contents"></div>
+            <div id="editorToolbar" class="flex items-center gap-2"></div>
             <button onclick="resetToDefault()"
-                class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 transition flex items-center gap-1.5"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 transition flex items-center gap-1.5"
                 title="Khôi phục mẫu gốc">
                 <i class="fa-solid fa-rotate-left"></i> Khôi phục gốc
             </button>
             <button id="btnPublish" onclick="openPublishModal()" disabled
-                class="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-violet-500 to-rose-500 text-white shadow-lg transition flex items-center gap-2 opacity-50 cursor-not-allowed"
+                class="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-violet-500 to-rose-500 text-white shadow-lg transition flex items-center gap-2 opacity-50 cursor-not-allowed"
                 title="Chạy backend rồi tải lại trang hoặc bấm lại. Mở bằng file:// thì không xuất bản được.">
                 <i class="fa-solid fa-cloud-arrow-up"></i> Xuất bản
             </button>
             <button onclick="openExportModal()"
-                class="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
-                <i class="fa-solid fa-code"></i> Xuất File HTML Độc Lập
+                class="px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2"
+                title="Xuất file HTML độc lập">
+                <i class="fa-solid fa-code"></i> Xuất file HTML
             </button>
         </div>
     </header>
@@ -84,7 +85,7 @@
                 <button onclick="switchLeftTab('sections')" id="tabBtn-sections"
                     class="py-3 flex flex-col items-center gap-1 border-b-2 border-violet-600 text-violet-700 bg-white">
                     <i class="fa-solid fa-layer-group text-sm"></i>
-                    <span>Bố cục (6)</span>
+                    <span>Bố cục</span>
                 </button>
                 <button onclick="switchLeftTab('theme')" id="tabBtn-theme"
                     class="py-3 flex flex-col items-center gap-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800">
@@ -122,40 +123,8 @@
                 <div>
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Bộ Phối Màu &
                         Font Mẫu</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button onclick="applyThemePreset('classic')"
-                            class="p-2.5 rounded-xl border border-slate-200 hover:border-amber-600 text-left transition flex items-center gap-2 bg-[#fdfbf7]">
-                            <span class="w-5 h-5 rounded-full bg-[#8c6239] shrink-0 border border-white shadow"></span>
-                            <div>
-                                <div class="text-xs font-bold text-slate-800">Cổ điển (MM03)</div>
-                                <div class="text-[10px] text-slate-500">Nâu trầm & Kem</div>
-                            </div>
-                        </button>
-                        <button onclick="applyThemePreset('blush')"
-                            class="p-2.5 rounded-xl border border-slate-200 hover:border-rose-500 text-left transition flex items-center gap-2 bg-[#fff9fa]">
-                            <span class="w-5 h-5 rounded-full bg-[#be185d] shrink-0 border border-white shadow"></span>
-                            <div>
-                                <div class="text-xs font-bold text-slate-800">Hồng Pastel</div>
-                                <div class="text-[10px] text-slate-500">Ngọt ngào & Lãng mạn</div>
-                            </div>
-                        </button>
-                        <button onclick="applyThemePreset('sage')"
-                            class="p-2.5 rounded-xl border border-slate-200 hover:border-emerald-600 text-left transition flex items-center gap-2 bg-[#f6f9f6]">
-                            <span class="w-5 h-5 rounded-full bg-[#3f6212] shrink-0 border border-white shadow"></span>
-                            <div>
-                                <div class="text-xs font-bold text-slate-800">Xanh Lá Sage</div>
-                                <div class="text-[10px] text-slate-500">Tối giản & Tinh tế</div>
-                            </div>
-                        </button>
-                        <button onclick="applyThemePreset('royal')"
-                            class="p-2.5 rounded-xl border border-slate-200 hover:border-blue-800 text-left transition flex items-center gap-2 bg-[#f8fafc]">
-                            <span class="w-5 h-5 rounded-full bg-[#1e3a8a] shrink-0 border border-white shadow"></span>
-                            <div>
-                                <div class="text-xs font-bold text-slate-800">Xanh Hoàng Gia</div>
-                                <div class="text-[10px] text-slate-500">Sang trọng &Hiện đại</div>
-                            </div>
-                        </button>
-                    </div>
+                    <!-- Lưới preset do renderThemePresetGrid (render.js) vẽ từ THEME_PRESETS; giữ đúng class grid grid-cols-2 để selector tìm thấy -->
+                    <div class="grid grid-cols-2 gap-2"></div>
                 </div>
 
                 <hr class="border-slate-200">
@@ -238,8 +207,66 @@
                         class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
                         <option value="hearts">🌸 Cánh hoa & Tim hồng rơi nhẹ</option>
                         <option value="sparkles">✨ Sao lấp lánh vàng kim</option>
+                        <option value="petals">🌺 Cánh hoa rơi</option>
+                        <option value="snow">❄️ Tuyết rơi</option>
+                        <option value="stars">⭐ Sao đêm lấp lánh</option>
                         <option value="none">🚫 Tắt hiệu ứng rơi</option>
                     </select>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Trang trí nền & khung (giao kèo G5) -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">Trang Trí Thiệp</label>
+                    <div>
+                        <span class="text-xs font-medium text-slate-700 block mb-1">Hoạ tiết nền</span>
+                        <select id="select_bgTexture" onchange="updateGlobalStyle('bgTexture', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
+                            <option value="none">Không có</option>
+                            <option value="paper">Giấy mịn</option>
+                            <option value="floral">Hoa văn nhẹ</option>
+                            <option value="silk">Lụa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-700 block mb-1">Khung viền</span>
+                        <select id="select_frameStyle" onchange="updateGlobalStyle('frameStyle', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
+                            <option value="none">Không có</option>
+                            <option value="single">Viền đơn</option>
+                            <option value="double">Viền kép</option>
+                            <option value="floral-corner">Góc hoa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-700 block mb-1">Hoạ tiết góc</span>
+                        <select id="select_cornerOrnament" onchange="updateGlobalStyle('cornerOrnament', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
+                            <option value="none">Không có</option>
+                            <option value="leaf">Lá</option>
+                            <option value="rose">Hoa hồng</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-700 block mb-1">Hiệu ứng xuất hiện từng phần</span>
+                        <select id="select_revealAnimation" onchange="updateGlobalStyle('revealAnimation', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
+                            <option value="none">Không có</option>
+                            <option value="fade-up">Hiện dần từ dưới lên</option>
+                            <option value="zoom">Phóng to</option>
+                            <option value="slide">Trượt ngang</option>
+                        </select>
+                    </div>
+                    <div>
+                        <span class="text-xs font-medium text-slate-700 block mb-1">Màn mở đầu (trang khách)</span>
+                        <select id="select_introStyle" onchange="updateGlobalStyle('introStyle', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
+                            <option value="none">Không có</option>
+                            <option value="envelope">Phong bì</option>
+                            <option value="curtain">Rèm cửa</option>
+                        </select>
+                    </div>
                 </div>
             </div>
 
@@ -262,6 +289,9 @@
                     <input type="text" id="inputAudioUrl" oninput="updateGlobalStyle('audioUrl', this.value)"
                         placeholder="Dán link file .mp3..."
                         class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
+                    <label class="block text-[11px] text-slate-500 pt-1">Hoặc tải tệp nhạc từ máy:</label>
+                    <input type="file" accept="audio/*" onchange="handleAudioFileUpload(event)"
+                        class="w-full text-xs text-slate-600 file:mr-2 file:px-2.5 file:py-1.5 file:rounded-lg file:border-0 file:bg-violet-50 file:text-violet-700 file:text-xs file:font-semibold">
                 </div>
 
                 <hr class="border-slate-200">

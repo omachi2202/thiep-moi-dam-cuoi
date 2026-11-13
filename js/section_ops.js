@@ -161,12 +161,9 @@ function applyThemePreset(presetName) {
         const v = safeColor(p[k], '');
         if (v) g[k] = v;
     });
-    if (p.fallingEffect !== undefined && ['hearts', 'sparkles', 'none'].indexOf(p.fallingEffect) >= 0) {
-        g.fallingEffect = p.fallingEffect;
-    }
-    // Khoá T13 (khi có trong preset): bgTexture, frameStyle — chỉ ghi chuỗi ngắn [a-z0-9_-]
-    ['bgTexture', 'frameStyle'].forEach(k => {
-        if (p[k] !== undefined && /^[a-z0-9_-]{0,40}$/.test(String(p[k]))) g[k] = String(p[k]);
+    // Khoá G5: chỉ ghi giá trị thuộc whitelist G5_OPTIONS (state.js)
+    Object.keys(G5_OPTIONS).forEach(k => {
+        if (p[k] !== undefined && G5_OPTIONS[k].indexOf(p[k]) >= 0) g[k] = p[k];
     });
     if (Array.isArray(p.sectionOrder)) {
         const rank = new Map();

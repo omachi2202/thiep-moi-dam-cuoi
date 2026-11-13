@@ -3,9 +3,52 @@ window.onload = function () {
     syncLeftControlsWithState();
     renderAll();
     if (typeof initStore === 'function') initStore();
+    setupFileMenu();
     initFallingEffect();
     startCountdownTimer();
 };
+
+// Gom Xuất/Nhập JSON (do store.js chèn vào #editorToolbar) vào menu "Tệp"; chuyển phần tử có sẵn nên id và onclick giữ nguyên
+function setupFileMenu() {
+    const host = document.getElementById('editorToolbar');
+    // Hoàn tác/Làm lại: chỉ icon (bỏ nút văn bản; title tooltip giữ nguyên, thêm aria-label)
+    [['btnUndo', 'Hoàn tác'], ['btnRedo', 'Làm lại']].forEach(pair => {
+        const b = document.getElementById(pair[0]);
+        if (!b) return;
+        Array.from(b.childNodes).forEach(n => { if (n.nodeType === 3) b.removeChild(n); });
+        b.setAttribute('aria-label', pair[1]);
+    });
+    const bExport = document.getElementById('btnExportJson');
+    const bImport = document.getElementById('btnImportJson');
+    if (!host || !bExport || !bImport || document.getElementById('fileMenuPanel')) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'relative';
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.id = 'btnFileMenu';
+    toggle.title = 'Xuất/Nhập dữ liệu thiệp (JSON)';
+    toggle.className = 'px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 transition flex items-center gap-1.5';
+    toggle.innerHTML = '<i class="fa-solid fa-folder-open"></i> Tệp <i class="fa-solid fa-chevron-down text-[9px]"></i>';
+    const panel = document.createElement('div');
+    panel.id = 'fileMenuPanel';
+    panel.className = 'hidden absolute right-0 top-full mt-1 z-50 min-w-[150px] p-1 rounded-lg bg-slate-800 border border-slate-700 shadow-xl flex-col gap-1';
+    [bExport, bImport].forEach(b => {
+        b.classList.add('w-full', 'whitespace-nowrap', 'border-transparent');
+        panel.appendChild(b);
+    });
+    const setOpen = open => {
+        panel.classList.toggle('hidden', !open);
+        panel.classList.toggle('flex', open);
+    };
+    toggle.onclick = e => { e.stopPropagation(); setOpen(panel.classList.contains('hidden')); };
+    panel.addEventListener('click', () => setOpen(false));
+    document.addEventListener('click', () => setOpen(false));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setOpen(false); });
+    wrap.appendChild(toggle);
+    wrap.appendChild(panel);
+    host.appendChild(wrap);
+}
 
 function syncLeftControlsWithState() {
     document.getElementById('globalScriptFont').value = appState.globalStyle.scriptFont;
@@ -15,6 +58,10 @@ function syncLeftControlsWithState() {
     document.getElementById('inputBgColor').value = appState.globalStyle.bgColor;
     document.getElementById('inputTextColor').value = appState.globalStyle.textColor;
     document.getElementById('selectFallingEffect').value = appState.globalStyle.fallingEffect;
+    ['bgTexture', 'frameStyle', 'cornerOrnament', 'revealAnimation', 'introStyle'].forEach(k => {
+        const el = document.getElementById('select_' + k);
+        if (el) el.value = appState.globalStyle[k];
+    });
     document.getElementById('inputAudioUrl').value = appState.globalStyle.audioUrl;
 
     document.getElementById('groomBankName').value = appState.bankInfo.groom.bank;
@@ -134,10 +181,12 @@ async function handleAudioFileUpload(event) {
 }
 
 function updateGlobalStyle(key, val) {
+    // Khoá G5: chỉ nhận giá trị thuộc whitelist
+    if (window.G5_OPTIONS && G5_OPTIONS[key] && G5_OPTIONS[key].indexOf(val) < 0) return;
     appState.globalStyle[key] = val;
     if (key === 'audioUrl') {
         const audio = document.getElementById('weddingAudio');
-        audio.src = safeUrl(val);
+        audio.src = safeAudioUrl(val);
     }
     if (key === 'fallingEffect') {
         initFallingEffect();
@@ -257,7 +306,7 @@ async function openExportModal() {
     const heroSec = getFirstSectionOfType(state, 'hero');
     const pageTitle = heroSec && heroSec.data && heroSec.data.coupleShortName
         ? `Thiệp Cưới ${heroSec.data.coupleShortName}` : 'Thiệp Cưới Online';
-    const audioSrc = (typeof safeUrl === 'function' ? safeUrl(g.audioUrl) : g.audioUrl) || '';
+    const audioSrc = (typeof safeAudioUrl === 'function' ? safeAudioUrl(g.audioUrl) : (typeof safeUrl === 'function' ? safeUrl(g.audioUrl) : g.audioUrl)) || '';
 
     const inlineScripts = scripts.map(code => `<script>\n${_exportInlineJs(code)}\n<\/script>`).join('\n');
 

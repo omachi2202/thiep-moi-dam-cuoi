@@ -20,7 +20,7 @@
 | T10 | Section map + dresscode | `js/sections/map.js`, `js/sections/dresscode.js` | frontend-ui | 5 | T7 | không | xong |
 | T11 | Section wishes + gift (VietQR) | `js/sections/wishes.js`, `js/sections/gift.js` | frontend-ui | 5 | T7, T8 | có | xong |
 | T12 | Section thanks + nâng cấp RSVP | `js/sections/thanks.js`, `js/sections/rsvp.js` | frontend-ui | 5 | T7, T8 | có | xong |
-| T13 | Style toàn thiệp mới: state + điều khiển | `js/state.js`, `index.html`, `js/editor.js` | frontend-ui | 6 | đợt 5 | có | chờ |
+| T13 | Style toàn thiệp mới: state + điều khiển | `js/state.js`, `index.html`, `js/editor.js` | frontend-ui | 6 | đợt 5 | có | xong |
 | T14 | Áp texture/khung/ornament/reveal + override nền section | `js/render.js`, `css/app.css` | frontend-ui | 6 | đợt 5 | không | xong |
 | T15 | Trang khách invite.html + intro, {khach}, lịch, reveal, hiệu ứng rơi | `invite.html`, `js/runtime.js`, `css/invite.css` | frontend-ui | 6 | đợt 5 | có | chờ |
 | T16 | Rà thẩm mỹ desktop + 390px | (chỉ đọc) | ui-aesthetic-reviewer | 7 | T13–T15 | — | chờ |
@@ -46,3 +46,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T11.1, T12.1** (2026-11-13): live xác định theo slug (gọi checkHealth trước khi gọi API), không còn báo cảm ơn giả hay hiện lời chúc mẫu giả; chống race lời chúc; ô số người bị disabled khi ẩn; cho phép gửi lại RSVP. Fuzz vẫn sạch. Re-review: cả hai ĐẠT.
 - **T14** (2026-11-13): kiểm bằng vm: chèn `;position:fixed`, `"><img`, `javascript:`, `");` vào globalStyle và sec.style đều bị chặn; ảnh nền https hợp lệ được giữ; đủ các lớp G5 (card-root, frame-double, reveal-*, sec-orn-both); giá trị lạ trả về mặc định.
 - **T6.1 + T6.2** (2026-11-13): không còn mất nháp ngầm (giữ ở thiep:draft:prev), không gộp undo cho thao tác cấu trúc, xử lý quota, chặn base64 > 1.5MB, giới hạn byte stack undo, chặn import > 10MB hoặc > 100 section. T6.1 gây hồi quy (gõ trong ô global/bank thành 1 bước mỗi ký tự), T6.2 sửa bằng mergeKey. Kiểm bằng vm: gộp/tách đúng. Re-review vòng 2: ĐẠT.
+- **T13** (2026-11-13): schema v3 với 5 khoá G5, migrate theo whitelist, safeAudioUrl, preset có G5, menu Tệp, header gọn trên một dòng (ảnh `moc/editor_1440_sau_T13.png`). Các bộ test cũ vẫn đạt; CDP ở 1440px: không lỗi JS, preset royal áp đúng lớp. reviewer-code: ĐẠT, có 1 NÊN SỬA (preset không dựng lại hiệu ứng rơi ở editor), giao T13.1.
