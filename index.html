@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZiuStudio - Trình Thiết Kế Thiệp Cưới Tương Tác</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts (Đầy đủ các font từ mẫu mm03 và các font nghệ thuật cưới) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Slab:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Hiệu ứng chọn Section như Canva */
+        .wedding-section {
+            position: relative;
+            transition: all 0.25s ease;
+            border: 2px solid transparent;
+        }
+
+        .editor-mode .wedding-section:hover {
+            border-color: #c084fc;
+        }
+
+        .editor-mode .wedding-section.selected-section {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+        }
+
+        .section-badge {
+            display: none;
+        }
+
+        .editor-mode .wedding-section:hover .section-badge,
+        .editor-mode .wedding-section.selected-section .section-badge {
+            display: flex;
+        }
+
+        /* Hiệu ứng chỉnh sửa chữ trực tiếp (ContentEditable) */
+        [contenteditable="true"]:focus {
+            outline: 2px dashed #8b5cf6;
+            outline-offset: 4px;
+            background-color: rgba(139, 92, 246, 0.06);
+            border-radius: 4px;
+        }
+
+        /* Hiệu ứng cánh hoa rơi */
+        @keyframes fall {
+            0% {
+                transform: translateY(-10vh) translateX(0) rotate(0deg);
+                opacity: 0.9;
+            }
+
+            50% {
+                transform: translateY(45vh) translateX(18px) rotate(180deg);
+                opacity: 0.85;
+            }
+
+            100% {
+                transform: translateY(105vh) translateX(-15px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .petal {
+            position: absolute;
+            top: -30px;
+            pointer-events: none;
+            z-index: 40;
+            animation: fall linear infinite;
+        }
+
+        /* Đĩa nhạc xoay */
+        @keyframes spinSlow {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .spin-music {
+            animation: spinSlow 6s linear infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden select-none font-['Montserrat']">
+
+    <!-- ================= TOP NAVBAR (THANH CÔNG CỤ CANVA) ================= -->
+    <header class="h-14 bg-slate-900 text-white px-4 flex items-center justify-between shadow-md z-50 shrink-0">
+        <!-- Brand & Project Title -->
+        <div class="flex items-center gap-3">
+            <div
+                class="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 to-amber-400 flex items-center justify-center shadow">
+                <i class="fa-solid fa-rings-wedding text-white text-lg"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="font-bold tracking-wide text-sm">ZiuStudio</span>
+                    <span
+                        class="text-[10px] uppercase px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-400/30 rounded-full font-semibold">Canva
+                        Wedding Builder</span>
+                </div>
+                <p class="text-[11px] text-slate-400">Mẫu chuẩn: ziuwedding.site/mm03 (Tùy biến toàn diện)</p>
+            </div>
+        </div>
+
+        <!-- Center Mode Controls -->
+        <div class="flex items-center gap-2 bg-slate-800 p-1 rounded-xl border border-slate-700">
+            <button id="btnModeEdit" onclick="setPreviewMode(false)"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-violet-600 text-white shadow transition">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Thiết kế (Canva Mode)
+            </button>
+            <button id="btnModePreview" onclick="setPreviewMode(true)"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 text-slate-300 hover:text-white transition">
+                <i class="fa-solid fa-mobile-screen-button"></i> Xem thực tế
+            </button>
+        </div>
+
+        <!-- Right Action Buttons -->
+        <div class="flex items-center gap-2.5">
+            <button onclick="resetToDefault()"
+                class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 transition flex items-center gap-1.5"
+                title="Khôi phục mẫu gốc">
+                <i class="fa-solid fa-rotate-left"></i> Khôi phục gốc
+            </button>
+            <button onclick="openExportModal()"
+                class="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
+                <i class="fa-solid fa-code"></i> Xuất File HTML Độc Lập
+            </button>
+        </div>
+    </header>
+
+    <!-- ================= MAIN WORKSPACE ================= -->
+    <div class="flex-1 flex overflow-hidden">
+
+        <!-- LEFT SIDEBAR: QUẢN LÝ SECTION & BẢNG PHONG CÁCH CHUNG -->
+        <aside id="leftSidebar"
+            class="w-80 bg-white border-r border-slate-200 flex flex-col shrink-0 z-30 transition-all duration-300">
+            <!-- Sidebar Tabs -->
+            <div class="grid grid-cols-3 border-b border-slate-200 bg-slate-50 text-xs font-semibold">
+                <button onclick="switchLeftTab('sections')" id="tabBtn-sections"
+                    class="py-3 flex flex-col items-center gap-1 border-b-2 border-violet-600 text-violet-700 bg-white">
+                    <i class="fa-solid fa-layer-group text-sm"></i>
+                    <span>Bố cục (6)</span>
+                </button>
+                <button onclick="switchLeftTab('theme')" id="tabBtn-theme"
+                    class="py-3 flex flex-col items-center gap-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+                    <i class="fa-solid fa-font text-sm"></i>
+                    <span>Font & Màu</span>
+                </button>
+                <button onclick="switchLeftTab('settings')" id="tabBtn-settings"
+                    class="py-3 flex flex-col items-center gap-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800">
+                    <i class="fa-solid fa-music text-sm"></i>
+                    <span>Nhạc & QR</span>
+                </button>
+            </div>
+
+            <!-- Tab 1: Danh sách các Section (Kéo/Đổi thứ tự, Ẩn/Hiện) -->
+            <div id="leftTab-sections" class="flex-1 overflow-y-auto p-4 space-y-3">
+                <div class="bg-violet-50 border border-violet-200 rounded-xl p-3 text-xs text-violet-900">
+                    <p class="font-semibold flex items-center gap-1.5 mb-1">
+                        <i class="fa-solid fa-circle-info text-violet-600"></i> Mẹo sử dụng nhanh:
+                    </p>
+                    <p class="text-violet-700 leading-relaxed">
+                        • Bấm vào từng mục bên dưới để <b>chỉnh sửa nội dung & phông chữ riêng</b> ở cột bên phải.<br>
+                        • Dùng nút <i class="fa-solid fa-arrow-up"></i> <i class="fa-solid fa-arrow-down"></i> để đổi vị
+                        trí các phần hoặc <i class="fa-solid fa-eye"></i> để ẩn/hiện.
+                    </p>
+                </div>
+
+                <div id="sectionListContainer" class="space-y-2">
+                    <!-- Được render tự động bằng JS -->
+                </div>
+            </div>
+
+            <!-- Tab 2: Font chữ & Bảng màu tổng thể (Canva Brand Kit) -->
+            <div id="leftTab-theme" class="hidden flex-1 overflow-y-auto p-4 space-y-5">
+                <!-- Bộ giao diện mẫu (Presets) -->
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Bộ Phối Màu &
+                        Font Mẫu</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="applyThemePreset('classic')"
+                            class="p-2.5 rounded-xl border border-slate-200 hover:border-amber-600 text-left transition flex items-center gap-2 bg-[#fdfbf7]">
+                            <span class="w-5 h-5 rounded-full bg-[#8c6239] shrink-0 border border-white shadow"></span>
+                            <div>
+                                <div class="text-xs font-bold text-slate-800">Cổ điển (MM03)</div>
+                                <div class="text-[10px] text-slate-500">Nâu trầm & Kem</div>
+                            </div>
+                        </button>
+                        <button onclick="applyThemePreset('blush')"
+                            class="p-2.5 rounded-xl border border-slate-200 hover:border-rose-500 text-left transition flex items-center gap-2 bg-[#fff9fa]">
+                            <span class="w-5 h-5 rounded-full bg-[#be185d] shrink-0 border border-white shadow"></span>
+                            <div>
+                                <div class="text-xs font-bold text-slate-800">Hồng Pastel</div>
+                                <div class="text-[10px] text-slate-500">Ngọt ngào & Lãng mạn</div>
+                            </div>
+                        </button>
+                        <button onclick="applyThemePreset('sage')"
+                            class="p-2.5 rounded-xl border border-slate-200 hover:border-emerald-600 text-left transition flex items-center gap-2 bg-[#f6f9f6]">
+                            <span class="w-5 h-5 rounded-full bg-[#3f6212] shrink-0 border border-white shadow"></span>
+                            <div>
+                                <div class="text-xs font-bold text-slate-800">Xanh Lá Sage</div>
+                                <div class="text-[10px] text-slate-500">Tối giản & Tinh tế</div>
+                            </div>
+                        </button>
+                        <button onclick="applyThemePreset('royal')"
+                            class="p-2.5 rounded-xl border border-slate-200 hover:border-blue-800 text-left transition flex items-center gap-2 bg-[#f8fafc]">
+                            <span class="w-5 h-5 rounded-full bg-[#1e3a8a] shrink-0 border border-white shadow"></span>
+                            <div>
+                                <div class="text-xs font-bold text-slate-800">Xanh Hoàng Gia</div>
+                                <div class="text-[10px] text-slate-500">Sang trọng &Hiện đại</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- 3 Nhóm Font Chữ Chủ Đạo -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">Hệ Thống Phông Chữ
+                        (Google Fonts)</label>
+
+                    <div>
+                        <span class="text-xs font-medium text-slate-700 block mb-1">1. Font Tên Cặp Đôi / Nghệ thuật
+                            (Script)</span>
+                        <select id="globalScriptFont" onchange="updateGlobalStyle('scriptFont', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:border-violet-600 focus:outline-none">
+                            <option value="'Philosopher', serif">Philosopher (Chuẩn mẫu MM03)</option>
+                            <option value="'Great Vibes', cursive">Great Vibes (Chữ ký mềm mại)</option>
+                            <option value="'Dancing Script', cursive">Dancing Script (Hiện đại bay bổng)</option>
+                            <option value="'Cormorant Garamond', serif">Cormorant Garamond (Thanh lịch)</option>
+                            <option value="'Playfair Display', serif">Playfair Display (Tạp chí sang trọng)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <span class="text-xs font-medium text-slate-700 block mb-1">2. Font Tiêu Đề Các Mục
+                            (Heading)</span>
+                        <select id="globalHeadingFont" onchange="updateGlobalStyle('headingFont', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:border-violet-600 focus:outline-none">
+                            <option value="'Philosopher', serif">Philosopher (Chuẩn mẫu MM03)</option>
+                            <option value="'Noto Serif', serif">Noto Serif (Trang trọng)</option>
+                            <option value="'Playfair Display', serif">Playfair Display (Cổ điển)</option>
+                            <option value="'Oswald', sans-serif">Oswald (Hiện đại, gọn gàng)</option>
+                            <option value="'Roboto Slab', serif">Roboto Slab (Rõ nét)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <span class="text-xs font-medium text-slate-700 block mb-1">3. Font Nội Dung Chi Tiết
+                            (Body)</span>
+                        <select id="globalBodyFont" onchange="updateGlobalStyle('bodyFont', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 focus:border-violet-600 focus:outline-none">
+                            <option value="'Noto Serif', serif">Noto Serif (Chuẩn mẫu MM03)</option>
+                            <option value="'Tinos', serif">Tinos (Cổ điển sắc nét)</option>
+                            <option value="'Open Sans', sans-serif">Open Sans (Dễ đọc, hiện đại)</option>
+                            <option value="'Montserrat', sans-serif">Montserrat (Trẻ trung)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Màu sắc tùy chỉnh -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">Bảng Màu Thiệp
+                        Cưới</label>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-700">Màu chủ đạo (Nút, Điểm nhấn)</span>
+                        <input type="color" id="inputPrimaryColor"
+                            onchange="updateGlobalStyle('primaryColor', this.value)"
+                            class="w-9 h-7 rounded cursor-pointer border border-slate-300">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-700">Màu nền thiệp chính</span>
+                        <input type="color" id="inputBgColor" onchange="updateGlobalStyle('bgColor', this.value)"
+                            class="w-9 h-7 rounded cursor-pointer border border-slate-300">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-700">Màu chữ chính</span>
+                        <input type="color" id="inputTextColor" onchange="updateGlobalStyle('textColor', this.value)"
+                            class="w-9 h-7 rounded cursor-pointer border border-slate-300">
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Hiệu ứng rơi -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">Hiệu Ứng Chuyển
+                        Động</label>
+                    <select id="selectFallingEffect" onchange="updateGlobalStyle('fallingEffect', this.value)"
+                        class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
+                        <option value="hearts">🌸 Cánh hoa & Tim hồng rơi nhẹ</option>
+                        <option value="sparkles">✨ Sao lấp lánh vàng kim</option>
+                        <option value="none">🚫 Tắt hiệu ứng rơi</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Tab 3: Nhạc nền, QR Ngân hàng & Google Sheet RSVP -->
+            <div id="leftTab-settings" class="hidden flex-1 overflow-y-auto p-4 space-y-5">
+                <!-- Nhạc nền -->
+                <div class="space-y-2">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">Nhạc Nền Thiệp Cưới
+                        (MP3)</label>
+                    <p class="text-[11px] text-slate-500">Chọn bài nhạc có sẵn hoặc dán link MP3 từ Vocaroo/Zing:</p>
+                    <select onchange="selectPresetAudio(this.value)"
+                        class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 mb-2">
+                        <option value="https://media.vocaroo.com/mp3/15iKnK2wEfyY">🎵 Nhạc gốc mẫu MM03 (Vocaroo)
+                        </option>
+                        <option value="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3">🎹 Piano
+                            Lãng Mạn (Wedding Day)</option>
+                        <option value="https://cdn.pixabay.com/download/audio/2022/03/15/audio_c8c8a73467.mp3">🎻
+                            Acoustic Ngọt Ngào (Forever Love)</option>
+                    </select>
+                    <input type="text" id="inputAudioUrl" oninput="updateGlobalStyle('audioUrl', this.value)"
+                        placeholder="Dán link file .mp3..."
+                        class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300">
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Tích hợp VietQR tự động cho Nhà Trai & Nhà Gái -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">Hộp Mừng Cưới (Tự Tạo
+                        Mã VietQR)</label>
+
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                        <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-tie text-blue-600"></i> QR Mừng Cưới Nhà Trai
+                        </div>
+                        <input type="text" id="groomBankName" oninput="updateBankInfo('groom', 'bank', this.value)"
+                            placeholder="Tên Ngân hàng (VD: MB, VCB, TCB...)"
+                            class="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300">
+                        <input type="text" id="groomBankAcc" oninput="updateBankInfo('groom', 'acc', this.value)"
+                            placeholder="Số tài khoản"
+                            class="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300">
+                        <input type="text" id="groomBankOwner" oninput="updateBankInfo('groom', 'owner', this.value)"
+                            placeholder="Chủ tài khoản"
+                            class="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300">
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                        <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-dress text-rose-600"></i> QR Mừng Cưới Nhà Gái
+                        </div>
+                        <input type="text" id="brideBankName" oninput="updateBankInfo('bride', 'bank', this.value)"
+                            placeholder="Tên Ngân hàng (VD: VCB, ACB, BIDV...)"
+                            class="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300">
+                        <input type="text" id="brideBankAcc" oninput="updateBankInfo('bride', 'acc', this.value)"
+                            placeholder="Số tài khoản"
+                            class="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300">
+                        <input type="text" id="brideBankOwner" oninput="updateBankInfo('bride', 'owner', this.value)"
+                            placeholder="Chủ tài khoản"
+                            class="w-full px-2.5 py-1.5 text-xs rounded border border-slate-300">
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- CENTER CANVAS: KHUNG THIỆP CƯỚI TƯƠNG TÁC (MOBILE-FIRST 430PX) -->
+        <main class="flex-1 bg-slate-200/80 overflow-y-auto flex justify-center py-6 px-4 relative"
+            id="canvasScrollArea">
+
+            <!-- Khung Điện Thoại Thiệp Cưới -->
+            <div id="weddingCardFrame"
+                class="w-full max-w-[430px] min-h-max shadow-2xl rounded-[28px] overflow-hidden relative transition-all duration-300 editor-mode border-[6px] border-white"
+                style="background-color: #fdfbf7; color: #3d312a;">
+
+                <!-- Lớp hiệu ứng hoa rơi -->
+                <div id="fallingContainer" class="inset-0 pointer-events-none overflow-hidden sticky top-0 h-0 z-40">
+                </div>
+
+                <!-- Nút Bật/Tắt Nhạc Nền Nổi -->
+                <button id="floatingMusicBtn" onclick="toggleAudioPlayback()"
+                    class="sticky top-4 left-4 z-50 w-10 h-10 rounded-full shadow-lg flex items-center justify-center text-white transition transform hover:scale-105 ml-4 mt-4"
+                    style="background-color: #8c6239;" title="Bật/Tắt nhạc cưới">
+                    <i id="musicIcon" class="fa-solid fa-music text-sm"></i>
+                </button>
+                <audio id="weddingAudio" loop preload="auto" src="https://media.vocaroo.com/mp3/15iKnK2wEfyY"></audio>
+
+                <!-- Vùng Chứa 6 Sections (Được kết xuất động theo thứ tự người dùng sắp xếp) -->
+                <div id="sectionsViewport" class="-mt-14">
+                    <!-- Nội dung các Section được vẽ tại đây bằng JS -->
+                </div>
+
+                <!-- Popup Hộp Mừng Cưới (QR Code) -->
+                <div id="giftModal"
+                    class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div
+                        class="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl relative animate-fadeIn">
+                        <button onclick="closeGiftModal()"
+                            class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                        <div class="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center text-white shadow"
+                            id="giftModalBadge" style="background-color: #8c6239;">
+                            <i class="fa-solid fa-gift text-lg"></i>
+                        </div>
+                        <h4 id="giftModalTitle" class="text-lg font-bold text-slate-800 mb-1">Gửi Mừng Cưới Nhà Trai
+                        </h4>
+                        <p class="text-xs text-slate-500 mb-4">Quét mã QR ngân hàng bên dưới để gửi lời chúc phúc</p>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 inline-block mb-3">
+                            <img id="giftModalQrImg" src="" alt="VietQR"
+                                class="w-48 h-48 object-contain mx-auto rounded-lg"
+                                onerror="this.src='https://placehold.co/250x250/f8fafc/64748b?text=VietQR'">
+                        </div>
+                        <div
+                            class="text-xs space-y-1 text-slate-700 bg-amber-50/70 p-3 rounded-xl border border-amber-200/70">
+                            <p>Ngân hàng: <strong id="giftModalBank">MB Bank</strong></p>
+                            <p>Số TK: <strong id="giftModalAcc" class="text-sm tracking-wider">0987654321</strong></p>
+                            <p>Chủ TK: <strong id="giftModalOwner">NGUYEN THANH TUNG</strong></p>
+                        </div>
+                        <button onclick="copyBankAccount()"
+                            class="mt-4 w-full py-2.5 rounded-xl text-xs font-semibold text-white shadow transition"
+                            id="giftModalCopyBtn" style="background-color: #8c6239;">
+                            <i class="fa-regular fa-copy mr-1"></i> Sao chép Số Tài Khoản
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- RIGHT SIDEBAR: BẢNG THUỘC TÍNH CHI TIẾT CỦA SECTION ĐANG CHỌN (CONTEXTUAL INSPECTOR) -->
+        <aside id="rightSidebar"
+            class="w-80 bg-white border-l border-slate-200 flex flex-col shrink-0 z-30 transition-all duration-300">
+            <div class="p-3.5 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-violet-600"></span>
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700" id="inspectorTitle">Chỉnh sửa
+                        Phần</h3>
+                </div>
+                <span class="text-[10px] px-2 py-0.5 bg-violet-100 text-violet-700 rounded font-semibold"
+                    id="inspectorBadge">Hero</span>
+            </div>
+
+            <!-- Nội dung Inspector thay đổi động theo Section đang chọn -->
+            <div id="inspectorContent" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
+                <!-- Được render tự động bằng JS -->
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- ================= MODAL XUẤT FILE HTML ĐỘC LẬP ================= -->
+    <div id="exportModal"
+        class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-file-code text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-base text-slate-800">Xuất Trang Web Thiệp Cưới Hoàn Chỉnh</h3>
+                        <p class="text-xs text-slate-500">File HTML độc lập đã đóng gói sẵn Font chữ, Bố cục, Nhạc nền,
+                            Đếm ngược & QR</p>
+                    </div>
+                </div>
+                <button onclick="closeExportModal()"
+                    class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="py-4 space-y-3 flex-1 overflow-hidden flex flex-col">
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="font-bold text-slate-700 mb-0.5">1. Tải file `.html`</div>
+                        <p class="text-[11px] text-slate-500">Bấm nút Tải xuống bên dưới để lưu file `index.html` về
+                            máy.</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="font-bold text-slate-700 mb-0.5">2. Đưa lên mạng miễn phí</div>
+                        <p class="text-[11px] text-slate-500">Kéo thả file lên <b>app.netlify.com/drop</b> hoặc
+                            <b>Vercel / GitHub Pages</b>.</p>
+                    </div>
+                    <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="font-bold text-slate-700 mb-0.5">3. Gửi thiệp mời</div>
+                        <p class="text-[11px] text-slate-500">Chia sẻ đường link qua Zalo, Messenger cho bạn bè & người
+                            thân.</p>
+                    </div>
+                </div>
+
+                <textarea id="exportedHtmlCode" readonly
+                    class="w-full flex-1 p-3 font-mono text-[11px] bg-slate-900 text-emerald-300 rounded-xl border border-slate-700 focus:outline-none resize-none"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+                <button onclick="copyExportedHtml()"
+                    class="px-4 py-2.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5">
+                    <i class="fa-regular fa-copy"></i> Sao chép Mã HTML
+                </button>
+                <button onclick="downloadExportedHtml()"
+                    class="px-5 py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 transition flex items-center gap-2">
+                    <i class="fa-solid fa-download"></i> Tải File index.html Về Máy
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Thông báo Toast nhỏ gọn (Thay thế hoàn toàn alert) -->
+    <div id="toastNotification"
+        class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-xs font-medium flex items-center gap-2 border border-slate-700">
+        <i class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toastMessage">Đã cập nhật!</span>
+    </div>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        // 1. DỮ LIỆU GỐC (MÔ PHỎNG CHUẨN ZIUWEDDING.SITE/MM03 - TÙNG & NGỌC)
+        const DEFAULT_STATE = {
+            selectedSectionId: 'hero',
+            isPreviewMode: false,
+            globalStyle: {
+                scriptFont: "'Philosopher', serif",
+                headingFont: "'Philosopher', serif",
+                bodyFont: "'Noto Serif', serif",
+                primaryColor: "#8c6239",
+                bgColor: "#fdfbf7",
+                textColor: "#3d312a",
+                fallingEffect: "hearts",
+                audioUrl: "https://media.vocaroo.com/mp3/15iKnK2wEfyY"
+            },
+            bankInfo: {
+                groom: { bank: "MB", acc: "0988123456", owner: "NGUYEN THANH TUNG" },
+                bride: { bank: "VCB", acc: "0123456789", owner: "TRAN KHANH NGOC" }
+            },
+            sections: [
+                {
+                    id: 'hero',
+                    name: '1. Trang Bìa (Save The Date)',
+                    icon: 'fa-heart',
+                    visible: true,
+                    customFont: '',
+                    customTitleSize: '36',
+                    customTextColor: '',
+                    data: {
+                        coupleShortName: 'Tùng & Ngọc',
+                        tagline: 'SAVE OUR DATE',
+                        dateDisplay: '24.10.2026',
+                        heroImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=900&q=80',
+                        subNote: 'Trân trọng báo tin lễ thành hôn của chúng mình'
+                    }
+                },
+                {
+                    id: 'family',
+                    name: '2. Thông Tin Gia Đình & Lời Mời',
+                    icon: 'fa-users',
+                    visible: true,
+                    customFont: '',
+                    customTitleSize: '28',
+                    customTextColor: '',
+                    data: {
+                        brideParents: 'Ông: Nguyễn Văn Đoàn\nBà: Vũ Thị Đương',
+                        brideAddress: 'Cẩm Lý, Lục Nam, Bắc Giang',
+                        groomParents: 'Ông: Nguyễn Văn Thắng\nBà: Lương Thị Tám',
+                        groomAddress: 'Cẩm Lý, Lục Nam, Bắc Giang',
+                        inviteHeader: 'TRÂN TRỌNG KÍNH MỜI',
+                        inviteSub: 'THAM DỰ LỄ CƯỚI CỦA CHÚNG MÌNH',
+                        groomFullName: 'Nguyễn Thanh Tùng',
+                        brideFullName: 'Trần Khánh Ngọc',
+                        coupleAvatar: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=700&q=80'
+                    }
+                },
+                {
+                    id: 'events',
+                    name: '3. Lịch Trình & Chỉ Đường',
+                    icon: 'fa-location-dot',
+                    visible: true,
+                    customFont: '',
+                    customTitleSize: '22',
+                    customTextColor: '',
+                    data: {
+                        event1Title: 'TIỆC MỪNG CƯỚI',
+                        event1Time: '16:00 - CHỦ NHẬT',
+                        event1Date: '24.10.2026',
+                        event1Lunar: '(Tức ngày 15 tháng 09 năm Bính Ngọ)',
+                        event1Venue: 'Tại Tư Gia Nhà Gái - Cẩm Lý, Lục Nam, Bắc Giang',
+                        event1MapUrl: 'https://maps.google.com/?q=Cam+Ly+Luc+Nam+Bac+Giang',
+                        event2Title: 'LỄ THÀNH HÔN',
+                        event2Time: '09:00 - THỨ HAI',
+                        event2Date: '25.10.2026',
+                        event2Lunar: '(Tức ngày 16 tháng 09 năm Bính Ngọ)',
+                        event2Venue: 'Tại Tư Gia Nhà Trai - Cẩm Lý, Lục Nam, Bắc Giang',
+                        event2MapUrl: 'https://maps.google.com/?q=Cam+Ly+Luc+Nam+Bac+Giang'
+                    }
+                },
+                {
+                    id: 'countdown',
+                    name: '4. Lịch Tháng & Đếm Ngược',
+                    icon: 'fa-calendar-check',
+                    visible: true,
+                    customFont: '',
+                    customTitleSize: '24',
+                    customTextColor: '',
+                    data: {
+                        quoteTitle: 'Happy Wedding',
+                        quoteText: '"It\'s been said that you only truly fall in love once, but don\'t believe it. Every time I see you, I fall in love all over again!"',
+                        weddingIsoDate: '2026-10-24T16:00:00',
+                        calendarTitle: 'THÁNG 10 / 2026'
+                    }
+                },
+                {
+                    id: 'rsvp',
+                    name: '5. Xác Nhận Tham Dự & Mừng Cưới',
+                    icon: 'fa-envelope-open-text',
+                    visible: true,
+                    customFont: '',
+                    customTitleSize: '20',
+                    customTextColor: '',
+                    data: {
+                        rsvpIntro: 'Hãy xác nhận sự có mặt của bạn để chúng mình chuẩn bị đón tiếp một cách chu đáo nhất. Trân trọng!',
+                        groomBtnText: 'GỬI MỪNG CƯỚI NHÀ TRAI',
+                        brideBtnText: 'GỬI MỪNG CƯỚI NHÀ GÁI'
+                    }
+                },
+                {
+                    id: 'album',
+                    name: '6. Album Ảnh & Lời Cảm Ơn',
+                    icon: 'fa-images',
+                    visible: true,
+                    customFont: '',
+                    customTitleSize: '26',
+                    customTextColor: '',
+                    data: {
+                        albumTitle: 'OUR ALBUM',
+                        albumSubtitle: 'CAPTURED WITH LOVE',
+                        photos: [
+                            'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=600&q=80',
+                            'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?auto=format&fit=crop&w=600&q=80',
+                            'https://images.unsplash.com/photo-1520854221256-17451cc331bf?auto=format&fit=crop&w=600&q=80',
+                            'https://images.unsplash.com/photo-1606800052052-a08af7148866?auto=format&fit=crop&w=600&q=80',
+                            'https://images.unsplash.com/photo-1537633552985-df8429e8048b?auto=format&fit=crop&w=600&q=80',
+                            'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=600&q=80'
+                        ],
+                        thankYouText: 'Sự hiện diện của Quý khách là niềm vinh hạnh đối với gia đình chúng tôi. Xin chân thành cảm ơn!',
+                        footerCredit: 'HIME WEDDING INVITATION'
+                    }
+                }
+            ]
+        };
+
+        let appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+        let countdownInterval = null;
+
+        // Danh sách các Font chữ cho phép chọn riêng ở từng Section
+        const FONT_OPTIONS = [
+            { label: 'Mặc định theo Giao diện chung', value: '' },
+            { label: 'Philosopher (Chuẩn mẫu MM03)', value: "'Philosopher', serif" },
+            { label: 'Noto Serif (Cổ điển trang trọng)', value: "'Noto Serif', serif" },
+            { label: 'Great Vibes (Chữ ký nghệ thuật)', value: "'Great Vibes', cursive" },
+            { label: 'Dancing Script (Bay bổng)', value: "'Dancing Script', cursive" },
+            { label: 'Playfair Display (Tạp chí)', value: "'Playfair Display', serif" },
+            { label: 'Cormorant Garamond (Tinh tế)', value: "'Cormorant Garamond', serif" },
+            { label: 'Oswald (Hiện đại in hoa)', value: "'Oswald', sans-serif" },
+            { label: 'Montserrat (Trẻ trung)', value: "'Montserrat', sans-serif" }
+        ];
+
+        // 2. KHỞI TẠO ỨNG DỤNG
+        window.onload = function () {
+            syncLeftControlsWithState();
+            renderAll();
+            initFallingEffect();
+            startCountdownTimer();
+        };
+
+        function showToast(msg) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').textContent = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 2400);
+        }
+
+        function syncLeftControlsWithState() {
+            document.getElementById('globalScriptFont').value = appState.globalStyle.scriptFont;
+            document.getElementById('globalHeadingFont').value = appState.globalStyle.headingFont;
+            document.getElementById('globalBodyFont').value = appState.globalStyle.bodyFont;
+            document.getElementById('inputPrimaryColor').value = appState.globalStyle.primaryColor;
+            document.getElementById('inputBgColor').value = appState.globalStyle.bgColor;
+            document.getElementById('inputTextColor').value = appState.globalStyle.textColor;
+            document.getElementById('selectFallingEffect').value = appState.globalStyle.fallingEffect;
+            document.getElementById('inputAudioUrl').value = appState.globalStyle.audioUrl;
+
+            document.getElementById('groomBankName').value = appState.bankInfo.groom.bank;
+            document.getElementById('groomBankAcc').value = appState.bankInfo.groom.acc;
+            document.getElementById('groomBankOwner').value = appState.bankInfo.groom.owner;
+
+            document.getElementById('brideBankName').value = appState.bankInfo.bride.bank;
+            document.getElementById('brideBankAcc').value = appState.bankInfo.bride.acc;
+            document.getElementById('brideBankOwner').value = appState.bankInfo.bride.owner;
+        }
+
+        function renderAll() {
+            renderSectionListSidebar();
+            renderWeddingCanvas();
+            renderRightInspector();
+        }
+
+        // 3. QUẢN LÝ SIDEBAR TRÁI (DANH SÁCH SECTION, SẮP XẾP, ẨN/HIỆN)
+        function switchLeftTab(tabName) {
+            ['sections', 'theme', 'settings'].forEach(t => {
+                document.getElementById(`leftTab-${t}`).classList.toggle('hidden', t !== tabName);
+                const btn = document.getElementById(`tabBtn-${t}`);
+                if (t === tabName) {
+                    btn.className = "py-3 flex flex-col items-center gap-1 border-b-2 border-violet-600 text-violet-700 bg-white";
+                } else {
+                    btn.className = "py-3 flex flex-col items-center gap-1 border-b-2 border-transparent text-slate-500 hover:text-slate-800";
+                }
+            });
+        }
+
+        function renderSectionListSidebar() {
+            const container = document.getElementById('sectionListContainer');
+            container.innerHTML = appState.sections.map((sec, idx) => {
+                const isSelected = sec.id === appState.selectedSectionId;
+                return `
+                <div onclick="selectSection('${sec.id}')" class="p-3 rounded-xl border transition cursor-pointer flex items-center justify-between ${isSelected ? 'bg-violet-50 border-violet-500 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'} ${!sec.visible ? 'opacity-50' : ''}">
+                    <div class="flex items-center gap-2.5 overflow-hidden">
+                        <div class="w-7 h-7 rounded-lg ${isSelected ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600'} flex items-center justify-center shrink-0 text-xs">
+                            <i class="fa-solid ${sec.icon}"></i>
+                        </div>
+                        <div class="truncate">
+                            <div class="text-xs font-semibold text-slate-800 truncate">${sec.name}</div>
+                            <div class="text-[10px] text-slate-400">${sec.visible ? 'Đang hiển thị' : 'Đang ẩn'}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
+                        <button onclick="moveSection(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="w-6 h-6 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 flex items-center justify-center" title="Lên trên">
+                            <i class="fa-solid fa-arrow-up text-[10px]"></i>
+                        </button>
+                        <button onclick="moveSection(${idx}, 1)" ${idx === appState.sections.length - 1 ? 'disabled' : ''} class="w-6 h-6 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 flex items-center justify-center" title="Xuống dưới">
+                            <i class="fa-solid fa-arrow-down text-[10px]"></i>
+                        </button>
+                        <button onclick="toggleSectionVisibility('${sec.id}')" class="w-6 h-6 rounded hover:bg-slate-200 ${sec.visible ? 'text-violet-600' : 'text-slate-400'} flex items-center justify-center" title="Ẩn/Hiện phần này">
+                            <i class="fa-solid ${sec.visible ? 'fa-eye' : 'fa-eye-slash'} text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function selectSection(secId) {
+            appState.selectedSectionId = secId;
+            renderSectionListSidebar();
+            renderRightInspector();
+
+            // Highlight trên khung Canvas
+            document.querySelectorAll('.wedding-section').forEach(el => {
+                el.classList.toggle('selected-section', el.dataset.sectionId === secId);
+            });
+
+            // Cuộn mượt tới section đó
+            const targetEl = document.querySelector(`.wedding-section[data-section-id="${secId}"]`);
+            if (targetEl) {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function moveSection(index, direction) {
+            const targetIndex = index + direction;
+            if (targetIndex < 0 || targetIndex >= appState.sections.length) return;
+            const temp = appState.sections[index];
+            appState.sections[index] = appState.sections[targetIndex];
+            appState.sections[targetIndex] = temp;
+            renderAll();
+            showToast("Đã thay đổi vị trí phần!");
+        }
+
+        function toggleSectionVisibility(secId) {
+            const sec = appState.sections.find(s => s.id === secId);
+            if (sec) {
+                sec.visible = !sec.visible;
+                renderAll();
+                showToast(sec.visible ? `Đã hiện: ${sec.name}` : `Đã ẩn: ${sec.name}`);
+            }
+        }
+
+        // 4. VẼ KHUNG THIỆP CƯỚI TRỰC TIẾP (CENTER CANVAS)
+        function generateCalendarHtml(isoDateStr, primaryColor) {
+            const d = new Date(isoDateStr || '2026-10-24T16:00:00');
+            const year = isNaN(d.getFullYear()) ? 2026 : d.getFullYear();
+            const month = isNaN(d.getMonth()) ? 9 : d.getMonth(); // 0-indexed
+            const weddingDay = isNaN(d.getDate()) ? 24 : d.getDate();
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay(); // 0 (CN) -> 6 (T7)
+            // Chuyển sang Thứ 2 là đầu tuần (0: T2 ... 6: CN)
+            const offset = (firstDayOfMonth + 6) % 7;
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            const weekDays = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+            let cells = weekDays.map(w => `<div class="font-bold text-[11px] py-1.5 opacity-70">${w}</div>`).join('');
+
+            for (let i = 0; i < offset; i++) {
+                cells += `<div></div>`;
+            }
+            for (let day = 1; day <= daysInMonth; day++) {
+                if (day === weddingDay) {
+                    cells += `
+                    <div class="relative flex items-center justify-center py-1">
+                        <span class="w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-md" style="background-color: ${primaryColor};">
+                            ${day}
+                        </span>
+                        <i class="fa-solid fa-heart text-[9px] absolute -top-0.5 right-1 text-rose-500"></i>
+                    </div>`;
+                } else {
+                    cells += `<div class="py-1.5 text-xs">${day}</div>`;
+                }
+            }
+            return cells;
+        }
+
+        function renderWeddingCanvas() {
+            const frame = document.getElementById('weddingCardFrame');
+            const viewport = document.getElementById('sectionsViewport');
+            const g = appState.globalStyle;
+
+            frame.style.backgroundColor = g.bgColor;
+            frame.style.color = g.textColor;
+            frame.style.fontFamily = g.bodyFont;
+            document.getElementById('floatingMusicBtn').style.backgroundColor = g.primaryColor;
+
+            viewport.innerHTML = appState.sections
+                .filter(sec => sec.visible)
+                .map(sec => {
+                    const isSelected = sec.id === appState.selectedSectionId;
+                    const secFont = sec.customFont || g.headingFont;
+                    const secColor = sec.customTextColor || g.textColor;
+                    const titleSize = sec.customTitleSize ? `${sec.customTitleSize}px` : '28px';
+
+                    let innerHtml = '';
+
+                    // --- SECTION 1: HERO BANNER ---
+                    if (sec.id === 'hero') {
+                        innerHtml = `
+                        <div class="relative text-center pb-8">
+                            <div class="relative h-[470px] overflow-hidden">
+                                <img src="${sec.data.heroImage}" alt="Wedding Banner" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x800/e2d9d0/5c4938?text=Wedding+Photo'">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
+                                <div class="absolute bottom-8 inset-x-4 text-white">
+                                    <p class="tracking-[0.28em] text-xs uppercase mb-2 opacity-90" contenteditable="true" onblur="updateSectionField('hero','tagline',this.innerText)">${sec.data.tagline}</p>
+                                    <h1 class="font-bold mb-2 drop-shadow" style="font-family: ${sec.customFont || g.scriptFont}; font-size: ${titleSize};" contenteditable="true" onblur="updateSectionField('hero','coupleShortName',this.innerText)">${sec.data.coupleShortName}</h1>
+                                    <div class="w-16 h-[1px] bg-white/70 mx-auto my-3"></div>
+                                    <p class="text-xl tracking-[0.2em] font-semibold" style="font-family: ${secFont};" contenteditable="true" onblur="updateSectionField('hero','dateDisplay',this.innerText)">${sec.data.dateDisplay}</p>
+                                </div>
+                            </div>
+                            <p class="text-xs italic mt-4 px-6 opacity-80" style="color: ${secColor};" contenteditable="true" onblur="updateSectionField('hero','subNote',this.innerText)">${sec.data.subNote}</p>
+                        </div>`;
+                    }
+
+                    // --- SECTION 2: THÔNG TIN GIA ĐÌNH & LỜI MỜI ---
+                    else if (sec.id === 'family') {
+                        innerHtml = `
+                        <div class="py-10 px-6 text-center space-y-6" style="color: ${secColor};">
+                            <!-- Nhà Trai & Nhà Gái -->
+                            <div class="grid grid-cols-2 gap-4 text-xs border-y border-amber-900/15 py-5">
+                                <div class="space-y-1 pr-2 border-r border-amber-900/15">
+                                    <p class="font-bold uppercase tracking-wider text-[11px]" style="color: ${g.primaryColor};">Nhà Trai</p>
+                                    <p class="whitespace-pre-line font-semibold leading-relaxed" contenteditable="true" onblur="updateSectionField('family','groomParents',this.innerText)">${sec.data.groomParents}</p>
+                                    <p class="text-[11px] opacity-75" contenteditable="true" onblur="updateSectionField('family','groomAddress',this.innerText)">${sec.data.groomAddress}</p>
+                                </div>
+                                <div class="space-y-1 pl-2">
+                                    <p class="font-bold uppercase tracking-wider text-[11px]" style="color: ${g.primaryColor};">Nhà Gái</p>
+                                    <p class="whitespace-pre-line font-semibold leading-relaxed" contenteditable="true" onblur="updateSectionField('family','brideParents',this.innerText)">${sec.data.brideParents}</p>
+                                    <p class="text-[11px] opacity-75" contenteditable="true" onblur="updateSectionField('family','brideAddress',this.innerText)">${sec.data.brideAddress}</p>
+                                </div>
+                            </div>
+
+                            <!-- Lời mời -->
+                            <div class="space-y-1.5">
+                                <h3 class="font-bold tracking-[0.15em] text-sm" style="font-family: ${secFont}; color: ${g.primaryColor};" contenteditable="true" onblur="updateSectionField('family','inviteHeader',this.innerText)">${sec.data.inviteHeader}</h3>
+                                <p class="text-[11px] uppercase tracking-widest opacity-75" contenteditable="true" onblur="updateSectionField('family','inviteSub',this.innerText)">${sec.data.inviteSub}</p>
+                            </div>
+
+                            <!-- Tên đầy đủ Cô Dâu & Chú Rể -->
+                            <div class="py-2 space-y-1" style="font-family: ${sec.customFont || g.scriptFont}; font-size: ${titleSize};">
+                                <div class="font-bold" contenteditable="true" onblur="updateSectionField('family','groomFullName',this.innerText)">${sec.data.groomFullName}</div>
+                                <div class="text-base opacity-70">&amp;</div>
+                                <div class="font-bold" contenteditable="true" onblur="updateSectionField('family','brideFullName',this.innerText)">${sec.data.brideFullName}</div>
+                            </div>
+
+                            <!-- Ảnh tròn cặp đôi -->
+                            <div class="w-48 h-60 mx-auto rounded-t-full overflow-hidden border-4 border-white shadow-lg">
+                                <img src="${sec.data.coupleAvatar}" alt="Couple" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Couple'">
+                            </div>
+                        </div>`;
+                    }
+
+                    // --- SECTION 3: LỊCH TRÌNH SỰ KIỆN & CHỈ ĐƯỜNG ---
+                    else if (sec.id === 'events') {
+                        innerHtml = `
+                        <div class="py-10 px-6 text-center space-y-6 bg-black/[0.02]" style="color: ${secColor};">
+                            <!-- Sự kiện 1: Tiệc Mừng Cưới -->
+                            <div class="bg-white/90 rounded-2xl p-6 shadow-sm border border-amber-900/10 space-y-2.5">
+                                <h3 class="font-bold tracking-widest uppercase" style="font-family: ${secFont}; font-size: ${titleSize}; color: ${g.primaryColor};" contenteditable="true" onblur="updateSectionField('events','event1Title',this.innerText)">${sec.data.event1Title}</h3>
+                                <div class="w-10 h-0.5 mx-auto opacity-40" style="background-color: ${g.primaryColor};"></div>
+                                <p class="font-bold text-sm tracking-wide" contenteditable="true" onblur="updateSectionField('events','event1Time',this.innerText)">${sec.data.event1Time}</p>
+                                <p class="text-2xl font-bold tracking-wider" style="color: ${g.primaryColor}; font-family: ${secFont};" contenteditable="true" onblur="updateSectionField('events','event1Date',this.innerText)">${sec.data.event1Date}</p>
+                                <p class="text-xs italic opacity-75" contenteditable="true" onblur="updateSectionField('events','event1Lunar',this.innerText)">${sec.data.event1Lunar}</p>
+                                <p class="text-xs font-medium pt-1" contenteditable="true" onblur="updateSectionField('events','event1Venue',this.innerText)">${sec.data.event1Venue}</p>
+                                <div class="pt-2">
+                                    <a href="${sec.data.event1MapUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold text-white shadow transition hover:opacity-90" style="background-color: ${g.primaryColor};">
+                                        <i class="fa-solid fa-location-dot"></i> XEM CHỈ ĐƯỜNG
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Sự kiện 2: Lễ Thành Hôn -->
+                            <div class="bg-white/90 rounded-2xl p-6 shadow-sm border border-amber-900/10 space-y-2.5">
+                                <h3 class="font-bold tracking-widest uppercase" style="font-family: ${secFont}; font-size: ${titleSize}; color: ${g.primaryColor};" contenteditable="true" onblur="updateSectionField('events','event2Title',this.innerText)">${sec.data.event2Title}</h3>
+                                <div class="w-10 h-0.5 mx-auto opacity-40" style="background-color: ${g.primaryColor};"></div>
+                                <p class="font-bold text-sm tracking-wide" contenteditable="true" onblur="updateSectionField('events','event2Time',this.innerText)">${sec.data.event2Time}</p>
+                                <p class="text-2xl font-bold tracking-wider" style="color: ${g.primaryColor}; font-family: ${secFont};" contenteditable="true" onblur="updateSectionField('events','event2Date',this.innerText)">${sec.data.event2Date}</p>
+                                <p class="text-xs italic opacity-75" contenteditable="true" onblur="updateSectionField('events','event2Lunar',this.innerText)">${sec.data.event2Lunar}</p>
+                                <p class="text-xs font-medium pt-1" contenteditable="true" onblur="updateSectionField('events','event2Venue',this.innerText)">${sec.data.event2Venue}</p>
+                                <div class="pt-2">
+                                    <a href="${sec.data.event2MapUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold text-white shadow transition hover:opacity-90" style="background-color: ${g.primaryColor};">
+                                        <i class="fa-solid fa-location-dot"></i> XEM CHỈ ĐƯỜNG
+                                    </a>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+
+                    // --- SECTION 4: LỊCH THÁNG & ĐẾM NGƯỢC (COUNTDOWN) ---
+                    else if (sec.id === 'countdown') {
+                        const calendarGrid = generateCalendarHtml(sec.data.weddingIsoDate, g.primaryColor);
+                        innerHtml = `
+                        <div class="py-10 px-6 text-center space-y-6" style="color: ${secColor};">
+                            <div class="space-y-2">
+                                <h3 class="font-bold" style="font-family: ${sec.customFont || g.scriptFont}; font-size: ${titleSize}; color: ${g.primaryColor};" contenteditable="true" onblur="updateSectionField('countdown','quoteTitle',this.innerText)">${sec.data.quoteTitle}</h3>
+                                <p class="text-xs italic leading-relaxed px-2 opacity-85" contenteditable="true" onblur="updateSectionField('countdown','quoteText',this.innerText)">${sec.data.quoteText}</p>
+                            </div>
+
+                            <!-- Tờ lịch tháng -->
+                            <div class="bg-white rounded-2xl p-5 shadow-sm border border-amber-900/10">
+                                <div class="font-bold text-sm tracking-widest uppercase mb-3 pb-2 border-b border-slate-100" style="color: ${g.primaryColor}; font-family: ${secFont};" contenteditable="true" onblur="updateSectionField('countdown','calendarTitle',this.innerText)">
+                                    ${sec.data.calendarTitle}
+                                </div>
+                                <div class="grid grid-cols-7 gap-1 text-center">
+                                    ${calendarGrid}
+                                </div>
+                            </div>
+
+                            <!-- Đồng hồ đếm ngược -->
+                            <div class="space-y-3 pt-2">
+                                <p class="text-xs font-bold tracking-[0.25em] uppercase opacity-75">COUNTDOWN</p>
+                                <div class="grid grid-cols-4 gap-2.5">
+                                    <div class="bg-white rounded-xl py-3 px-2 shadow-sm border border-amber-900/10">
+                                        <span id="cd-days" class="block text-xl font-bold" style="color: ${g.primaryColor}; font-family: ${secFont};">00</span>
+                                        <span class="text-[10px] uppercase opacity-70">Ngày</span>
+                                    </div>
+                                    <div class="bg-white rounded-xl py-3 px-2 shadow-sm border border-amber-900/10">
+                                        <span id="cd-hours" class="block text-xl font-bold" style="color: ${g.primaryColor}; font-family: ${secFont};">00</span>
+                                        <span class="text-[10px] uppercase opacity-70">Giờ</span>
+                                    </div>
+                                    <div class="bg-white rounded-xl py-3 px-2 shadow-sm border border-amber-900/10">
+                                        <span id="cd-mins" class="block text-xl font-bold" style="color: ${g.primaryColor}; font-family: ${secFont};">00</span>
+                                        <span class="text-[10px] uppercase opacity-70">Phút</span>
+                                    </div>
+                                    <div class="bg-white rounded-xl py-3 px-2 shadow-sm border border-amber-900/10">
+                                        <span id="cd-secs" class="block text-xl font-bold" style="color: ${g.primaryColor}; font-family: ${secFont};">00</span>
+                                        <span class="text-[10px] uppercase opacity-70">Giây</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+
+                    // --- SECTION 5: XÁC NHẬN THAM DỰ (RSVP) & HỘP MỪNG CƯỚI ---
+                    else if (sec.id === 'rsvp') {
+                        innerHtml = `
+                        <div class="py-10 px-6 text-center space-y-5 bg-black/[0.02]" style="color: ${secColor};">
+                            <h3 class="font-bold uppercase tracking-wider" style="font-family: ${secFont}; font-size: ${titleSize}; color: ${g.primaryColor};">Xác Nhận Tham Dự</h3>
+                            <p class="text-xs leading-relaxed opacity-85" contenteditable="true" onblur="updateSectionField('rsvp','rsvpIntro',this.innerText)">${sec.data.rsvpIntro}</p>
+
+                            <!-- Form RSVP -->
+                            <form onsubmit="handleRsvpSubmit(event)" class="bg-white p-5 rounded-2xl shadow-sm border border-amber-900/10 space-y-3 text-left text-xs">
+                                <div>
+                                    <label class="block font-semibold mb-1 opacity-80">Tên của bạn *</label>
+                                    <input type="text" required placeholder="Nhập họ và tên..." class="w-full px-3 py-2.5 rounded-xl border border-slate-200 focus:outline-none">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2.5">
+                                    <div>
+                                        <label class="block font-semibold mb-1 opacity-80">Khách của</label>
+                                        <select class="w-full px-3 py-2.5 rounded-xl border border-slate-200">
+                                            <option>Nhà Trai</option>
+                                            <option>Nhà Gái</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block font-semibold mb-1 opacity-80">Số người đi cùng</label>
+                                        <select class="w-full px-3 py-2.5 rounded-xl border border-slate-200">
+                                            <option>Đi 1 mình</option>
+                                            <option>Đi cùng 1 người</option>
+                                            <option>Đi cùng gia đình</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold mb-1 opacity-80">Lời chúc gửi tới cô dâu & chú rể</label>
+                                    <textarea rows="2" placeholder="Chúc hai bạn trăm năm hạnh phúc..." class="w-full px-3 py-2 rounded-xl border border-slate-200 focus:outline-none"></textarea>
+                                </div>
+                                <button type="submit" class="w-full py-3 rounded-xl font-bold text-white shadow transition hover:opacity-95 text-center" style="background-color: ${g.primaryColor};">
+                                    GỬI XÁC NHẬN & LỜI CHÚC
+                                </button>
+                            </form>
+
+                            <!-- 2 Nút Gửi Mừng Cưới Nhà Trai / Nhà Gái -->
+                            <div class="pt-2 space-y-2.5">
+                                <button onclick="openGiftModal('groom'); event.stopPropagation();" class="w-full py-3 px-4 rounded-xl font-bold text-xs text-white shadow flex items-center justify-center gap-2 transition transform hover:scale-[1.01]" style="background-color: ${g.primaryColor};">
+                                    <i class="fa-solid fa-gift"></i>
+                                    <span contenteditable="true" onblur="updateSectionField('rsvp','groomBtnText',this.innerText)">${sec.data.groomBtnText}</span>
+                                </button>
+                                <button onclick="openGiftModal('bride'); event.stopPropagation();" class="w-full py-3 px-4 rounded-xl font-bold text-xs border-2 bg-white shadow-sm flex items-center justify-center gap-2 transition transform hover:scale-[1.01]" style="border-color: ${g.primaryColor}; color: ${g.primaryColor};">
+                                    <i class="fa-solid fa-heart"></i>
+                                    <span contenteditable="true" onblur="updateSectionField('rsvp','brideBtnText',this.innerText)">${sec.data.brideBtnText}</span>
+                                </button>
+                            </div>
+                        </div>`;
+                    }
+
+                    // --- SECTION 6: ALBUM ẢNH & LỜI CẢM ƠN ---
+                    else if (sec.id === 'album') {
+                        const photosGrid = sec.data.photos.map((url, idx) => `
+                            <div class="overflow-hidden rounded-xl shadow-sm border border-white aspect-[3/4] bg-slate-100 group">
+                                <img src="${url}" alt="Album ${idx + 1}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105" onerror="this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Wedding+Photo'">
+                            </div>
+                        `).join('');
+
+                        innerHtml = `
+                        <div class="py-10 px-6 text-center space-y-6" style="color: ${secColor};">
+                            <div class="space-y-1">
+                                <h3 class="font-bold tracking-widest uppercase" style="font-family: ${secFont}; font-size: ${titleSize}; color: ${g.primaryColor};" contenteditable="true" onblur="updateSectionField('album','albumTitle',this.innerText)">${sec.data.albumTitle}</h3>
+                                <p class="text-[11px] tracking-[0.22em] uppercase opacity-70" contenteditable="true" onblur="updateSectionField('album','albumSubtitle',this.innerText)">${sec.data.albumSubtitle}</p>
+                            </div>
+
+                            <!-- Lưới 6 ảnh cưới -->
+                            <div class="grid grid-cols-2 gap-2.5">
+                                ${photosGrid}
+                            </div>
+
+                            <!-- Lời cảm ơn -->
+                            <div class="pt-6 border-t border-amber-900/15 space-y-2">
+                                <h4 class="text-3xl font-bold" style="font-family: ${g.scriptFont}; color: ${g.primaryColor};">Thank you!</h4>
+                                <p class="text-xs leading-relaxed px-2 opacity-85" contenteditable="true" onblur="updateSectionField('album','thankYouText',this.innerText)">${sec.data.thankYouText}</p>
+                            </div>
+
+                            <!-- Footer Credit -->
+                            <div class="pt-4 text-[10px] tracking-[0.2em] uppercase opacity-50" contenteditable="true" onblur="updateSectionField('album','footerCredit',this.innerText)">
+                                ${sec.data.footerCredit}
+                            </div>
+                        </div>`;
+                    }
+
+                    return `
+                    <section data-section-id="${sec.id}" onclick="selectSection('${sec.id}')" class="wedding-section ${isSelected ? 'selected-section' : ''}">
+                        <!-- Nhãn công cụ nổi kiểu Canva khi di chuột vào Section -->
+                        <div class="section-badge absolute top-2 right-2 z-30 items-center gap-1 bg-violet-600 text-white text-[10px] font-semibold px-2.5 py-1 rounded-full shadow-md">
+                            <i class="fa-solid fa-pen-ruler"></i>
+                            <span>${sec.name}</span>
+                        </div>
+                        ${innerHtml}
+                    </section>`;
+                }).join('');
+
+            updateCountdownDisplay();
+        }
+
+        // 5. BẢNG THUỘC TÍNH BÊN PHẢI (CONTEXTUAL INSPECTOR CHO TỪNG SECTION)
+        function renderRightInspector() {
+            const sec = appState.sections.find(s => s.id === appState.selectedSectionId);
+            if (!sec) return;
+
+            document.getElementById('inspectorTitle').textContent = sec.name;
+            document.getElementById('inspectorBadge').textContent = sec.id.toUpperCase();
+
+            const fontOptionsHtml = FONT_OPTIONS.map(opt =>
+                `<option value="${opt.value}" ${sec.customFont === opt.value ? 'selected' : ''}>${opt.label}</option>`
+            ).join('');
+
+            let specificFieldsHtml = '';
+
+            if (sec.id === 'hero') {
+                specificFieldsHtml = `
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tên Cặp Đôi (Trang bìa)</label>
+                        <input type="text" value="${sec.data.coupleShortName}" oninput="updateSectionField('hero','coupleShortName',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Thông điệp</label>
+                            <input type="text" value="${sec.data.tagline}" oninput="updateSectionField('hero','tagline',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Ngày hiển thị</label>
+                            <input type="text" value="${sec.data.dateDisplay}" oninput="updateSectionField('hero','dateDisplay',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Ảnh Bìa Chính (URL hoặc Tải ảnh)</label>
+                        <input type="text" value="${sec.data.heroImage}" oninput="updateSectionField('hero','heroImage',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300 mb-1.5">
+                        <label class="w-full py-2 px-3 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 font-semibold border border-violet-200 cursor-pointer flex items-center justify-center gap-1.5 transition">
+                            <i class="fa-solid fa-upload"></i> Tải ảnh từ máy tính
+                            <input type="file" accept="image/*" class="hidden" onchange="handleLocalImageUpload(event, 'hero', 'heroImage')">
+                        </label>
+                    </div>
+                `;
+            } else if (sec.id === 'family') {
+                specificFieldsHtml = `
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Họ tên Chú Rể</label>
+                            <input type="text" value="${sec.data.groomFullName}" oninput="updateSectionField('family','groomFullName',this.value,true)" class="w-full px-2.5 py-2 rounded-lg border border-slate-300">
+                        </div>
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Họ tên Cô Dâu</label>
+                            <input type="text" value="${sec.data.brideFullName}" oninput="updateSectionField('family','brideFullName',this.value,true)" class="w-full px-2.5 py-2 rounded-lg border border-slate-300">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Phụ huynh Nhà Trai</label>
+                        <textarea rows="2" oninput="updateSectionField('family','groomParents',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">${sec.data.groomParents}</textarea>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Địa chỉ Nhà Trai</label>
+                        <input type="text" value="${sec.data.groomAddress}" oninput="updateSectionField('family','groomAddress',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Phụ huynh Nhà Gái</label>
+                        <textarea rows="2" oninput="updateSectionField('family','brideParents',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">${sec.data.brideParents}</textarea>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Địa chỉ Nhà Gái</label>
+                        <input type="text" value="${sec.data.brideAddress}" oninput="updateSectionField('family','brideAddress',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Ảnh Cặp Đôi (Khung vòm)</label>
+                        <input type="text" value="${sec.data.coupleAvatar}" oninput="updateSectionField('family','coupleAvatar',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300 mb-1.5">
+                        <label class="w-full py-2 px-3 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 font-semibold border border-violet-200 cursor-pointer flex items-center justify-center gap-1.5 transition">
+                            <i class="fa-solid fa-upload"></i> Đổi ảnh từ máy tính
+                            <input type="file" accept="image/*" class="hidden" onchange="handleLocalImageUpload(event, 'family', 'coupleAvatar')">
+                        </label>
+                    </div>
+                `;
+            } else if (sec.id === 'events') {
+                specificFieldsHtml = `
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                        <div class="font-bold text-violet-700">Sự kiện 1 (Tiệc Cưới)</div>
+                        <input type="text" value="${sec.data.event1Title}" oninput="updateSectionField('events','event1Title',this.value,true)" placeholder="Tên sự kiện" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event1Time}" oninput="updateSectionField('events','event1Time',this.value,true)" placeholder="Giờ & Thứ" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event1Date}" oninput="updateSectionField('events','event1Date',this.value,true)" placeholder="Ngày dương lịch" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event1Lunar}" oninput="updateSectionField('events','event1Lunar',this.value,true)" placeholder="Ngày âm lịch" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event1Venue}" oninput="updateSectionField('events','event1Venue',this.value,true)" placeholder="Địa điểm" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event1MapUrl}" oninput="updateSectionField('events','event1MapUrl',this.value,true)" placeholder="Link Google Maps" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                    </div>
+
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+                        <div class="font-bold text-violet-700">Sự kiện 2 (Lễ Thành Hôn)</div>
+                        <input type="text" value="${sec.data.event2Title}" oninput="updateSectionField('events','event2Title',this.value,true)" placeholder="Tên sự kiện" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event2Time}" oninput="updateSectionField('events','event2Time',this.value,true)" placeholder="Giờ & Thứ" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event2Date}" oninput="updateSectionField('events','event2Date',this.value,true)" placeholder="Ngày dương lịch" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event2Lunar}" oninput="updateSectionField('events','event2Lunar',this.value,true)" placeholder="Ngày âm lịch" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event2Venue}" oninput="updateSectionField('events','event2Venue',this.value,true)" placeholder="Địa điểm" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                        <input type="text" value="${sec.data.event2MapUrl}" oninput="updateSectionField('events','event2MapUrl',this.value,true)" placeholder="Link Google Maps" class="w-full px-2.5 py-1.5 rounded border border-slate-300">
+                    </div>
+                `;
+            } else if (sec.id === 'countdown') {
+                specificFieldsHtml = `
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Ngày & Giờ Cưới (Tự động vẽ Lịch & Đếm ngược)</label>
+                        <input type="datetime-local" value="${sec.data.weddingIsoDate}" onchange="updateWeddingDateTime(this.value)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Tiêu đề Tháng hiển thị</label>
+                        <input type="text" value="${sec.data.calendarTitle}" oninput="updateSectionField('countdown','calendarTitle',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Câu trích dẫn (Quote)</label>
+                        <textarea rows="3" oninput="updateSectionField('countdown','quoteText',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">${sec.data.quoteText}</textarea>
+                    </div>
+                `;
+            } else if (sec.id === 'rsvp') {
+                specificFieldsHtml = `
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Lời nhắn xác nhận tham dự</label>
+                        <textarea rows="3" oninput="updateSectionField('rsvp','rsvpIntro',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">${sec.data.rsvpIntro}</textarea>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Chữ trên nút QR Nhà Trai</label>
+                        <input type="text" value="${sec.data.groomBtnText}" oninput="updateSectionField('rsvp','groomBtnText',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Chữ trên nút QR Nhà Gái</label>
+                        <input type="text" value="${sec.data.brideBtnText}" oninput="updateSectionField('rsvp','brideBtnText',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    </div>
+                `;
+            } else if (sec.id === 'album') {
+                const photoInputs = sec.data.photos.map((url, i) => `
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-[10px] font-bold text-slate-400 w-4">#${i + 1}</span>
+                        <input type="text" value="${url}" oninput="updateAlbumPhoto(${i}, this.value)" class="flex-1 px-2 py-1.5 rounded border border-slate-300 text-[11px]">
+                        <label class="px-2 py-1.5 rounded bg-slate-100 hover:bg-slate-200 cursor-pointer text-slate-600" title="Tải ảnh lên">
+                            <i class="fa-solid fa-upload"></i>
+                            <input type="file" accept="image/*" class="hidden" onchange="handleAlbumFileUpload(event, ${i})">
+                        </label>
+                    </div>
+                `).join('');
+
+                specificFieldsHtml = `
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1.5">Danh sách 6 ảnh trong Album</label>
+                        <div class="space-y-2">${photoInputs}</div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Lời cảm ơn cuối thiệp</label>
+                        <textarea rows="2" oninput="updateSectionField('album','thankYouText',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">${sec.data.thankYouText}</textarea>
+                    </div>
+                `;
+            }
+
+            document.getElementById('inspectorContent').innerHTML = `
+                <!-- Khối Tùy chỉnh Font & Cỡ chữ riêng cho Section này (Canva Style) -->
+                <div class="p-3.5 rounded-xl bg-violet-50/70 border border-violet-200 space-y-3">
+                    <div class="font-bold text-violet-900 flex items-center gap-1.5">
+                        <i class="fa-solid fa-font text-violet-600"></i> Kiểu chữ riêng của Phần này
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Phông chữ Tiêu đề phần này</label>
+                        <select onchange="updateSectionStyle('${sec.id}', 'customFont', this.value)" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
+                            ${fontOptionsHtml}
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-600 mb-1">Cỡ tiêu đề (${sec.customTitleSize}px)</label>
+                            <input type="range" min="18" max="48" value="${sec.customTitleSize}" oninput="updateSectionStyle('${sec.id}', 'customTitleSize', this.value)" class="w-full accent-violet-600 mt-1.5">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-medium text-slate-600 mb-1">Màu chữ riêng</label>
+                            <div class="flex items-center gap-1.5">
+                                <input type="color" value="${sec.customTextColor || appState.globalStyle.textColor}" onchange="updateSectionStyle('${sec.id}', 'customTextColor', this.value)" class="w-8 h-7 rounded border border-slate-300 cursor-pointer">
+                                <button onclick="updateSectionStyle('${sec.id}', 'customTextColor', '')" class="text-[10px] text-slate-500 underline">Mặc định</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-200">
+
+                <!-- Nội dung chi tiết của Section -->
+                <div class="space-y-3">
+                    <div class="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Nội dung chi tiết</div>
+                    ${specificFieldsHtml}
+                </div>
+            `;
+        }
+
+        // 6. CÁC HÀM CẬP NHẬT TRẠNG THÁI & GIAO DIỆN
+        function updateSectionStyle(secId, prop, value) {
+            const sec = appState.sections.find(s => s.id === secId);
+            if (!sec) return;
+            sec[prop] = value;
+            renderWeddingCanvas();
+            renderRightInspector();
+        }
+
+        function updateSectionField(secId, fieldKey, value, fromInspector = false) {
+            const sec = appState.sections.find(s => s.id === secId);
+            if (!sec) return;
+            sec.data[fieldKey] = value;
+            renderWeddingCanvas();
+            if (!fromInspector) {
+                renderRightInspector();
+            }
+        }
+
+        function updateWeddingDateTime(isoVal) {
+            const sec = appState.sections.find(s => s.id === 'countdown');
+            if (!sec) return;
+            sec.data.weddingIsoDate = isoVal;
+            const d = new Date(isoVal);
+            if (!isNaN(d.getTime())) {
+                sec.data.calendarTitle = `THÁNG ${d.getMonth() + 1} / ${d.getFullYear()}`;
+            }
+            renderWeddingCanvas();
+            renderRightInspector();
+            showToast("Đã cập nhật Lịch tháng & Đồng hồ đếm ngược!");
+        }
+
+        function updateAlbumPhoto(index, url) {
+            const sec = appState.sections.find(s => s.id === 'album');
+            if (sec) {
+                sec.data.photos[index] = url;
+                renderWeddingCanvas();
+            }
+        }
+
+        function handleLocalImageUpload(event, secId, fieldKey) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                updateSectionField(secId, fieldKey, e.target.result, false);
+                showToast("Đã tải ảnh lên thành công!");
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleAlbumFileUpload(event, idx) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                updateAlbumPhoto(idx, e.target.result);
+                renderRightInspector();
+                showToast(`Đã cập nhật ảnh Album #${idx + 1}!`);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateGlobalStyle(key, val) {
+            appState.globalStyle[key] = val;
+            if (key === 'audioUrl') {
+                const audio = document.getElementById('weddingAudio');
+                audio.src = val;
+            }
+            if (key === 'fallingEffect') {
+                initFallingEffect();
+            }
+            renderWeddingCanvas();
+        }
+
+        function selectPresetAudio(url) {
+            document.getElementById('inputAudioUrl').value = url;
+            updateGlobalStyle('audioUrl', url);
+            showToast("Đã đổi nhạc nền thiệp cưới!");
+        }
+
+        function applyThemePreset(presetName) {
+            const presets = {
+                classic: {
+                    scriptFont: "'Philosopher', serif",
+                    headingFont: "'Philosopher', serif",
+                    bodyFont: "'Noto Serif', serif",
+                    primaryColor: "#8c6239",
+                    bgColor: "#fdfbf7",
+                    textColor: "#3d312a"
+                },
+                blush: {
+                    scriptFont: "'Great Vibes', cursive",
+                    headingFont: "'Playfair Display', serif",
+                    bodyFont: "'Montserrat', sans-serif",
+                    primaryColor: "#be185d",
+                    bgColor: "#fff9fb",
+                    textColor: "#4a1d32"
+                },
+                sage: {
+                    scriptFont: "'Cormorant Garamond', serif",
+                    headingFont: "'Cormorant Garamond', serif",
+                    bodyFont: "'Open Sans', sans-serif",
+                    primaryColor: "#3f6212",
+                    bgColor: "#f7faf7",
+                    textColor: "#263819"
+                },
+                royal: {
+                    scriptFont: "'Dancing Script', cursive",
+                    headingFont: "'Playfair Display', serif",
+                    bodyFont: "'Noto Serif', serif",
+                    primaryColor: "#1e3a8a",
+                    bgColor: "#f8fafc",
+                    textColor: "#1e293b"
+                }
+            };
+            const p = presets[presetName];
+            if (!p) return;
+            Object.assign(appState.globalStyle, p);
+            syncLeftControlsWithState();
+            renderWeddingCanvas();
+            showToast("Đã áp dụng bộ phối màu & phông chữ mới!");
+        }
+
+        function updateBankInfo(side, field, value) {
+            appState.bankInfo[side][field] = value;
+        }
+
+        // 7. ĐỒNG HỒ ĐẾM NGƯỢC, NHẠC NỀN, HOA RƠI & POPUP QR
+        function startCountdownTimer() {
+            if (countdownInterval) clearInterval(countdownInterval);
+            countdownInterval = setInterval(updateCountdownDisplay, 1000);
+        }
+
+        function updateCountdownDisplay() {
+            const sec = appState.sections.find(s => s.id === 'countdown');
+            if (!sec || !sec.visible) return;
+
+            const target = new Date(sec.data.weddingIsoDate).getTime();
+            const now = new Date().getTime();
+            const diff = Math.max(0, target - now);
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+            const mins = Math.floor((diff / 1000 / 60) % 60);
+            const secs = Math.floor((diff / 1000) % 60);
+
+            const elD = document.getElementById('cd-days');
+            const elH = document.getElementById('cd-hours');
+            const elM = document.getElementById('cd-mins');
+            const elS = document.getElementById('cd-secs');
+
+            if (elD) elD.textContent = String(days).padStart(2, '0');
+            if (elH) elH.textContent = String(hours).padStart(2, '0');
+            if (elM) elM.textContent = String(mins).padStart(2, '0');
+            if (elS) elS.textContent = String(secs).padStart(2, '0');
+        }
+
+        function toggleAudioPlayback() {
+            const audio = document.getElementById('weddingAudio');
+            const btn = document.getElementById('floatingMusicBtn');
+            const icon = document.getElementById('musicIcon');
+            if (audio.paused) {
+                audio.play().then(() => {
+                    btn.classList.add('spin-music');
+                    icon.className = 'fa-solid fa-compact-disc text-base';
+                    showToast("Đang phát nhạc nền thiệp cưới ♫");
+                }).catch(() => {
+                    showToast("Không thể phát đường dẫn nhạc này.");
+                });
+            } else {
+                audio.pause();
+                btn.classList.remove('spin-music');
+                icon.className = 'fa-solid fa-music text-sm';
+            }
+        }
+
+        function initFallingEffect() {
+            const container = document.getElementById('fallingContainer');
+            container.innerHTML = '';
+            const mode = appState.globalStyle.fallingEffect;
+            if (mode === 'none') return;
+
+            const symbols = mode === 'hearts' ? ['🌸', '💮', '💗'] : ['✨', '⭐', '💛'];
+            for (let i = 0; i < 12; i++) {
+                const span = document.createElement('span');
+                span.className = 'petal';
+                span.textContent = symbols[i % symbols.length];
+                span.style.left = `${Math.random() * 92}%`;
+                span.style.fontSize = `${10 + Math.random() * 8}px`;
+                span.style.animationDuration = `${6 + Math.random() * 7}s`;
+                span.style.animationDelay = `${Math.random() * 5}s`;
+                container.appendChild(span);
+            }
+        }
+
+        function openGiftModal(side) {
+            const info = appState.bankInfo[side];
+            const modal = document.getElementById('giftModal');
+            const primary = appState.globalStyle.primaryColor;
+
+            document.getElementById('giftModalBadge').style.backgroundColor = primary;
+            document.getElementById('giftModalCopyBtn').style.backgroundColor = primary;
+            document.getElementById('giftModalTitle').textContent = side === 'groom' ? 'Gửi Mừng Cưới Nhà Trai' : 'Gửi Mừng Cưới Nhà Gái';
+            document.getElementById('giftModalBank').textContent = info.bank;
+            document.getElementById('giftModalAcc').textContent = info.acc;
+            document.getElementById('giftModalOwner').textContent = info.owner;
+
+            const qrUrl = `https://img.vietqr.io/image/${encodeURIComponent(info.bank.trim())}-${encodeURIComponent(info.acc.trim())}-compact2.png?accountName=${encodeURIComponent(info.owner.trim())}`;
+            document.getElementById('giftModalQrImg').src = qrUrl;
+
+            modal.classList.remove('hidden');
+        }
+
+        function closeGiftModal() {
+            document.getElementById('giftModal').classList.add('hidden');
+        }
+
+        function copyBankAccount() {
+            const acc = document.getElementById('giftModalAcc').textContent;
+            const tempInput = document.createElement('input');
+            tempInput.value = acc;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempInput);
+            showToast(`Đã sao chép STK: ${acc}`);
+        }
+
+        function handleRsvpSubmit(e) {
+            e.preventDefault();
+            showToast("Cảm ơn bạn đã gửi lời chúc & xác nhận tham dự!");
+            e.target.reset();
+        }
+
+        // 8. CHẾ ĐỘ XEM THỰC TẾ (PREVIEW) & KHÔI PHỤC MẶC ĐỊNH
+        function setPreviewMode(isPreview) {
+            appState.isPreviewMode = isPreview;
+            const left = document.getElementById('leftSidebar');
+            const right = document.getElementById('rightSidebar');
+            const card = document.getElementById('weddingCardFrame');
+            const btnEdit = document.getElementById('btnModeEdit');
+            const btnPreview = document.getElementById('btnModePreview');
+
+            if (isPreview) {
+                left.classList.add('hidden');
+                right.classList.add('hidden');
+                card.classList.remove('editor-mode');
+                btnPreview.className = "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-violet-600 text-white shadow transition";
+                btnEdit.className = "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 text-slate-300 hover:text-white transition";
+            } else {
+                left.classList.remove('hidden');
+                right.classList.remove('hidden');
+                card.classList.add('editor-mode');
+                btnEdit.className = "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 bg-violet-600 text-white shadow transition";
+                btnPreview.className = "px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1.5 text-slate-300 hover:text-white transition";
+            }
+        }
+
+        function resetToDefault() {
+            appState = JSON.parse(JSON.stringify(DEFAULT_STATE));
+            syncLeftControlsWithState();
+            renderAll();
+            initFallingEffect();
+            showToast("Đã khôi phục về mẫu gốc MM03!");
+        }
+
+        // 9. TRÌNH XUẤT FILE HTML ĐỘC LẬP (1-CLICK EXPORT STANDALONE WEB PAGE)
+        function openExportModal() {
+            const g = appState.globalStyle;
+            const heroSec = appState.sections.find(s => s.id === 'hero');
+            const pageTitle = heroSec ? `Thiệp Cưới ${heroSec.data.coupleShortName}` : 'Thiệp Cưới Online';
+            const cdSec = appState.sections.find(s => s.id === 'countdown');
+            const targetIso = cdSec ? cdSec.data.weddingIsoDate : '2026-10-24T16:00:00';
+
+            // Lấy phần HTML nội dung của các section nhưng loại bỏ các thuộc tính contenteditable và thanh badge công cụ
+            const cloneViewport = document.getElementById('sectionsViewport').cloneNode(true);
+            cloneViewport.querySelectorAll('.section-badge').forEach(el => el.remove());
+            cloneViewport.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+            cloneViewport.querySelectorAll('[onblur]').forEach(el => el.removeAttribute('onblur'));
+            cloneViewport.querySelectorAll('.wedding-section').forEach(el => {
+                el.removeAttribute('onclick');
+                el.classList.remove('selected-section');
+            });
+
+            const standaloneHtml = `<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${pageTitle}</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Montserrat:wght@400;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600&family=Oswald:wght@400;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #e2e8f0; margin: 0; padding: 0; }
+        @keyframes spinSlow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spin-music { animation: spinSlow 6s linear infinite; }
+    </style>
+</head>
+<body class="min-h-screen flex justify-center">
+    <div class="w-full max-w-[430px] min-h-screen shadow-2xl relative overflow-hidden" style="background-color: ${g.bgColor}; color: ${g.textColor}; font-family: ${g.bodyFont};">
+        <button id="floatingMusicBtn" onclick="toggleAudioPlayback()" class="fixed bottom-5 left-5 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center text-white" style="background-color: ${g.primaryColor};">
+            <i id="musicIcon" class="fa-solid fa-music"></i>
+        </button>
+        <audio id="weddingAudio" loop preload="auto" src="${g.audioUrl}"></audio>
+
+        <div>${cloneViewport.innerHTML}</div>
+
+        <!-- Popup QR Mừng Cưới -->
+        <div id="giftModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl relative">
+                <button onclick="document.getElementById('giftModal').classList.add('hidden')" class="absolute top-3 right-3 w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600">✕</button>
+                <h4 id="giftModalTitle" class="text-lg font-bold text-slate-800 mb-2">Mừng Cưới</h4>
+                <img id="giftModalQrImg" src="" alt="VietQR" class="w-48 h-48 object-contain mx-auto mb-3 border rounded-xl p-2">
+                <div class="text-xs space-y-1 text-slate-700 bg-amber-50 p-3 rounded-xl">
+                    <p>Ngân hàng: <strong id="giftModalBank"></strong></p>
+                    <p>Số TK: <strong id="giftModalAcc"></strong></p>
+                    <p>Chủ TK: <strong id="giftModalOwner"></strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const BANK_INFO = ${JSON.stringify(appState.bankInfo)};
+        const TARGET_DATE = new Date("${targetIso}").getTime();
+
+        function updateCountdown() {
+            const diff = Math.max(0, TARGET_DATE - Date.now());
+            const d = Math.floor(diff / 86400000);
+            const h = Math.floor((diff / 3600000) % 24);
+            const m = Math.floor((diff / 60000) % 60);
+            const s = Math.floor((diff / 1000) % 60);
+            if(document.getElementById('cd-days')) document.getElementById('cd-days').textContent = String(d).padStart(2,'0');
+            if(document.getElementById('cd-hours')) document.getElementById('cd-hours').textContent = String(h).padStart(2,'0');
+            if(document.getElementById('cd-mins')) document.getElementById('cd-mins').textContent = String(m).padStart(2,'0');
+            if(document.getElementById('cd-secs')) document.getElementById('cd-secs').textContent = String(s).padStart(2,'0');
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        function toggleAudioPlayback() {
+            const a = document.getElementById('weddingAudio');
+            const b = document.getElementById('floatingMusicBtn');
+            if (a.paused) { a.play(); b.classList.add('spin-music'); }
+            else { a.pause(); b.classList.remove('spin-music'); }
+        }
+
+        function openGiftModal(side) {
+            const info = BANK_INFO[side];
+            document.getElementById('giftModalTitle').textContent = side === 'groom' ? 'Gửi Mừng Cưới Nhà Trai' : 'Gửi Mừng Cưới Nhà Gái';
+            document.getElementById('giftModalBank').textContent = info.bank;
+            document.getElementById('giftModalAcc').textContent = info.acc;
+            document.getElementById('giftModalOwner').textContent = info.owner;
+            document.getElementById('giftModalQrImg').src = 'https://img.vietqr.io/image/' + encodeURIComponent(info.bank) + '-' + encodeURIComponent(info.acc) + '-compact2.png?accountName=' + encodeURIComponent(info.owner);
+            document.getElementById('giftModal').classList.remove('hidden');
+        }
+
+        function handleRsvpSubmit(e) {
+            e.preventDefault();
+            e.target.innerHTML = '<div class="py-4 text-center font-semibold text-emerald-700">Cảm ơn bạn đã gửi lời chúc và xác nhận tham dự!</div>';
+        }
+    <\/script>
+</body>
+</html>`;
+
+            document.getElementById('exportedHtmlCode').value = standaloneHtml;
+            document.getElementById('exportModal').classList.remove('hidden');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.add('hidden');
+        }
+
+        function copyExportedHtml() {
+            const textarea = document.getElementById('exportedHtmlCode');
+            textarea.select();
+            document.execCommand('copy');
+            showToast("Đã sao chép toàn bộ mã HTML!");
+        }
+
+        function downloadExportedHtml() {
+            const htmlContent = document.getElementById('exportedHtmlCode').value;
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'thiep-cuoi-online.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast("Đã tải file thiep-cuoi-online.html về máy!");
+        }
+    </script>
+</body>
+
+</html>
