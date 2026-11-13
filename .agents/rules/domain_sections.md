@@ -36,6 +36,9 @@ registerSection({
 - `id` duy nhất. Section cũ giữ id cũ (`hero`, `family`…); section thêm mới có id `<type>-<n>` với n nhỏ nhất chưa dùng.
 - `name` hiển thị ở sidebar, sửa được; không đánh số cứng ("1. …") cho section mới.
 
+### Biến thể bố cục trong một section
+Section có nhiều bố cục khai báo trường `data.layout` và danh sách kiểu ngay trong tệp section (vd `HERO_LAYOUTS`); `migrate` riêng của loại đó đưa giá trị lạ về mặc định. Không rẽ nhánh bố cục ở ngoài tệp section (`render.js`, `editor.js`, `runtime.js`). Ví dụ: hero (`classic|fade|arch|fullscreen`).
+
 ## 3. `migrate(state)` (trong `js/state.js`)
 - Gọi ở mọi điểm nạp state: khởi động, khôi phục nháp, nhập JSON, `invite.html` tải từ API.
 - Idempotent: gọi nhiều lần cho cùng kết quả.

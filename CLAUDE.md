@@ -38,7 +38,7 @@ Adding a type = create the file + add a `<script>` tag in **both** `index.html` 
 
 ## State, migrate, undo
 
-`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 4) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
+`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 5) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
 
 All mutations go through a mutator ending in `commitState(label)` (undo snapshot, autosave to localStorage `thiep:draft`, re-render). Never assign `appState` from UI code. Exception (Điều 5): `selectedSectionId` and `isPreviewMode` are UI state and change without `commitState`; read-only pages (`invite.html`, exported file) assign `appState` directly. Undo stack is capped (50 entries / ~30M chars).
 

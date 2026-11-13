@@ -19,6 +19,15 @@ Mỗi dòng: việc — lý do — ưu tiên (Cao / Trung bình / Thấp).
 - Markup khung/modal mừng cưới lặp ở `invite.html` và chuỗi export trong `editor.js` — gộp thành một nguồn — Trung bình.
 - `CLAUDE.md` viết tiếng Anh trong khi Điều 1 yêu cầu tài liệu tiếng Việt — quyết định giữ hay dịch — Thấp.
 
+## Ý ngoài phạm vi: hình nền & ảnh bìa (T25)
+
+- Trình phát nhạc dạng thẻ — ngoài phạm vi đợt hình nền/ảnh bìa — Thấp.
+- Timeline có icon (section Lịch trình) — ngoài phạm vi đợt này — Thấp.
+- Ảnh mép cong ở section cảm ơn — ngoài phạm vi đợt này — Thấp.
+- Ô màu ở section dress code — ngoài phạm vi đợt này — Thấp.
+- Chế độ nền `fixed` (ảnh nền đứng yên khi cuộn) — ngoài phạm vi đợt này, hay lỗi trên iOS — Thấp.
+- Ảnh nền `cover` trên thiệp rất dài sẽ bị phóng to mạnh — cân nhắc chế độ "phủ theo bề ngang" — Trung bình.
+
 ## Tồn đọng khi tạm dừng (2026-11-13)
 
 Trạng thái: `master` = `cb640f4` (đã push GitHub `omachi2202/thiep-moi-dam-cuoi`), nhánh `feat/thiep-tuy-bien-sau` và `feat/xem-thuc-te-hieu-ung` đã merge. pytest 34 passed, `py tools/build_export_bundle.py --check` khớp. Hồ sơ đầy đủ: `docs/thiep-tuy-bien-sau/README.md`.
