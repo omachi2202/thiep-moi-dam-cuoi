@@ -1,6 +1,6 @@
 ---
 name: dieu-phoi
-description: Quy trình điều phối 6 bước của repo Tích Hợp Web - phân loại yêu cầu CREATE/UPDATE/DELETE, nạp đúng rules trong .agents/rules, xuất kế hoạch kèm bảng chia việc rồi dừng chờ người dùng duyệt; sau khi duyệt thì tự tạo nhánh, lập hồ sơ docs/<slug>/ và giao các sub-agent chạy song song, phiên chính chỉ điều phối. Chỉ dùng khi người dùng gọi /dieu-phoi hoặc yêu cầu làm theo quy trình điều phối.
+description: Quy trình điều phối 6 bước của dự án Thiệp cưới online - phân loại yêu cầu CREATE/UPDATE/DELETE, nạp đúng rules trong .agents/rules, xuất kế hoạch kèm bảng chia việc rồi dừng chờ người dùng duyệt; sau khi duyệt thì tự tạo nhánh, lập hồ sơ docs/<slug>/ và giao các sub-agent chạy song song, phiên chính chỉ điều phối. Chỉ dùng khi người dùng gọi /dieu-phoi hoặc yêu cầu làm theo quy trình điều phối.
 argument-hint: "<yêu cầu cần phân loại, lập kế hoạch và giao việc>"
 ---
 
@@ -10,9 +10,9 @@ Yêu cầu cần xử lý: $ARGUMENTS
 
 Nếu dòng trên trống, lấy yêu cầu gần nhất của người dùng trong hội thoại. Vẫn không rõ thì hỏi lại.
 
-Thực hiện đủ 6 bước theo thứ tự. **Không sửa tệp, không chạy lệnh làm thay đổi hệ thống** (ghi tệp, tạo nhánh, git commit, cài gói, docker) trước khi người dùng duyệt ở Bước 4. Lệnh chỉ đọc (đọc tệp, grep, `graphify query`, `git status`, `git log`) được phép dùng ở mọi bước.
+Thực hiện đủ 6 bước theo thứ tự. **Không sửa tệp, không chạy lệnh làm thay đổi hệ thống** (ghi tệp, tạo nhánh, git commit, cài gói, chạy server ghi `data/`) trước khi người dùng duyệt ở Bước 4. Lệnh chỉ đọc (đọc tệp, grep, `graphify query`, `git status`, `git log`) được phép dùng ở mọi bước.
 
-**Phiên chính chỉ điều phối.** Sau khi được duyệt, phiên chính không tự sửa bất kỳ tệp nào trong `backend/` và `frontend/`, bằng bất kỳ công cụ nào: mọi việc sửa mã đều giao sub-agent (Bước 6).
+**Phiên chính chỉ điều phối.** Sau khi được duyệt, phiên chính không tự sửa `index.html`, `invite.html` và bất kỳ tệp nào trong `js/`, `css/`, `server/`, bằng bất kỳ công cụ nào: mọi việc sửa mã đều giao sub-agent (Bước 6).
 
 Mọi đường dẫn dưới đây tính từ gốc repo.
 
@@ -39,21 +39,13 @@ Dùng công cụ đọc tệp để đọc thật, không dựa vào trí nhớ.
    - `[UPDATE]`: `.agents/rules/workflows/update.md`
    - `[DELETE]`: `.agents/rules/workflows/delete.md`
 3. Theo phạm vi kỹ thuật:
-   - Đụng API, service, dữ liệu lưu trữ: `.agents/rules/domain_backend.md` và `.agents/rules/domain_security_storage.md`
-   - Đụng giao diện: `.agents/rules/domain_frontend.md`
-   - Đụng test, build, Docker, APK: `.agents/rules/domain_workflow_testing.md`
-4. Theo trang bị chạm (chỉ khi việc liên quan tới công thức hoặc quy trình nghiệp vụ của trang đó):
-
-| Trang (route) | Tệp |
-|---|---|
-| Dashboard (`/`) | `.agents/rules/domain_dashboard.md` |
-| N30 (`/ban-le/n30`) | `.agents/rules/domain_ban_le_n30.md` |
-| KS5 (`/ban-le/ks5`) | `.agents/rules/domain_ban_le_ks5.md` |
-| Điều chuyển (`/ban-le/dieu-chuyen`) | `.agents/rules/domain_ban_le_dieu_chuyen.md` |
-| Hầm Bể (`/ban-le/ham-be`) | `.agents/rules/domain_ban_le_ham_be.md` |
-| PTK, Báo giá (`/ptk`) | `.agents/rules/domain_ptk.md` |
-| Kiểm kê (`/kiem-ke/theo-thang`) | `.agents/rules/domain_kiem_ke_theo_thang.md` |
-| Cài đặt (`/settings`) | `.agents/rules/domain_settings.md` |
+   - Đụng editor (`index.html`, `js/`, `css/`): `.agents/rules/domain_frontend.md`
+   - Đụng section, schema state, `migrate()`: `.agents/rules/domain_sections.md`
+   - Đụng runtime, trang khách `invite.html`, RSVP/lời chúc/lịch/QR phía client: `.agents/rules/domain_runtime_invite.md`
+   - Đụng API, `server/`, Excel, upload, dữ liệu lưu trữ: `.agents/rules/domain_backend.md` và `.agents/rules/domain_security_storage.md`
+   - Đụng test, chạy server, kiểm thử: `.agents/rules/domain_workflow_testing.md`
+   - Điều phối, quyền agent, mẫu báo cáo: `.agents/rules/domain_subagents_workflow.md`
+4. Quyết định kiến trúc đã chốt: `docs/quyet_dinh.md` (AD-xxx), nếu tồn tại.
 
 Tệp workflow của nhãn là quy trình chi tiết cho phần còn lại: làm đúng thứ tự các mục trong đó. Ba việc dưới đây có trong cả ba workflow và **không được bỏ qua**:
 
@@ -78,7 +70,7 @@ Chạy `git branch --show-current` và `git status --short`. Mọi việc có s�
 
 ### 2.4. Khảo sát mã
 
-Khảo sát mã liên quan ở mức đủ để chia phiếu chính xác tới từng tệp. Có `graphify-out/graph.json` thì chạy `graphify query` trước lần grep/đọc mã đầu tiên (CLAUDE.md §9).
+Khảo sát mã liên quan ở mức đủ để chia phiếu chính xác tới từng tệp. Có `graphify-out/graph.json` thì chạy `graphify query` trước lần grep/đọc mã đầu tiên.
 
 ## Bước 3: Xuất kế hoạch triển khai
 
@@ -92,12 +84,12 @@ Trình bày bằng tiếng Việt, đúng khung sau:
 **2. Phạm vi ảnh hưởng**
 - Tệp/component sẽ tạo, sửa hoặc xóa: <đường dẫn từ gốc repo>
 - Tệp phụ thuộc bị ảnh hưởng gián tiếp: <nếu có>
-- Số liệu lưu/xuất, schema API, mốc golden: <có đổi hay không, đổi gì>
+- Số liệu lưu/xuất, schema state/API, cột Excel: <có đổi hay không, đổi gì>
 
 **3. Bảng chia việc**
 | Mã | Việc | Tệp (2–3 tệp) | Sub-agent | Đợt | Phụ thuộc | Review |
 |---|---|---|---|---|---|---|
-| T1 | … | … | gas-backend | 1 | không | có |
+| T1 | … | … | py-backend | 1 | không | có |
 
 - Giao kèo giữa các phiếu cùng đợt: <chữ ký hàm, tên trường, đường dẫn đã chốt để chạy song song>
 - Sau mỗi đợt: `autotest`. Cuối: `inspector`.
@@ -118,8 +110,8 @@ Trình bày bằng tiếng Việt, đúng khung sau:
 Yêu cầu với bản kế hoạch:
 - Đủ các mục mà tệp workflow của nhãn đó ghi là "nội dung bắt buộc của kế hoạch".
 - Bảng chia việc theo luật ở `giao_viec.md` §5: mỗi phiếu một mục tiêu, 2–3 tệp; cùng đợt không trùng tệp; xếp được song song thì không xếp tuần tự; phiếu tài liệu ở đợt 1; việc chạy thật, chạy lâu là phiếu riêng chạy nền. Sub-agent lấy từ `.agents/AGENTS.md` (bản cho Claude Code: `.claude/agents/`).
-- Nếu kế hoạch chạm vùng cấm CLAUDE.md §6, trái một AD đã chốt hoặc trái Hiến pháp: nêu rõ ở mục rủi ro và đề xuất phương án không vi phạm. Không tự lách.
-- Chốt review bắt buộc: phiếu chạm công thức, tiền, đơn giá, quy tắc đối soát, số liệu lưu/xuất, schema API hoặc cấu trúc dữ liệu lưu trữ phải ghi Review = "có" (`reviewer-code` rà ngay khi phiếu xong), và cả việc phải qua `inspector` trước khi bàn giao.
+- Nếu kế hoạch chạm vùng cấm (Hiến pháp Điều 10), trái một AD đã chốt hoặc trái Hiến pháp: nêu rõ ở mục rủi ro và đề xuất phương án không vi phạm. Không tự lách.
+- Chốt review bắt buộc: phiếu chạm schema state/`migrate()`, API, Excel/JSON lưu trữ, upload, edit key, dữ liệu khách hoặc QR mừng cưới phải ghi Review = "có" (`reviewer-code` rà ngay khi phiếu xong), và cả việc phải qua `inspector` trước khi bàn giao.
 
 ## Bước 4: Dừng lại chờ xác nhận
 

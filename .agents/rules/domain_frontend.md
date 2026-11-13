@@ -1,0 +1,38 @@
+# Luật Front-end (editor `index.html`)
+
+## 1. Bố cục tệp
+| Tệp | Nội dung |
+|---|---|
+| `index.html` | Markup editor 3 cột + modal + thẻ `<script>`/`<link>`. Không chứa logic. |
+| `css/app.css` | Style editor + thiệp (dùng chung với trang khách). |
+| `css/invite.css` | Chỉ style riêng trang khách (phong bì, rèm). |
+| `js/state.js` | `DEFAULT_STATE`, `FONT_OPTIONS`, `THEME_PRESETS`, `SECTION_TYPES`, `registerSection`, `migrate`, `escapeHtml`. |
+| `js/render.js` | `renderAll`, `renderSectionListSidebar`, `renderWeddingCanvas`, `renderRightInspector` — lặp qua registry. |
+| `js/runtime.js` | Hành vi tương tác của thiệp (xem `domain_runtime_invite.md`). |
+| `js/editor.js` | Mutator, sự kiện editor, upload, export. |
+| `js/store.js` | `commitState`, undo/redo, autosave, nhập/xuất JSON. |
+| `js/section_ops.js` | Thêm/nhân bản/xoá/di chuyển/ẩn section, áp preset. |
+| `js/api.js` | `window.api` — mọi lời gọi HTTP tới backend. |
+| `js/sections/*.js` | Mỗi loại section một tệp. |
+
+Thứ tự nạp: `state.js` → `api.js` → `runtime.js` → `sections/*.js` → `render.js` → `store.js` → `section_ops.js` → `editor.js`.
+
+## 2. Quy ước mã
+- Script thường, không `import/export`. Hàm public gắn `window.<ten>`; hàm nội bộ bọc trong IIFE.
+- HTML sinh bằng template string; giá trị người dùng qua `escapeHtml()`.
+- Mutator: `updateSectionField`, `updateSectionStyle`, `updateGlobalStyle`, `updateBankInfo` và các hàm trong `section_ops.js` — đều gọi `commitState(label)`.
+- `fromInspector=true`: không render lại inspector để ô đang gõ giữ focus.
+- Không dùng `alert/confirm/prompt`; thông báo bằng `showToast`, xác nhận bằng modal trong trang.
+- `localStorage` luôn bọc `try/catch`.
+
+## 3. Giao diện
+- Tailwind CDN + Font Awesome 6.5.1 + Google Fonts. Font mới phải thêm vào `FONT_OPTIONS` và link Google Fonts của cả editor, `invite.html`, export.
+- Canvas thiệp rộng như điện thoại (≈ 390–430px); trang khách responsive, kiểm ở 390px.
+- Vùng chạm ≥ 44px trên mobile; tương phản chữ/nền đủ đọc.
+- Chữ giao diện tiếng Việt, có dấu đầy đủ.
+
+## 4. Chạy không backend
+`window.api.available === false` (mở `file://` hoặc server không phản hồi `/api/health`): ẩn/khoá nút Xuất bản, upload dùng base64, form RSVP/lời chúc hiện toast "Chỉ hoạt động trên thiệp đã xuất bản".
+
+## 5. Export HTML tĩnh
+Export = 1 tệp HTML tự chứa: inline `css/app.css`, `js/state.js`, `js/runtime.js`, `js/sections/*.js` (đọc bằng `fetch` khi có server; khi `file://` dùng bản đã nạp sẵn) + `window.__CARD_STATE__` JSON, render với `mode: 'export'`. Chuỗi `</script>` trong nội dung inline phải được thoát.
