@@ -224,6 +224,32 @@
                 <!-- Trang trí nền & khung (giao kèo G5) -->
                 <div class="space-y-3">
                     <label class="block text-xs font-bold uppercase tracking-wider text-slate-500">Trang Trí Thiệp</label>
+                    <div class="space-y-2">
+                        <span class="text-xs font-medium text-slate-700 block">Hình nền thiệp</span>
+                        <input type="text" id="inputBgImage" placeholder="Dán link ảnh nền (https://...)"
+                            onchange="updateGlobalStyle('bgImage', this.value.trim())"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 min-h-[44px]">
+                        <div class="flex gap-2">
+                            <label class="flex-1 min-h-[44px] flex items-center justify-center px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white hover:bg-slate-50 cursor-pointer text-center">
+                                <i class="fa-solid fa-upload mr-1.5"></i> Tải ảnh từ máy tính
+                                <input type="file" accept="image/*" class="hidden" onchange="handleGlobalBgUpload(event)">
+                            </label>
+                            <button type="button" onclick="updateGlobalStyle('bgImage','')"
+                                class="min-h-[44px] px-3 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white hover:bg-slate-50">Bỏ hình nền</button>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-600 block mb-1">Lớp phủ sáng: <span id="bgImageOverlayLabel">0%</span></span>
+                            <input type="range" id="inputBgImageOverlay" min="0" max="0.9" step="0.05" value="0"
+                                oninput="document.getElementById('bgImageOverlayLabel').textContent = Math.round(this.value * 100) + '%'"
+                                onchange="updateGlobalStyle('bgImageOverlay', parseFloat(this.value))"
+                                class="w-full min-h-[44px]">
+                        </div>
+                        <select id="select_bgImageFit" onchange="updateGlobalStyle('bgImageFit', this.value)"
+                            class="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 min-h-[44px]">
+                            <option value="cover">Phủ kín</option>
+                            <option value="repeat">Lặp hoạ tiết</option>
+                        </select>
+                    </div>
                     <div>
                         <span class="text-xs font-medium text-slate-700 block mb-1">Hoạ tiết nền</span>
                         <select id="select_bgTexture" onchange="updateGlobalStyle('bgTexture', this.value)"
