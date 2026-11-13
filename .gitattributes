@@ -1,0 +1,4 @@
+# Giữ LF cho mọi tệp văn bản trên mọi máy (AD-003: js/export_bundle.js phải khớp byte với nguồn)
+* text=auto eol=lf
+*.png binary
+*.xlsx binary

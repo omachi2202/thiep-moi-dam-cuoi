@@ -308,6 +308,7 @@ function renderCardHtml(state, ctx) {
             const dec = sectionDecor(sec, gs);
             const styleAttr = dec.style ? ` style="${escapeHtml(dec.style)}"` : '';
             if (!isEditor) {
+                if (!String(innerHtml == null ? '' : innerHtml).trim()) return '';
                 return `
             <section data-section-id="${escapeHtml(sec.id)}" class="wedding-section ${dec.cls}"${styleAttr}>
                 ${innerHtml}

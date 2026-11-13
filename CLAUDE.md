@@ -16,7 +16,7 @@ py -m uvicorn server.app:app --reload --port 8000   # editor: http://localhost:8
 py -m pytest server/tests -q
 ```
 
-`python` on this machine is the Microsoft Store alias — always use `py`. Opening `index.html` via `file://` still edits (base64 images, JSON import/export, local draft) but publish, upload, HTML export and RSVP/wishes submit are disabled (check `window.api.available`).
+`python` on this machine is the Microsoft Store alias — always use `py`. Opening `index.html` via `file://` still edits (base64 images, JSON import/export, local draft) and HTML export works (via `js/export_bundle.js`), but publish, upload and RSVP/wishes submit are disabled (check `window.api.available`).
 
 ## File layout and script order
 
@@ -38,7 +38,7 @@ Adding a type = create the file + add a `<script>` tag in **both** `index.html` 
 
 ## State, migrate, undo
 
-`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 3) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
+`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 4) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
 
 All mutations go through a mutator ending in `commitState(label)` (undo snapshot, autosave to localStorage `thiep:draft`, re-render). Never assign `appState` from UI code. Exception (Điều 5): `selectedSectionId` and `isPreviewMode` are UI state and change without `commitState`; read-only pages (`invite.html`, exported file) assign `appState` directly. Undo stack is capped (50 entries / ~30M chars).
 
@@ -49,7 +49,7 @@ All mutations go through a mutator ending in `commitState(label)` (undo snapshot
 ## Guest page and export
 
 - Guest page `/c/<slug>?khach=<tên>`: `invite.html` fetches `GET /api/cards/<slug>`, `migrate`, renders `mode:'invite'`; guest name is decoded, cut to 60 chars, escaped, replaces `{khach}`.
-- Export HTML (`openExportModal` in `editor.js`) builds a self-contained file by inlining CSS + `state/api/runtime/sections/render` JS + `window.__CARD_STATE__` + a bootstrap that reuses the same runtime. It fetches those files, so it needs the server (not `file://`) — pending decision (Điều 7), see docs/backlog.md.
+- Export HTML (`openExportModal` in `editor.js`) builds a self-contained file by inlining CSS + `state/api/runtime/sections/render` JS + `window.__CARD_STATE__` + a bootstrap that reuses the same runtime. Sources come from `fetch` over http, or from `window.__EXPORT_SOURCES` in the generated `js/export_bundle.js` when opened via `file://` (AD-003). **After editing any of `css/app.css`, `js/state.js`, `js/api.js`, `js/runtime.js`, `js/render.js`, `js/sections/*.js`, run `py tools/build_export_bundle.py`** — never edit the bundle by hand; `pytest` (`test_export_bundle_fresh`) fails if it is stale. `.gitattributes` forces LF.
 - RSVP/wishes post only via `window.api.postRsvp/postWish/getWishes`.
 
 ## Backend

@@ -266,17 +266,28 @@ function _exportJson(obj) {
         .replace(ps, '\\' + 'u2029');
 }
 
-async function _exportFetchText(path) {
-    const res = await fetch(path, { cache: 'no-store' });
-    if (!res.ok) throw new Error(path + ' ' + res.status);
-    return res.text();
+// AD-003: http -> fetch; file:// hoặc fetch lỗi -> window.__EXPORT_SOURCES (js/export_bundle.js)
+async function getExportSource(path) {
+    if (location.protocol !== 'file:') {
+        try {
+            const res = await fetch(path, { cache: 'no-store' });
+            if (res.ok) return await res.text();
+        } catch (e) { /* rơi xuống bundle */ }
+    }
+    const src = window.__EXPORT_SOURCES && window.__EXPORT_SOURCES[path];
+    if (typeof src === 'string') {
+        if (!window.__exportBundleWarned) {
+            window.__exportBundleWarned = true;
+            console.warn('Export dùng js/export_bundle.js — nếu vừa sửa JS/CSS hãy chạy py tools/build_export_bundle.py');
+        }
+        return src;
+    }
+    const err = new Error('Thiếu nguồn export: ' + path);
+    err.exportSourceMissing = true;
+    throw err;
 }
 
 async function openExportModal() {
-    if (location.protocol === 'file:') {
-        showToast('Hãy mở qua server (py -m uvicorn ...) để export');
-        return;
-    }
     if (typeof renderCardHtml !== 'function') {
         showToast('Chưa sẵn sàng xuất thiệp (thiếu renderCardHtml).');
         return;
@@ -288,10 +299,14 @@ async function openExportModal() {
 
     let css, scripts;
     try {
-        css = await _exportFetchText('css/app.css');
-        scripts = await Promise.all(jsFiles.map(_exportFetchText));
+        css = await getExportSource('css/app.css');
+        scripts = await Promise.all(jsFiles.map(getExportSource));
     } catch (err) {
-        showToast('Hãy mở qua server (py -m uvicorn ...) để export');
+        if (err && err.exportSourceMissing) {
+            showToast('Thiếu js/export_bundle.js — chạy: py tools/build_export_bundle.py');
+        } else {
+            showToast('Không xuất được HTML: ' + (err && err.message ? err.message : err));
+        }
         return;
     }
 

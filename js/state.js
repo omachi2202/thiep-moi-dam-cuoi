@@ -1,6 +1,6 @@
 // 1. DỮ LIỆU GỐC (MÔ PHỎNG CHUẨN ZIUWEDDING.SITE/MM03 - TÙNG & NGỌC)
 const DEFAULT_STATE = {
-    schemaVersion: 3,
+    schemaVersion: 4,
     selectedSectionId: 'hero',
     isPreviewMode: false,
     globalStyle: {
@@ -74,18 +74,24 @@ const DEFAULT_STATE = {
             customTitleSize: '22',
             customTextColor: '',
             data: {
-                event1Title: 'TIỆC MỪNG CƯỚI',
-                event1Time: '16:00 - CHỦ NHẬT',
-                event1Date: '24.10.2026',
-                event1Lunar: '(Tức ngày 15 tháng 09 năm Bính Ngọ)',
-                event1Venue: 'Tại Tư Gia Nhà Gái - Cẩm Lý, Lục Nam, Bắc Giang',
-                event1MapUrl: 'https://maps.google.com/?q=Cam+Ly+Luc+Nam+Bac+Giang',
-                event2Title: 'LỄ THÀNH HÔN',
-                event2Time: '09:00 - THỨ HAI',
-                event2Date: '25.10.2026',
-                event2Lunar: '(Tức ngày 16 tháng 09 năm Bính Ngọ)',
-                event2Venue: 'Tại Tư Gia Nhà Trai - Cẩm Lý, Lục Nam, Bắc Giang',
-                event2MapUrl: 'https://maps.google.com/?q=Cam+Ly+Luc+Nam+Bac+Giang'
+                items: [
+                    {
+                        title: 'TIỆC MỪNG CƯỚI',
+                        time: '16:00 - CHỦ NHẬT',
+                        date: '24.10.2026',
+                        lunar: '(Tức ngày 15 tháng 09 năm Bính Ngọ)',
+                        venue: 'Tại Tư Gia Nhà Gái - Cẩm Lý, Lục Nam, Bắc Giang',
+                        mapUrl: 'https://maps.google.com/?q=Cam+Ly+Luc+Nam+Bac+Giang'
+                    },
+                    {
+                        title: 'LỄ THÀNH HÔN',
+                        time: '09:00 - THỨ HAI',
+                        date: '25.10.2026',
+                        lunar: '(Tức ngày 16 tháng 09 năm Bính Ngọ)',
+                        venue: 'Tại Tư Gia Nhà Trai - Cẩm Lý, Lục Nam, Bắc Giang',
+                        mapUrl: 'https://maps.google.com/?q=Cam+Ly+Luc+Nam+Bac+Giang'
+                    }
+                ]
             }
         },
         {
@@ -259,7 +265,7 @@ const THEME_PRESETS = {
 };
 
 // 2. REGISTRY SECTION, TIỆN ÍCH CHUNG & MIGRATE (giao kèo G2/G4)
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 window.SECTION_TYPES = Object.create(null);
 
 // Whitelist giá trị G5 của globalStyle (giá trị đầu tiên không phải mặc định; mặc định lấy từ DEFAULT_STATE)
