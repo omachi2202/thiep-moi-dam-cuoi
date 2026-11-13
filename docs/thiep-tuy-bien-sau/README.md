@@ -16,8 +16,8 @@
 | T6 | commitState, undo/redo, autosave, JSON, upload | `js/store.js`, `js/editor.js` | frontend-ui | 4 | T3, T4 | có | xong (T6.1 đang sửa) |
 | T7 | Thêm/nhân bản/xoá section + preset toàn thiệp | `js/section_ops.js`, `js/render.js`, `js/state.js` | frontend-ui | 4 | T3 | không | xong |
 | T8 | Client API + modal Xuất bản | `js/api.js`, `index.html` | frontend-ui | 4 | T2, T3 | có | xong (T8.1 đang sửa) |
-| T9 | Section story + video | `js/sections/story.js`, `js/sections/video.js` | frontend-ui | 5 | T7 | không | chờ |
-| T10 | Section map + dresscode | `js/sections/map.js`, `js/sections/dresscode.js` | frontend-ui | 5 | T7 | không | chờ |
+| T9 | Section story + video | `js/sections/story.js`, `js/sections/video.js` | frontend-ui | 5 | T7 | không | xong |
+| T10 | Section map + dresscode | `js/sections/map.js`, `js/sections/dresscode.js` | frontend-ui | 5 | T7 | không | xong |
 | T11 | Section wishes + gift (VietQR) | `js/sections/wishes.js`, `js/sections/gift.js` | frontend-ui | 5 | T7, T8 | có | chờ |
 | T12 | Section thanks + nâng cấp RSVP | `js/sections/thanks.js`, `js/sections/rsvp.js` | frontend-ui | 5 | T7, T8 | có | chờ |
 | T13 | Style toàn thiệp mới: state + điều khiển | `js/state.js`, `index.html`, `js/editor.js` | frontend-ui | 6 | đợt 5 | có | chờ |
@@ -41,3 +41,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T3.2** (2026-11-13): thêm Roboto Slab/Tinos/Open Sans vào FONT_OPTIONS, SECTION_TYPES dùng Object.create(null) kèm getSectionDef, inspector chịu lỗi, preview không cho sửa. Kiểm bằng vm: Roboto Slab hiển thị, type 'constructor' an toàn, các kiểm của T3.1 vẫn đạt. Re-review vòng 2: ĐẠT.
 - **T7** (2026-11-13): kiểm bằng vm: thêm 3 loại hợp lệ có id <type>-<n> duy nhất và hợp lệ, loại lạ bị từ chối, nhân bản deep copy với id mới, 6 preset áp dụng được với font nằm trong FONT_OPTIONS, preset 'constructor' bị bỏ qua, mọi thao tác gọi commitState. Mở rộng fallingEffect của preset giao sang T13.
 - **T6** (2026-11-13): kiểm bằng vm: undo 3 lần về đúng trạng thái đầu, redo đúng, updateWeddingDateTime/updateAlbumPhoto theo secId, import đi qua migrate, JSON sai bị bỏ qua. Headless Chrome không có lỗi console (ảnh `moc/sau_dot4.png`). reviewer-code: ĐẠT, có 4 NÊN SỬA (mất nháp ngầm, gộp nhầm undo khi thao tác cấu trúc, quota, base64 lớn), giao T6.1.
+- **T9, T10** (2026-11-13): fuzz cả 13 loại section (gài <img onerror>, javascript:, ;position:fixed vào mọi trường data/màu/font/cỡ) ở mode editor và invite: không lọt chỗ nào, không ném lỗi, invite không có contenteditable, migrate idempotent. Lưu ý: icon story fa-book-heart không có trong FA 6.5.1 free, giao T9 sửa một dòng.
