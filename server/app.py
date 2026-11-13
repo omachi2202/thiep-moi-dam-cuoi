@@ -1,5 +1,6 @@
 """App FastAPI cho thiệp cưới online. Logic openpyxl nằm trong excel_store.py."""
 import hashlib
+import ipaddress
 import json
 import os
 import re
@@ -91,8 +92,35 @@ def _err(code: int, msg: str):
     return HTTPException(status_code=code, detail=msg)
 
 
-def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0) -> FastAPI:
+CREATE_WINDOW = 3600.0
+DEFAULT_QUOTA_MB = 2048
+
+
+def _parse_codes(value) -> list[str]:
+    if value is None:
+        value = os.environ.get("THIEP_CREATE_CODES", "")
+    if isinstance(value, str):
+        value = value.split(",")
+    return [c.strip() for c in value if c and c.strip()]
+
+
+def _parse_quota_mb(value) -> int:
+    if value is None:
+        value = os.environ.get("THIEP_UPLOAD_QUOTA_MB")
+    try:
+        n = int(value) if value not in (None, "") else DEFAULT_QUOTA_MB
+    except (TypeError, ValueError):
+        n = DEFAULT_QUOTA_MB
+    return n if n > 0 else DEFAULT_QUOTA_MB
+
+
+def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
+               create_codes=None, upload_quota_mb=None, trust_cf=None) -> FastAPI:
     data = Path(data_dir or os.environ.get("THIEP_DATA_DIR") or (REPO_ROOT / "data")).resolve()
+    codes = _parse_codes(create_codes)
+    quota_bytes = _parse_quota_mb(upload_quota_mb) * 1024 * 1024
+    if trust_cf is None:
+        trust_cf = os.environ.get("THIEP_TRUST_CF") == "1"
     cards_dir = data / "cards"
     uploads_dir = data / "uploads"
     cards_dir.mkdir(parents=True, exist_ok=True)
@@ -144,27 +172,55 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0) -
         if not given:
             raise _err(403, "Thiếu khoá chỉnh sửa (X-Edit-Key).")
         try:
-            stored = kp.read_text(encoding="utf-8").strip()
-        except OSError:
+            stored = kp.read_text(encoding="utf-8").strip().encode("utf-8")
+            digest = hash_key(given).encode("utf-8")
+            good = secrets.compare_digest(stored, digest)
+        except (OSError, ValueError):  # gồm UnicodeError
             raise _err(403, "Khoá chỉnh sửa không đúng.")
-        if not secrets.compare_digest(stored, hash_key(given)):
+        if not good:
             raise _err(403, "Khoá chỉnh sửa không đúng.")
 
     last_sweep = [time.monotonic()]
+    wins: dict = {}  # cửa sổ riêng của từng khoá bộ đếm
 
-    def rate_check(request: Request, slug: str, kind: str, limit: int | None = None) -> None:
-        ip = request.client.host if request.client else "?"
+    def client_ip(request: Request) -> str:
+        if trust_cf:
+            h = (request.headers.get("CF-Connecting-IP") or "").strip()[:64]
+            if h:
+                try:
+                    return str(ipaddress.ip_address(h))
+                except ValueError:
+                    pass
+        return request.client.host if request.client else "?"
+
+    def code_ok(given: str | None) -> bool:
+        """So mã tạo thiệp với từng mã (không dừng sớm)."""
+        if not codes or not given:
+            return False
+        g = given.encode("utf-8")
+        ok = False
+        for c in codes:
+            if secrets.compare_digest(c.encode("utf-8"), g):
+                ok = True
+        return ok
+
+    def rate_check(request: Request, slug: str, kind: str, limit: int | None = None,
+                   window: float | None = None) -> None:
+        ip = client_ip(request)
         key = (ip, slug, kind)
         limit = rate_limit if limit is None else limit
+        win = rate_window if window is None else window
         now = time.monotonic()
         with hits_lock:
             # quét định kỳ các khoá cũ để bộ nhớ không phình
             if now - last_sweep[0] > rate_window:
                 last_sweep[0] = now
-                for k in [k for k, d in hits.items() if not d or now - d[-1] > rate_window]:
+                for k in [k for k, d in hits.items() if not d or now - d[-1] > wins.get(k, rate_window)]:
                     del hits[k]
+                    wins.pop(k, None)
             q = hits[key]
-            while q and now - q[0] > rate_window:
+            wins[key] = win
+            while q and now - q[0] > win:
                 q.popleft()
             if len(q) >= limit:
                 if not q:
@@ -194,7 +250,7 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0) -
     # ---- API ----
     @app.get("/api/health")
     def health():
-        return {"ok": True}
+        return {"ok": True, "needCreateCode": bool(codes)}
 
     @app.get("/api/cards/{slug}")
     def get_card(slug: str):
@@ -233,9 +289,16 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0) -
         given = request.headers.get("X-Edit-Key")
         with card_lock:
             if jp.exists():
+                rate_check(request, slug, "edit", 30)
                 check_key(kp, given)
                 atomic_write(jp, content)
                 return {"ok": True}
+            if codes:
+                # giới hạn dò mã trước khi so mã
+                rate_check(request, "-", "create_code", 10, window=300)
+            if codes and not code_ok(request.headers.get("X-Create-Code")):
+                raise _err(403, "Cần mã tạo thiệp hợp lệ.")
+            rate_check(request, "-", "create", 5, CREATE_WINDOW)
             new_key = secrets.token_urlsafe(24)
             atomic_write(kp, hash_key(new_key).encode("ascii"))
             atomic_write(jp, content)
@@ -244,6 +307,18 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0) -
     @app.post("/api/upload")
     async def upload(request: Request, file: UploadFile = File(...)):
         rate_check(request, "-", "upload", 20)
+        if codes and not code_ok(request.headers.get("X-Create-Code")):
+            denied = _err(403, "Cần mã tạo thiệp hoặc khoá chỉnh sửa để tải tệp lên.")
+            slug_h = (request.headers.get("X-Card-Slug") or "").strip()
+            if not SLUG_RE.fullmatch(slug_h):
+                raise denied
+            jp_u, kp_u = card_paths(slug_h)
+            if not jp_u.exists():
+                raise denied
+            try:
+                check_key(kp_u, request.headers.get("X-Edit-Key"))
+            except HTTPException:
+                raise denied
         ctype = (file.content_type or "").lower().split(";")[0].strip()
         ext = Path(file.filename or "").suffix.lower()
         if ctype not in UPLOAD_TYPES or ext not in UPLOAD_TYPES[ctype]:
@@ -260,9 +335,30 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0) -
         blob = b"".join(chunks)
         if not _magic_ok(ext, blob[:16]):
             raise _err(400, "Nội dung tệp không khớp định dạng khai báo.")
+        # Đúng nhờ không có `await` giữa lúc quét dung lượng và lúc ghi tệp
+        # (+ chạy 1 worker): các upload không chen nhau vượt hạn mức.
+        used = 0
+        with os.scandir(uploads_dir) as it:
+            for e in it:
+                try:
+                    if e.is_file(follow_symlinks=False):
+                        used += e.stat(follow_symlinks=False).st_size
+                except OSError:
+                    continue
+        if used + len(blob) > quota_bytes:
+            raise _err(507, "Máy chủ đã hết dung lượng lưu tệp, vui lòng liên hệ quản trị.")
         name = f"{uuid.uuid4().hex}{ext}"
         atomic_write(uploads_dir / name, blob)
         return {"url": f"/uploads/{name}"}
+
+    @app.post("/api/cards/{slug}/verify-key")
+    def verify_key(slug: str, request: Request):
+        jp, kp = card_paths(slug)
+        rate_check(request, "-", "verify", 10)
+        if not jp.exists():
+            raise _err(404, "Không tìm thấy thiệp.")
+        check_key(kp, request.headers.get("X-Edit-Key"))
+        return {"ok": True}
 
     @app.post("/api/cards/{slug}/rsvp")
     def post_rsvp(slug: str, body: RsvpBody, request: Request):

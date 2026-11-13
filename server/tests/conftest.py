@@ -6,6 +6,8 @@ import tempfile
 _IMPORT_DIR = tempfile.mkdtemp(prefix="thiep_import_")
 os.environ["THIEP_DATA_DIR"] = _IMPORT_DIR
 os.environ.pop("THIEP_DEBUG", None)
+for _n in ("THIEP_CREATE_CODES", "THIEP_TRUST_CF", "THIEP_UPLOAD_QUOTA_MB"):
+    os.environ.pop(_n, None)
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
@@ -17,6 +19,8 @@ from server.app import create_app  # noqa: E402
 def data_dir(tmp_path, monkeypatch):
     monkeypatch.setenv("THIEP_DATA_DIR", str(tmp_path))
     monkeypatch.delenv("THIEP_DEBUG", raising=False)
+    for name in ("THIEP_CREATE_CODES", "THIEP_TRUST_CF", "THIEP_UPLOAD_QUOTA_MB"):
+        monkeypatch.delenv(name, raising=False)
     return tmp_path
 
 
