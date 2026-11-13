@@ -44,3 +44,5 @@ Trạng thái: `master` = `cb640f4` (đã push GitHub `omachi2202/thiep-moi-dam-
 - Thao tác commitState/undo trong lúc "Xem thực tế" làm intro chạy lại và cuộn về đầu — chấp nhận được, ghi nhận — Thấp.
 - Nhắc quy trình: sửa `css/app.css`, `js/state.js`, `js/api.js`, `js/runtime.js`, `js/render.js`, `js/sections/*.js` → chạy `py tools/build_export_bundle.py` trước khi commit (AD-003).
 - Khoá `globalStyle.bgImageFit = 'cover'` nay nghĩa là "phủ theo bề ngang, lặp dọc" (T30) — lệch nghĩa tên khoá; nếu đổi tên phải kèm migrate — Thấp.
+- Upload: mã tạo thiệp cũ/sai trong localStorage làm upload 403 dù có khoá thiệp hợp lệ — thử lại bằng slug+khoá khi mã bị từ chối (inspector nhánh triển khai) — Thấp.
+- `export.xlsx` còn nhận khoá qua `?key=` — bỏ, chỉ nhận header (khoá có thể lọt log proxy) — Trung bình.

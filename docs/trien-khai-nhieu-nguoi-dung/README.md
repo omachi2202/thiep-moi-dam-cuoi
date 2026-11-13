@@ -36,3 +36,4 @@ Ngoại lệ: T31 sửa 4 tệp tài liệu. Sau đợt 1 phiên chính chạy `
 - **T34 + T34.1** (py-backend): review ĐẠT. T34.1: cảnh báo Tunnel portal ngắt khi khởi động lại, sao lưu + `tunnel ingress validate` trước, bắt buộc đặt mã khi công khai, `.dockerignore` thêm `.env*`, `*.xlsx`.
 - **T35** (autotest): docker build OK; image chỉ có css/js/server/index/invite + `/app/data` rỗng; container healthy; 11/11 kiểm HTTP đạt (health needCreateCode, 403 không mã, tạo có mã, verify-key, upload ghi ra bind mount bằng uid 10001, /c/<slug>); đã dọn container/image. Không đụng portal.
 - Bundle sinh lại; `CLAUDE.md` mục Backend cập nhật chế độ nhiều người dùng.
+- **Inspector**: PASS 10/10 Điều; rà bù T32.2, T33.1 không lỗi. Phiếu sửa nhỏ T31.1, T32.1, T34.1 giao qua tin nhắn, nội dung ghi ở nhật ký này (không có tệp phiếu riêng). 2 ghi chú đưa vào backlog.
