@@ -151,6 +151,7 @@ function applyThemePreset(presetName) {
     const p = Object.prototype.hasOwnProperty.call(THEME_PRESETS, presetName) ? THEME_PRESETS[presetName] : null;
     if (!p) return;
     const g = appState.globalStyle;
+    const prevFalling = g.fallingEffect;
     ['scriptFont', 'headingFont', 'bodyFont'].forEach(k => {
         if (p[k] === undefined) return;
         const v = safeFont(p[k], '');
@@ -174,6 +175,7 @@ function applyThemePreset(presetName) {
     }
     commitState('Áp bộ giao diện: ' + (p.label || presetName));
     if (typeof syncLeftControlsWithState === 'function') syncLeftControlsWithState();
+    if (g.fallingEffect !== prevFalling && typeof initFallingEffect === 'function') initFallingEffect();
     showToast("Đã áp dụng bộ phối màu & phông chữ mới!");
 }
 

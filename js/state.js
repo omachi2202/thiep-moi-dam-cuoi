@@ -306,6 +306,7 @@ function safeUrl(u) {
 // Nhạc nền: chỉ cho http(s), data:audio/ và /uploads/; còn lại trả chuỗi rỗng
 function safeAudioUrl(u) {
     const s = String(u === undefined || u === null ? '' : u).trim();
+    if (s.indexOf('..') >= 0) return '';
     if (/^https?:\/\//i.test(s) || /^data:audio\//i.test(s) || /^\/uploads\//.test(s)) return s;
     return '';
 }
