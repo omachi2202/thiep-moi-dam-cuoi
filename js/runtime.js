@@ -581,8 +581,12 @@ let countdownInterval = null;
     function cardPageTitle(state) {
         const list = visibleDefs(state, 'pageTitle');
         for (let i = 0; i < list.length; i++) {
-            const t = list[i].def.pageTitle(list[i].sec);
-            if (t !== undefined && t !== null && String(t) !== '') return String(t);
+            try {
+                const t = list[i].def.pageTitle(list[i].sec);
+                if (typeof t === 'string' && t !== '') return t;
+            } catch (err) {
+                console.warn('pageTitle lỗi, bỏ qua section', err);
+            }
         }
         return '';
     }
@@ -591,7 +595,13 @@ let countdownInterval = null;
     function cardCalendarEvent(state) {
         const res = { title: '', location: '', iso: null };
         visibleDefs(state, 'calendarEvent').forEach(function (x) {
-            const e = x.def.calendarEvent(x.sec);
+            let e = null;
+            try {
+                e = x.def.calendarEvent(x.sec);
+            } catch (err) {
+                console.warn('calendarEvent lỗi, bỏ qua section', err);
+                return;
+            }
             if (!e) return;
             if (!res.iso && e.iso) res.iso = e.iso;
             if (!res.title && e.title) res.title = e.title;
