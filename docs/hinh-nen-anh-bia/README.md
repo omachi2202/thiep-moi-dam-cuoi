@@ -38,3 +38,4 @@ Ngoại lệ: T25 sửa 4 tệp (chỉ tài liệu; `CLAUDE.md` một dòng). Sa
 - **T30**: ảnh chụp cho thấy `cover` trên thiệp ~6000px chỉ còn mảng màu; người dùng chọn phương án A (phủ bề ngang, lặp dọc).
 - Bundle sinh lại sau mỗi đợt; pytest 34 passed.
 - **T30** (frontend-ui): `cardBgVars` cover → `100% auto` + `repeat-y`, nhãn "Phủ theo bề ngang (lặp dọc)"; giá trị lưu không đổi. Phiên chính: node --check, node cardBgVars, chụp 390px thấy rõ ảnh nền. ĐẠT.
+- **Cuối**: autotest ĐẠT (node --check 5 tệp + script inline invite.html, registry 13 loại trong VM, bundle --check khớp, pytest 34 passed). Inspector PASS 10/10 Điều; rà bù T30 (chưa qua reviewer-code riêng) đạt.
