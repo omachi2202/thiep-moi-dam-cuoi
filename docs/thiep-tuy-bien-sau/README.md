@@ -8,7 +8,7 @@
 | Mã | Việc | Tệp | Sub-agent | Đợt | Phụ thuộc | Review | Trạng thái |
 |---|---|---|---|---|---|---|---|
 | L1–L7 | Luật, agents, skill, hồ sơ | `.agents/`, `.claude/`, `docs/` | phiên chính | 0 | — | — | xong |
-| T1 | Tách index.html thành css/js (không đổi hành vi) | index.html, css/, js/ (tách) | frontend-ui | 2 | không | có | chờ |
+| T1 | Tách index.html thành css/js (không đổi hành vi) | index.html, css/, js/ (tách) | frontend-ui | 2 | không | có | xong |
 | T2 | Backend FastAPI + Excel store | `server/app.py`, `server/excel_store.py`, `server/requirements.txt` | py-backend | 2 | không | có | chờ |
 | T3 | Registry section + chuyển 6 loại cũ + migrate | `js/render.js`, `js/state.js`, `js/sections/{hero,family,events,countdown,rsvp,album}.js` | frontend-ui | 3 | T1 | có | chờ |
 | T4 | CardRuntime dùng chung + export không nhân đôi | `js/runtime.js`, `js/editor.js` | frontend-ui | 3 | T1 | không | chờ |
@@ -29,3 +29,4 @@
 Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học, đa số là stub). T13 trong kế hoạch được tách thành T13 (state + điều khiển) và T14 (áp lớp + CSS) để không trùng tệp với T15 trong cùng đợt.
 
 ## Nhật ký nghiệm thu
+- **T1** (2026-11-13): ĐẠT. Phiên chính so sánh từng dòng với `master:index.html`: CSS trùng khớp; tập hàm trùng khớp; chỉ khác ở `THEME_PRESETS`, các stub, comment và thẻ script. `node --check` mọi tệp JS đạt. reviewer-code: ĐẠT, không có mục CHẶN/NÊN SỬA (thứ tự nạp, onload, handler toàn cục, #editorToolbar, export). Chưa kiểm trên trình duyệt (chờ kiểm tay sau T3).

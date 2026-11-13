@@ -1,0 +1,92 @@
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Hiệu ứng chọn Section như Canva */
+.wedding-section {
+    position: relative;
+    transition: all 0.25s ease;
+    border: 2px solid transparent;
+}
+
+.editor-mode .wedding-section:hover {
+    border-color: #c084fc;
+}
+
+.editor-mode .wedding-section.selected-section {
+    border-color: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+}
+
+.section-badge {
+    display: none;
+}
+
+.editor-mode .wedding-section:hover .section-badge,
+.editor-mode .wedding-section.selected-section .section-badge {
+    display: flex;
+}
+
+/* Hiệu ứng chỉnh sửa chữ trực tiếp (ContentEditable) */
+[contenteditable="true"]:focus {
+    outline: 2px dashed #8b5cf6;
+    outline-offset: 4px;
+    background-color: rgba(139, 92, 246, 0.06);
+    border-radius: 4px;
+}
+
+/* Hiệu ứng cánh hoa rơi */
+@keyframes fall {
+    0% {
+        transform: translateY(-10vh) translateX(0) rotate(0deg);
+        opacity: 0.9;
+    }
+
+    50% {
+        transform: translateY(45vh) translateX(18px) rotate(180deg);
+        opacity: 0.85;
+    }
+
+    100% {
+        transform: translateY(105vh) translateX(-15px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+.petal {
+    position: absolute;
+    top: -30px;
+    pointer-events: none;
+    z-index: 40;
+    animation: fall linear infinite;
+}
+
+/* Đĩa nhạc xoay */
+@keyframes spinSlow {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.spin-music {
+    animation: spinSlow 6s linear infinite;
+}
