@@ -74,7 +74,7 @@
     registerSection({
         type: 'story',
         label: 'Chuyện tình yêu',
-        icon: 'fa-book-heart',
+        icon: 'fa-book-open',
         defaults: () => ({
             title: 'OUR STORY',
             subtitle: 'CHUYỆN TÌNH YÊU CỦA CHÚNG MÌNH',
