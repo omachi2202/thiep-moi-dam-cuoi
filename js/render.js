@@ -8,6 +8,7 @@ function ensureStateMigrated() {
 function renderAll() {
     ensureStateMigrated();
     renderSectionListSidebar();
+    renderThemePresetGrid();
     renderWeddingCanvas();
     renderRightInspector();
 }
@@ -54,9 +55,56 @@ function renderSectionListSidebar() {
                 <button onclick="toggleSectionVisibility('${escapeHtml(sec.id)}')" class="w-6 h-6 rounded hover:bg-slate-200 ${sec.visible ? 'text-violet-600' : 'text-slate-400'} flex items-center justify-center" title="Ẩn/Hiện phần này">
                     <i class="fa-solid ${sec.visible ? 'fa-eye' : 'fa-eye-slash'} text-xs"></i>
                 </button>
+                <button onclick="duplicateSection('${escapeHtml(sec.id)}')" class="w-6 h-6 rounded hover:bg-slate-200 text-slate-500 flex items-center justify-center" title="Nhân bản phần này">
+                    <i class="fa-solid fa-clone text-[10px]"></i>
+                </button>
+                <button onclick="deleteSection('${escapeHtml(sec.id)}')" class="w-6 h-6 rounded hover:bg-rose-100 text-rose-500 flex items-center justify-center" title="Xoá phần này">
+                    <i class="fa-solid fa-trash text-[10px]"></i>
+                </button>
             </div>
         </div>
         `;
+    }).join('') + renderAddSectionMenuHtml();
+}
+
+// Nút "+ Thêm section" và danh sách loại lấy từ registry (loại mới đăng ký tự xuất hiện)
+function renderAddSectionMenuHtml() {
+    const types = Object.keys(window.SECTION_TYPES).filter(t => getSectionDef(t));
+    const open = !!window.__addMenuOpen;
+    let panel = '';
+    if (open) {
+        panel = types.length
+            ? types.map(t => {
+                const d = getSectionDef(t);
+                return `<button onclick="addSection('${escapeHtml(t)}')" class="w-full min-h-[44px] px-3 rounded-lg border border-slate-200 bg-white hover:border-violet-500 text-left flex items-center gap-2.5">
+                    <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center text-xs shrink-0"><i class="fa-solid ${escapeHtml(d.icon)}"></i></span>
+                    <span class="text-xs font-semibold text-slate-800">${escapeHtml(d.label)}</span>
+                </button>`;
+            }).join('')
+            : '<div class="text-amber-600 text-xs"><i class="fa-solid fa-triangle-exclamation"></i> Chưa có loại section nào được đăng ký.</div>';
+    }
+    return `
+        <div class="pt-1 space-y-2">
+            <button onclick="toggleAddSectionMenu()" class="w-full min-h-[44px] rounded-xl border-2 border-dashed border-violet-300 text-violet-700 text-xs font-semibold hover:bg-violet-50 flex items-center justify-center gap-1.5">
+                <i class="fa-solid ${open ? 'fa-xmark' : 'fa-plus'}"></i> ${open ? 'Đóng' : 'Thêm section'}
+            </button>
+            ${open ? `<div class="space-y-1.5">${panel}</div>` : ''}
+        </div>`;
+}
+
+// Vẽ lưới preset từ THEME_PRESETS vào khung có sẵn trong tab giao diện (index.html chỉ có nút tĩnh cũ)
+function renderThemePresetGrid() {
+    const grid = document.querySelector('#leftTab-theme .grid.grid-cols-2');
+    if (!grid) return;
+    grid.innerHTML = Object.keys(THEME_PRESETS).map(k => {
+        const p = THEME_PRESETS[k];
+        return `<button onclick="applyThemePreset('${escapeHtml(k)}')" class="p-2.5 min-h-[44px] rounded-xl border border-slate-200 hover:border-violet-500 text-left transition flex items-center gap-2" style="background-color:${safeColor(p.bgColor, '#ffffff')}">
+            <span class="w-5 h-5 rounded-full shrink-0 border border-white shadow" style="background-color:${safeColor(p.primaryColor, '#8c6239')}"></span>
+            <div>
+                <div class="text-xs font-bold text-slate-800">${escapeHtml(p.label || k)}</div>
+                <div class="text-[10px] text-slate-500">${escapeHtml(p.desc || '')}</div>
+            </div>
+        </button>`;
     }).join('');
 }
 

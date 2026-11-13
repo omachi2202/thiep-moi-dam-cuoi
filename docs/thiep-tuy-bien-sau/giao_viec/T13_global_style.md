@@ -13,6 +13,8 @@
 - Thêm khoá G5 vào `DEFAULT_STATE.globalStyle` + `migrate` (schemaVersion 3); thêm vào preset đã có.
 - Sidebar trái: select cho bgTexture, frameStyle, cornerOrnament, revealAnimation, introStyle; fallingEffect thêm petals/snow/stars. `syncLeftControlsWithState` cập nhật.
 
+- **Bổ sung sau T7**: `applyThemePreset` (`js/section_ops.js`) whitelist `fallingEffect` chỉ có hearts/sparkles/none, cần mở rộng theo G5 (petals/snow/stars) và nhận các khoá G5 mới. Được phép sửa đúng hàm này trong section_ops.js. Cần dọn 4 nút preset tĩnh trong index.html vì lưới preset giờ do `renderThemePresetGrid` vẽ.
+
 ## Tiêu chí đạt
 - Đổi từng điều khiển → state đổi, undo được, reload còn.
 

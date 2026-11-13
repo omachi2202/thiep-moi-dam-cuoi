@@ -163,38 +163,75 @@ const FONT_OPTIONS = [
 ];
 
 // Bộ phối màu & font mẫu (chuyển từ biến cục bộ `presets` của applyThemePreset)
+// Mỗi mẫu: label/desc (hiển thị), màu, 3 font (đều nằm trong FONT_OPTIONS), fallingEffect.
+// Tuỳ chọn: bgTexture, frameStyle (khi T13 xong), sectionOrder (mảng id section; id không có trong state bị bỏ qua).
+// applyThemePreset chỉ ghi các khoá có mặt trong mẫu.
 const THEME_PRESETS = {
     classic: {
+        label: 'Cổ điển nâu (MM03)',
+        desc: 'Nâu trầm & Kem',
         scriptFont: "'Philosopher', serif",
         headingFont: "'Philosopher', serif",
         bodyFont: "'Noto Serif', serif",
         primaryColor: "#8c6239",
         bgColor: "#fdfbf7",
-        textColor: "#3d312a"
+        textColor: "#3d312a",
+        fallingEffect: "hearts"
     },
     blush: {
+        label: 'Pastel hồng',
+        desc: 'Ngọt ngào & Lãng mạn',
         scriptFont: "'Great Vibes', cursive",
         headingFont: "'Playfair Display', serif",
         bodyFont: "'Montserrat', sans-serif",
         primaryColor: "#be185d",
         bgColor: "#fff9fb",
-        textColor: "#4a1d32"
+        textColor: "#4a1d32",
+        fallingEffect: "hearts"
     },
     sage: {
+        label: 'Xanh sage',
+        desc: 'Tối giản & Tinh tế',
         scriptFont: "'Cormorant Garamond', serif",
         headingFont: "'Cormorant Garamond', serif",
         bodyFont: "'Open Sans', sans-serif",
         primaryColor: "#3f6212",
         bgColor: "#f7faf7",
-        textColor: "#263819"
+        textColor: "#263819",
+        fallingEffect: "sparkles"
     },
     royal: {
+        label: 'Xanh hoàng gia',
+        desc: 'Sang trọng & Hiện đại',
         scriptFont: "'Dancing Script', cursive",
         headingFont: "'Playfair Display', serif",
         bodyFont: "'Noto Serif', serif",
         primaryColor: "#1e3a8a",
         bgColor: "#f8fafc",
-        textColor: "#1e293b"
+        textColor: "#1e293b",
+        fallingEffect: "sparkles"
+    },
+    redtrad: {
+        label: 'Đỏ truyền thống',
+        desc: 'Đỏ thắm & Vàng kem',
+        scriptFont: "'Great Vibes', cursive",
+        headingFont: "'Playfair Display', serif",
+        bodyFont: "'Noto Serif', serif",
+        primaryColor: "#b91c1c",
+        bgColor: "#fffaf0",
+        textColor: "#4a1212",
+        fallingEffect: "hearts"
+    },
+    minimal: {
+        label: 'Tối giản trắng đen',
+        desc: 'Gọn gàng & Hiện đại',
+        scriptFont: "'Cormorant Garamond', serif",
+        headingFont: "'Montserrat', sans-serif",
+        bodyFont: "'Open Sans', sans-serif",
+        primaryColor: "#111111",
+        bgColor: "#ffffff",
+        textColor: "#222222",
+        fallingEffect: "none"
     }
 };
 
