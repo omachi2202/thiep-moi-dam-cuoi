@@ -13,7 +13,7 @@
 | T3 | Registry section + chuyển 6 loại cũ + migrate | `js/render.js`, `js/state.js`, `js/sections/{hero,family,events,countdown,rsvp,album}.js` | frontend-ui | 3 | T1 | có | xong |
 | T4 | CardRuntime dùng chung + export không nhân đôi | `js/runtime.js`, `js/editor.js` | frontend-ui | 3 | T1 | không | xong |
 | T5 | Test API pytest | `server/tests/test_api.py` | py-backend | 3 | T2 | không | xong |
-| T6 | commitState, undo/redo, autosave, JSON, upload | `js/store.js`, `js/editor.js` | frontend-ui | 4 | T3, T4 | có | xong (T6.1 đang sửa) |
+| T6 | commitState, undo/redo, autosave, JSON, upload | `js/store.js`, `js/editor.js` | frontend-ui | 4 | T3, T4 | có | xong |
 | T7 | Thêm/nhân bản/xoá section + preset toàn thiệp | `js/section_ops.js`, `js/render.js`, `js/state.js` | frontend-ui | 4 | T3 | không | xong |
 | T8 | Client API + modal Xuất bản | `js/api.js`, `index.html` | frontend-ui | 4 | T2, T3 | có | xong (T8.1 đang sửa) |
 | T9 | Section story + video | `js/sections/story.js`, `js/sections/video.js` | frontend-ui | 5 | T7 | không | xong |
@@ -45,3 +45,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T11, T12** (2026-11-13): fuzz chèn mã độc không lọt. reviewer-code: cả hai ĐẠT, nhưng có NÊN SỬA về mất dữ liệu: khi còn chờ health check, wishes/rsvp coi là chưa xuất bản nên RSVP chỉ báo cảm ơn mà không gửi; race getWishes/postWish; ô số người bị ẩn vẫn chặn submit. Giao T11.1 và T12.1.
 - **T11.1, T12.1** (2026-11-13): live xác định theo slug (gọi checkHealth trước khi gọi API), không còn báo cảm ơn giả hay hiện lời chúc mẫu giả; chống race lời chúc; ô số người bị disabled khi ẩn; cho phép gửi lại RSVP. Fuzz vẫn sạch. Re-review: cả hai ĐẠT.
 - **T14** (2026-11-13): kiểm bằng vm: chèn `;position:fixed`, `"><img`, `javascript:`, `");` vào globalStyle và sec.style đều bị chặn; ảnh nền https hợp lệ được giữ; đủ các lớp G5 (card-root, frame-double, reveal-*, sec-orn-both); giá trị lạ trả về mặc định.
+- **T6.1 + T6.2** (2026-11-13): không còn mất nháp ngầm (giữ ở thiep:draft:prev), không gộp undo cho thao tác cấu trúc, xử lý quota, chặn base64 > 1.5MB, giới hạn byte stack undo, chặn import > 10MB hoặc > 100 section. T6.1 gây hồi quy (gõ trong ô global/bank thành 1 bước mỗi ký tự), T6.2 sửa bằng mergeKey. Kiểm bằng vm: gộp/tách đúng. Re-review vòng 2: ĐẠT.

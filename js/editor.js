@@ -70,15 +70,26 @@ function readFileAsDataUrl(file) {
     });
 }
 
+const MAX_BASE64_BYTES = 1.5 * 1024 * 1024;
+
 async function uploadOrDataUrl(file) {
+    let apiFailed = false;
     if (window.api && window.api.available) {
         try {
             const url = await window.api.uploadFile(file);
             if (url) return url;
         } catch (err) {
-            showToast('Tải lên máy chủ thất bại, dùng bản nhúng tạm trong thiệp.');
+            apiFailed = true;
         }
     }
+    // Fallback base64 làm phình state/nháp: từ chối tệp lớn (một toast duy nhất)
+    if (file.size > MAX_BASE64_BYTES) {
+        showToast((apiFailed ? 'Tải lên máy chủ thất bại và tệp quá lớn để nhúng trực tiếp (tối đa 1,5MB). ' : 'Tệp quá lớn để nhúng trực tiếp (tối đa 1,5MB). ') + 'Hãy thử lại khi backend hoạt động hoặc nén nhỏ tệp trước.');
+        const err = new Error('Tệp quá lớn');
+        err.handled = true;
+        throw err;
+    }
+    if (apiFailed) showToast('Tải lên máy chủ thất bại, dùng bản nhúng tạm trong thiệp.');
     return readFileAsDataUrl(file);
 }
 
@@ -90,7 +101,7 @@ async function handleLocalImageUpload(event, secId, fieldKey) {
         updateSectionField(secId, fieldKey, url, false);
         showToast("Đã tải ảnh lên thành công!");
     } catch (err) {
-        showToast("Không tải được ảnh, vui lòng thử lại.");
+        if (!err || !err.handled) showToast("Không tải được ảnh, vui lòng thử lại.");
     }
 }
 
@@ -104,7 +115,7 @@ async function handleAlbumFileUpload(event, idx, secId) {
         updateAlbumPhoto(sid, idx, url, false);
         showToast(`Đã cập nhật ảnh Album #${idx + 1}!`);
     } catch (err) {
-        showToast("Không tải được ảnh, vui lòng thử lại.");
+        if (!err || !err.handled) showToast("Không tải được ảnh, vui lòng thử lại.");
     }
 }
 
@@ -118,7 +129,7 @@ async function handleAudioFileUpload(event) {
         updateGlobalStyle('audioUrl', url);
         showToast("Đã đổi nhạc nền thiệp cưới!");
     } catch (err) {
-        showToast("Không tải được nhạc, vui lòng thử lại.");
+        if (!err || !err.handled) showToast("Không tải được nhạc, vui lòng thử lại.");
     }
 }
 
@@ -126,12 +137,12 @@ function updateGlobalStyle(key, val) {
     appState.globalStyle[key] = val;
     if (key === 'audioUrl') {
         const audio = document.getElementById('weddingAudio');
-        audio.src = val;
+        audio.src = safeUrl(val);
     }
     if (key === 'fallingEffect') {
         initFallingEffect();
     }
-    commitState('global:' + key, { skipInspector: true });
+    commitState('global:' + key, { skipInspector: true, mergeKey: 'global:' + key });
 }
 
 function selectPresetAudio(url) {
@@ -142,7 +153,7 @@ function selectPresetAudio(url) {
 
 function updateBankInfo(side, field, value) {
     appState.bankInfo[side][field] = value;
-    commitState('bank:' + side + ':' + field, { skipInspector: true });
+    commitState('bank:' + side + ':' + field, { skipInspector: true, mergeKey: 'bank:' + side + ':' + field });
 }
 
 // Section đầu tiên theo type (không tra theo id)

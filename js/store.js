@@ -6,6 +6,12 @@
     const SAVE_DEBOUNCE_MS = 500;
     const DRAFT_KEY = 'thiep:draft';
     const DRAFT_AT_KEY = 'thiep:draft:savedAt';
+    const PREV_KEY = 'thiep:draft:prev';
+    const PREV_AT_KEY = 'thiep:draft:prev:savedAt';
+    const MAX_UNDO_CHARS = 30 * 1024 * 1024;
+    const MAX_IMPORT_BYTES = 10 * 1024 * 1024;
+    const MAX_SECTIONS = 100;
+    let bannerMode = '';      // '' | 'draft' | 'prev'
 
     let undoStack = [];
     let redoStack = [];
@@ -38,9 +44,13 @@
             if (!isValidState(appState)) return;
             const c = Object.assign({}, appState);
             delete c.isPreviewMode;
-            localStorage.setItem(DRAFT_KEY, JSON.stringify(c));
             localStorage.setItem(DRAFT_AT_KEY, String(Date.now()));
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(c));
+            quotaWarned = false;
         } catch (e) {
+            // Xoá cả hai khoá để không để lại nháp lệch (savedAt mới, state cũ)
+            lsRemove(DRAFT_KEY);
+            lsRemove(DRAFT_AT_KEY);
             if (!quotaWarned) {
                 quotaWarned = true;
                 if (typeof showToast === 'function') showToast('Không lưu được bản nháp tự động (hết dung lượng trình duyệt).');
@@ -64,13 +74,41 @@
     function removeBanner() {
         if (bannerEl && bannerEl.parentNode) bannerEl.parentNode.removeChild(bannerEl);
         bannerEl = null;
+        bannerMode = '';
+    }
+
+    function pushUndo(s) {
+        undoStack.push(s);
+        if (undoStack.length > MAX_UNDO) undoStack.shift();
+        let total = 0;
+        undoStack.forEach(x => { total += x.length; });
+        while (total > MAX_UNDO_CHARS && undoStack.length > 0) {
+            total -= undoStack.shift().length;
+        }
+    }
+
+    // Người dùng sửa khi banner nháp còn đó: giữ nháp cũ sang khoá prev trước khi autosave ghi đè
+    function keepPrevDraft() {
+        if (bannerMode !== 'draft') return;
+        try {
+            const raw = localStorage.getItem(DRAFT_KEY);
+            if (raw !== null) {
+                localStorage.setItem(PREV_AT_KEY, localStorage.getItem(DRAFT_AT_KEY) || String(Date.now()));
+                localStorage.setItem(PREV_KEY, raw);
+            }
+        } catch (e) { /* bỏ qua: không giữ được thì thôi */ }
+        const draftRaw = lsGet(PREV_KEY);
+        removeBanner();
+        if (draftRaw !== null) showDraftBanner(readPrev(), 'prev');
     }
 
     // Đồng bộ UI ngoài canvas sau khi thay toàn bộ state
     function refreshAfterReplace() {
         if (typeof syncLeftControlsWithState === 'function') syncLeftControlsWithState();
         const audio = document.getElementById('weddingAudio');
-        if (audio && appState.globalStyle) audio.src = appState.globalStyle.audioUrl || '';
+        if (audio && appState.globalStyle) {
+            audio.src = (typeof safeUrl === 'function' ? safeUrl(appState.globalStyle.audioUrl) : appState.globalStyle.audioUrl) || '';
+        }
         renderAll();
         if (typeof initFallingEffect === 'function') initFallingEffect();
         updateToolbarState();
@@ -82,15 +120,12 @@
         const keepPreview = !!appState.isPreviewMode;
         const next = migrate(obj);
         next.isPreviewMode = keepPreview;
-        if (lastSnap !== null) {
-            undoStack.push(lastSnap);
-            if (undoStack.length > MAX_UNDO) undoStack.shift();
-        }
+        keepPrevDraft();
+        if (lastSnap !== null) pushUndo(lastSnap);
         redoStack = [];
         appState = next;
         lastSnap = snap();
         lastKey = null;
-        removeBanner();
         scheduleSave();
         refreshAfterReplace();
         return true;
@@ -117,19 +152,17 @@
         opts = opts || {};
         const cur = snap();
         if (lastSnap !== null && cur !== lastSnap) {
-            const key = String(label || '') + '|' + String(opts.secId || '');
+            const key = String(label || '') + '|' + String(opts.secId || '') + '|' + String(opts.mergeKey || '');
             const now = Date.now();
-            const merge = !opts.noMerge && key === lastKey && (now - lastTime) < MERGE_MS && undoStack.length > 0;
-            if (!merge) {
-                undoStack.push(lastSnap);
-                if (undoStack.length > MAX_UNDO) undoStack.shift();
-            }
+            // Chỉ gộp khi có secId (sửa trường/kiểu của một section); thao tác cấu trúc không bao giờ gộp
+            const merge = !!(opts.mergeKey || opts.secId) &&!opts.noMerge && key === lastKey && (now - lastTime) < MERGE_MS && undoStack.length > 0;
+            if (!merge) pushUndo(lastSnap);
             redoStack = [];
             lastKey = key;
             lastTime = now;
         }
         lastSnap = cur;
-        if (bannerEl) removeBanner();
+        keepPrevDraft();
         scheduleSave();
         if (opts.skipInspector) {
             if (typeof renderSectionListSidebar === 'function') renderSectionListSidebar();
@@ -144,14 +177,14 @@
         if (!undoStack.length) { if (typeof showToast === 'function') showToast('Không còn gì để hoàn tác.'); return; }
         const prev = undoStack.pop();
         redoStack.push(lastSnap);
-        if (!applySnapshot(prev)) { undoStack = []; updateToolbarState(); }
+        if (!applySnapshot(prev)) { undoStack = []; updateToolbarState(); showToast('Không hoàn tác được: dữ liệu lịch sử bị lỗi.'); }
     }
 
     function redoState() {
         if (!redoStack.length) { if (typeof showToast === 'function') showToast('Không còn gì để làm lại.'); return; }
         const next = redoStack.pop();
-        undoStack.push(lastSnap);
-        if (!applySnapshot(next)) { redoStack = []; updateToolbarState(); }
+        pushUndo(lastSnap);
+        if (!applySnapshot(next)) { redoStack = []; updateToolbarState(); showToast('Không làm lại được: dữ liệu lịch sử bị lỗi.'); }
     }
 
     // ---- Xuất / Nhập JSON ----
@@ -175,6 +208,11 @@
         const input = event.target;
         const file = input.files && input.files[0];
         if (!file) return;
+        if (file.size > MAX_IMPORT_BYTES) {
+            showToast('Tệp JSON quá lớn (tối đa 10MB).');
+            input.value = '';
+            return;
+        }
         const reader = new FileReader();
         reader.onload = function (e) {
             let obj;
@@ -182,6 +220,11 @@
                 obj = JSON.parse(String(e.target.result));
             } catch (err) {
                 showToast('Tệp JSON không hợp lệ, không đọc được nội dung.');
+                input.value = '';
+                return;
+            }
+            if (isValidState(obj) && (obj.sections.length < 1 || obj.sections.length > MAX_SECTIONS)) {
+                showToast('Số phần (sections) trong tệp phải từ 1 đến ' + MAX_SECTIONS + '.');
                 input.value = '';
                 return;
             }
@@ -214,30 +257,49 @@
 
     function pad2(n) { return n < 10 ? '0' + n : String(n); }
 
-    function showDraftBanner(draft) {
+    function readPrev() {
+        const raw = lsGet(PREV_KEY);
+        if (raw === null) return null;
+        try {
+            const o = JSON.parse(raw);
+            if (isValidState(o)) return o;
+        } catch (e) { /* rơi xuống xoá */ }
+        lsRemove(PREV_KEY);
+        lsRemove(PREV_AT_KEY);
+        return null;
+    }
+
+    // mode: 'draft' (nháp vừa phát hiện) hoặc 'prev' (nháp cũ đã được giữ sang khoá prev)
+    function showDraftBanner(draft, mode) {
         const host = document.getElementById('editorToolbar');
-        if (!host) return;
-        const t = new Date(Number(lsGet(DRAFT_AT_KEY)) || Date.now());
+        if (!host || !draft) return;
+        const isPrev = mode === 'prev';
+        const t = new Date(Number(lsGet(isPrev ? PREV_AT_KEY : DRAFT_AT_KEY)) || Date.now());
         const hhmm = pad2(t.getHours()) + ':' + pad2(t.getMinutes());
         const span = document.createElement('span');
         span.className = 'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs bg-amber-100 text-amber-900 border border-amber-300';
         const msg = document.createElement('span');
-        msg.textContent = 'Có bản nháp lúc ' + hhmm + ' —';
+        msg.textContent = isPrev
+            ? 'Bản nháp trước (' + hhmm + ') đã được giữ —'
+            : 'Có bản nháp lúc ' + hhmm + ' —';
         const bRestore = document.createElement('button');
         bRestore.type = 'button';
         bRestore.className = 'font-semibold underline';
         bRestore.textContent = 'Khôi phục';
         bRestore.onclick = function () {
+            removeBanner(); // trước replaceState để không bị giữ-prev lần nữa
+            if (isPrev) { lsRemove(PREV_KEY); lsRemove(PREV_AT_KEY); }
             if (replaceState(draft)) showToast('Đã khôi phục bản nháp!');
-            else { removeBanner(); showToast('Bản nháp không hợp lệ.'); }
+            else showToast('Bản nháp không hợp lệ.');
         };
         const bSkip = document.createElement('button');
         bSkip.type = 'button';
         bSkip.className = 'underline text-amber-700';
         bSkip.textContent = 'Bỏ qua';
         bSkip.onclick = function () {
-            lsRemove(DRAFT_KEY);
-            lsRemove(DRAFT_AT_KEY);
+            if (!isPrev) { lsRemove(DRAFT_KEY); lsRemove(DRAFT_AT_KEY); }
+            lsRemove(PREV_KEY);
+            lsRemove(PREV_AT_KEY);
             removeBanner();
         };
         span.appendChild(msg);
@@ -245,6 +307,7 @@
         span.appendChild(bSkip);
         host.insertBefore(span, host.firstChild);
         bannerEl = span;
+        bannerMode = isPrev ? 'prev' : 'draft';
     }
 
     function makeBtn(id, icon, text, title, onclick) {
@@ -284,7 +347,7 @@
         updateToolbarState();
 
         const draft = readDraft();
-        if (draft) showDraftBanner(draft);
+        if (draft) showDraftBanner(draft, 'draft');
     }
 
     document.addEventListener('keydown', function (e) {
