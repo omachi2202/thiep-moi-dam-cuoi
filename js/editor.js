@@ -338,7 +338,7 @@ ${_exportInlineCss(css)}
     </style>
 </head>
 <body class="min-h-screen flex justify-center">
-    <div id="weddingCardFrame" class="w-full max-w-[430px] min-h-screen shadow-2xl relative overflow-hidden" style="background-color: ${_exportEsc(g.bgColor)}; color: ${_exportEsc(g.textColor)}; font-family: ${_exportEsc(g.bodyFont)};">
+    <div id="weddingCardFrame" class="w-full max-w-[430px] min-h-screen shadow-2xl relative overflow-hidden" style="background-color: ${_exportEsc(g.bgColor)}; color: ${_exportEsc(g.textColor)}; font-family: ${safeFont(g.bodyFont, DEFAULT_STATE.globalStyle.bodyFont)};">
         <div id="fallingContainer" class="inset-0 pointer-events-none overflow-hidden sticky top-0 h-0 z-40"></div>
 
         <button id="floatingMusicBtn" onclick="toggleAudioPlayback()" class="fixed bottom-5 left-5 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center text-white" style="background-color: ${_exportEsc(g.primaryColor)};" title="Bật/Tắt nhạc cưới">

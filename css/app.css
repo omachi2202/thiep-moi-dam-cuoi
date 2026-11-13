@@ -22,6 +22,31 @@
     position: relative;
 }
 
+/* Không để nội dung/hoa văn tràn ngang */
+.card-root,
+#sectionsViewport {
+    overflow-x: clip;
+}
+
+/* Có khung/hoa góc: chừa lề ngang để chữ không đè lên viền */
+.frame-single .wedding-section,
+.frame-double .wedding-section,
+.frame-floral-corner .wedding-section,
+.orn-leaf .wedding-section,
+.orn-rose .wedding-section {
+    padding-inline: 20px;
+}
+
+@media (max-width: 479px) {
+    .frame-double::after { border-width: 3px; }
+    .frame-floral-corner::after { background-size: 56px 56px; }
+    .orn-leaf::before,
+    .orn-rose::before {
+        background-size: 56px 56px;
+        opacity: 0.65;
+    }
+}
+
 /* Texture (gradient / SVG data URI, không tệp ngoài); nhẹ để chữ vẫn đọc được */
 .tex-paper {
     background-image:
@@ -156,7 +181,7 @@
 
 .reveal-on .reveal-fade-up:not(.is-visible) { transform: translateY(28px); }
 .reveal-on .reveal-zoom:not(.is-visible) { transform: scale(0.92); }
-.reveal-on .reveal-slide:not(.is-visible) { transform: translateX(-36px); }
+.reveal-on .reveal-slide:not(.is-visible) { transform: translateX(-20px); }
 
 .reveal-on .reveal-fade-up,
 .reveal-on .reveal-zoom,

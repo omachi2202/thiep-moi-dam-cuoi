@@ -34,38 +34,64 @@ function renderSectionListSidebar() {
         const subLabel = unknown
             ? '<span class="text-amber-600"><i class="fa-solid fa-triangle-exclamation"></i> Loại section không được hỗ trợ</span>'
             : (sec.visible ? 'Đang hiển thị' : 'Đang ẩn');
+        const menuOpen = window.__secMenuId === sec.id;
+        const sidAttr = escapeHtml(sec.id);
+        const last = idx >= appState.sections.length - 2 && appState.sections.length > 2;
+        const btnCls = 'w-8 h-8 rounded hover:bg-slate-200 flex items-center justify-center';
         return `
-        <div onclick="selectSection('${escapeHtml(sec.id)}')" class="p-3 rounded-xl border transition cursor-pointer flex items-center justify-between ${isSelected ? 'bg-violet-50 border-violet-500 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'} ${!sec.visible ? 'opacity-50' : ''}">
-            <div class="flex items-center gap-2.5 overflow-hidden">
+        <div onclick="selectSection('${sidAttr}')" class="px-2.5 py-1.5 min-h-[48px] rounded-xl border transition cursor-pointer flex items-center justify-between gap-1 ${isSelected ? 'bg-violet-50 border-violet-500 shadow-sm' : 'bg-white border-slate-200 hover:border-slate-300'} ${!sec.visible ? 'opacity-50' : ''}">
+            <div class="flex items-center gap-2 min-w-0 flex-1">
                 <div class="w-7 h-7 rounded-lg ${isSelected ? 'bg-violet-600 text-white' : 'bg-slate-100 text-slate-600'} flex items-center justify-center shrink-0 text-xs">
                     <i class="fa-solid ${escapeHtml(sec.icon)}"></i>
                 </div>
-                <div class="truncate">
-                    <div class="text-xs font-semibold text-slate-800 truncate">${escapeHtml(sec.name)}</div>
-                    <div class="text-[10px] text-slate-400">${subLabel}</div>
+                <div class="min-w-0">
+                    <div class="text-xs font-semibold text-slate-800 line-clamp-2 leading-tight" title="${escapeHtml(sec.name)}">${escapeHtml(sec.name)}</div>
+                    <div class="text-[10px] text-slate-400 leading-tight">${subLabel}</div>
                 </div>
             </div>
-            <div class="flex items-center gap-1 shrink-0" onclick="event.stopPropagation()">
-                <button onclick="moveSection(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="w-6 h-6 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 flex items-center justify-center" title="Lên trên">
-                    <i class="fa-solid fa-arrow-up text-[10px]"></i>
+            <div class="flex items-center shrink-0" onclick="event.stopPropagation()">
+                <button onclick="moveSection(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="${btnCls} text-slate-500 disabled:opacity-30" title="Lên trên">
+                    <i class="fa-solid fa-arrow-up text-[11px]"></i>
                 </button>
-                <button onclick="moveSection(${idx}, 1)" ${idx === appState.sections.length - 1 ? 'disabled' : ''} class="w-6 h-6 rounded hover:bg-slate-200 text-slate-500 disabled:opacity-30 flex items-center justify-center" title="Xuống dưới">
-                    <i class="fa-solid fa-arrow-down text-[10px]"></i>
+                <button onclick="moveSection(${idx}, 1)" ${idx === appState.sections.length - 1 ? 'disabled' : ''} class="${btnCls} text-slate-500 disabled:opacity-30" title="Xuống dưới">
+                    <i class="fa-solid fa-arrow-down text-[11px]"></i>
                 </button>
-                <button onclick="toggleSectionVisibility('${escapeHtml(sec.id)}')" class="w-6 h-6 rounded hover:bg-slate-200 ${sec.visible ? 'text-violet-600' : 'text-slate-400'} flex items-center justify-center" title="Ẩn/Hiện phần này">
+                <button onclick="toggleSectionVisibility('${sidAttr}')" class="${btnCls} ${sec.visible ? 'text-violet-600' : 'text-slate-400'}" title="Ẩn/Hiện phần này">
                     <i class="fa-solid ${sec.visible ? 'fa-eye' : 'fa-eye-slash'} text-xs"></i>
                 </button>
-                <button onclick="duplicateSection('${escapeHtml(sec.id)}')" class="w-6 h-6 rounded hover:bg-slate-200 text-slate-500 flex items-center justify-center" title="Nhân bản phần này">
-                    <i class="fa-solid fa-clone text-[10px]"></i>
-                </button>
-                <button onclick="deleteSection('${escapeHtml(sec.id)}')" class="w-6 h-6 rounded hover:bg-rose-100 text-rose-500 flex items-center justify-center" title="Xoá phần này">
-                    <i class="fa-solid fa-trash text-[10px]"></i>
-                </button>
+                <div class="relative">
+                    <button onclick="toggleSectionMenu('${sidAttr}')" class="${btnCls} text-slate-500" title="Thêm thao tác" aria-haspopup="true" aria-expanded="${menuOpen}">
+                        <i class="fa-solid fa-ellipsis text-xs"></i>
+                    </button>
+                    ${menuOpen ? `<div class="absolute right-0 ${last ? 'bottom-full mb-1' : 'top-full mt-1'} z-20 w-36 rounded-lg border border-slate-200 bg-white shadow-lg py-1">
+                        <button onclick="closeSectionMenu(); duplicateSection('${sidAttr}')" class="w-full min-h-[36px] px-3 text-left text-xs text-slate-700 hover:bg-slate-100 flex items-center gap-2"><i class="fa-solid fa-clone text-[10px]"></i> Nhân bản</button>
+                        <button onclick="closeSectionMenu(); deleteSection('${sidAttr}')" class="w-full min-h-[36px] px-3 text-left text-xs text-rose-600 hover:bg-rose-50 flex items-center gap-2"><i class="fa-solid fa-trash text-[10px]"></i> Xoá</button>
+                    </div>` : ''}
+                </div>
             </div>
         </div>
         `;
     }).join('') + renderAddSectionMenuHtml();
 }
+
+// Menu "⋯" của thẻ section: trạng thái giữ ở window vì sidebar được vẽ lại sau mỗi commit
+function toggleSectionMenu(secId) {
+    window.__secMenuId = window.__secMenuId === secId ? null : secId;
+    renderSectionListSidebar();
+}
+function closeSectionMenu() {
+    if (!window.__secMenuId) return;
+    window.__secMenuId = null;
+    renderSectionListSidebar();
+}
+window.toggleSectionMenu = toggleSectionMenu;
+window.closeSectionMenu = closeSectionMenu;
+document.addEventListener('click', function (e) {
+    if (window.__secMenuId && !(e.target.closest && e.target.closest('[aria-haspopup="true"]')) ) closeSectionMenu();
+});
+document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeSectionMenu();
+});
 
 // Nút "+ Thêm section" và danh sách loại lấy từ registry (loại mới đăng ký tự xuất hiện)
 function renderAddSectionMenuHtml() {
@@ -221,35 +247,35 @@ function renderDecorInspectorHtml(sec) {
             </summary>
             <div class="p-3 pt-0 space-y-3">
                 <div>
-                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Màu nền phần này</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Màu nền phần này</label>
                     <div class="flex items-center gap-1.5">
-                        <input type="color" value="${escapeHtml(bgc || '#ffffff')}" onchange="setSectionDecor('${sid}', 'bgColor', this.value)" class="w-8 h-7 rounded border border-slate-300 cursor-pointer">
-                        <button onclick="setSectionDecor('${sid}', 'bgColor', '')" class="text-[10px] text-slate-500 underline">Bỏ nền</button>
+                        <input type="color" value="${escapeHtml(bgc || '#ffffff')}" onchange="setSectionDecor('${sid}', 'bgColor', this.value)" class="w-10 h-9 rounded border border-slate-300 cursor-pointer">
+                        <button onclick="setSectionDecor('${sid}', 'bgColor', '')" class="min-h-[36px] px-2 text-[11px] text-slate-500 underline">Bỏ nền</button>
                     </div>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Ảnh nền (đường dẫn https://... hoặc /uploads/...)</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Ảnh nền (đường dẫn https://... hoặc /uploads/...)</label>
                     <input type="text" value="${escapeHtml(st.bgImage || '')}" onchange="setSectionDecor('${sid}', 'bgImage', this.value.trim())" class="w-full px-2.5 py-2 rounded-lg border border-slate-300" placeholder="https://...">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Lớp phủ sáng trên ảnh (${Math.round(op * 100)}%)</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Lớp phủ sáng trên ảnh (${Math.round(op * 100)}%)</label>
                     <input type="range" min="0" max="0.9" step="0.05" value="${op}" onchange="setSectionDecor('${sid}', 'bgOverlayOpacity', parseFloat(this.value))" class="w-full accent-violet-600">
                 </div>
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Khoảng cách trên/dưới</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Khoảng cách trên/dưới</label>
                         ${sel('paddingY', [['', 'Mặc định'], ['sm', 'Nhỏ'], ['md', 'Vừa'], ['lg', 'Lớn']])}
                     </div>
                     <div>
-                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Căn chữ</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Căn chữ</label>
                         ${sel('align', [['', 'Mặc định'], ['left', 'Trái'], ['center', 'Giữa'], ['right', 'Phải']])}
                     </div>
                     <div>
-                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Hiệu ứng xuất hiện</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Hiệu ứng xuất hiện</label>
                         ${sel('animation', [['', 'Theo toàn thiệp'], ['none', 'Không'], ['fade-up', 'Hiện dần'], ['zoom', 'Phóng to'], ['slide', 'Trượt']])}
                     </div>
                     <div>
-                        <label class="block text-[11px] font-medium text-slate-600 mb-1">Hoa văn viền phần</label>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Hoa văn viền phần</label>
                         ${sel('ornament', [['', 'Không'], ['top', 'Phía trên'], ['bottom', 'Phía dưới'], ['both', 'Cả hai']])}
                     </div>
                 </div>
@@ -308,7 +334,7 @@ function renderWeddingCanvas() {
 
     frame.style.backgroundColor = g.bgColor;
     frame.style.color = g.textColor;
-    frame.style.fontFamily = g.bodyFont;
+    frame.style.fontFamily = safeFontCss(g.bodyFont, DEFAULT_STATE.globalStyle.bodyFont);
     // Áp lớp G5 lên khung (giữ các lớp khác của frame, chỉ thay tex-/frame-/orn-)
     Array.from(frame.classList).forEach(cl => { if (/^(tex|frame|orn)-/.test(cl)) frame.classList.remove(cl); });
     cardDecorClasses(g).split(' ').forEach(cl => frame.classList.add(cl));
@@ -405,18 +431,18 @@ function renderRightInspector() {
                 <i class="fa-solid fa-font text-violet-600"></i> Kiểu chữ riêng của Phần này
             </div>
             <div>
-                <label class="block text-[11px] font-medium text-slate-600 mb-1">Phông chữ Tiêu đề phần này</label>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Phông chữ Tiêu đề phần này</label>
                 <select onchange="updateSectionStyle('${sid}', 'customFont', this.value)" class="w-full px-2.5 py-2 rounded-lg border border-slate-300 bg-white">
                     ${fontOptionsHtml}
                 </select>
             </div>
             <div class="grid grid-cols-2 gap-2">
                 <div>
-                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Cỡ tiêu đề (${escapeHtml(sec.customTitleSize)}px)</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Cỡ tiêu đề (${escapeHtml(sec.customTitleSize)}px)</label>
                     <input type="range" min="18" max="48" value="${escapeHtml(sec.customTitleSize)}" oninput="updateSectionStyle('${sid}', 'customTitleSize', this.value)" class="w-full accent-violet-600 mt-1.5">
                 </div>
                 <div>
-                    <label class="block text-[11px] font-medium text-slate-600 mb-1">Màu chữ riêng</label>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">Màu chữ riêng</label>
                     <div class="flex items-center gap-1.5">
                         <input type="color" value="${escapeHtml(sec.customTextColor || appState.globalStyle.textColor)}" onchange="updateSectionStyle('${sid}', 'customTextColor', this.value)" class="w-8 h-7 rounded border border-slate-300 cursor-pointer">
                         <button onclick="updateSectionStyle('${sid}', 'customTextColor', '')" class="text-[10px] text-slate-500 underline">Mặc định</button>
