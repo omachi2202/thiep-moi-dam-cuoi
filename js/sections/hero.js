@@ -63,7 +63,7 @@ registerSection({
 
         if (layout === 'fade') {
             return `
-                <div class="hero-fade text-center pb-8" style="color: ${v.secColor};">
+                <div class="hero-fade hero-bleed text-center pb-8" style="color: ${v.secColor};">
                     <div class="hero-fade-stage">
                         <div class="hero-fade-media">
                             <img src="${img}" alt="Wedding Banner" onerror="${HERO_PLACEHOLDER}">
@@ -94,7 +94,7 @@ registerSection({
 
         if (layout === 'arch') {
             return `
-                <div class="hero-arch text-center" style="background: ${v.pc}; --hero-arch-ink: ${heroInkFor(v.pc)};">
+                <div class="hero-arch hero-bleed text-center" style="background: ${v.pc}; --hero-arch-ink: ${heroInkFor(v.pc)};">
                     <div class="hero-arch-head">
                         <div class="hero-arch-mono" style="font-family: ${v.scriptFont};" ${f('monogram')}>${t('monogram')}</div>
                         <p class="hero-arch-tag" style="font-family: ${v.secFont};" ${f('tagline')}>${t('tagline')}</p>
@@ -112,7 +112,7 @@ registerSection({
 
         if (layout === 'fullscreen') {
             return `
-                <div class="hero-full">
+                <div class="hero-full hero-bleed">
                     <img class="hero-full-img" src="${img}" alt="Wedding Banner" onerror="${HERO_PLACEHOLDER}">
                     <div class="hero-full-shade"></div>
                     <div class="hero-full-body">

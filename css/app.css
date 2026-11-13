@@ -547,6 +547,15 @@
 }
 
 /* ===== Trang bìa: layout (T27) ===== */
+/* --- tràn viền: bù padding-inline 20px của khung/hoa góc --- */
+.frame-single .hero-bleed,
+.frame-double .hero-bleed,
+.frame-floral-corner .hero-bleed,
+.orn-leaf .hero-bleed,
+.orn-rose .hero-bleed {
+    margin-inline: -20px;
+}
+
 /* --- fade: ảnh tràn viền, mép dưới mờ vào nền khung --- */
 .hero-fade { overflow: hidden; }
 .hero-fade-stage { position: relative; }
@@ -587,8 +596,10 @@
 .hero-arch { color: var(--hero-arch-ink, #efe3c4); overflow: hidden; }
 .hero-arch-head { padding: 32px 20px 22px; }
 .hero-arch-mono {
-    width: 64px; height: 64px; margin: 0 auto 14px; border: 1px solid #c9a96e; border-radius: 9999px;
-    display: flex; align-items: center; justify-content: center; font-size: 22px; color: var(--hero-arch-ink, #efe3c4);
+    min-width: 64px; width: fit-content; max-width: 90%; height: 64px; margin: 0 auto 14px; padding: 0 16px;
+    border: 1px solid #c9a96e; border-radius: 999px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    white-space: nowrap; font-size: clamp(15px, 5vw, 22px); color: var(--hero-arch-ink, #efe3c4);
 }
 .hero-arch-tag { font-size: 10px; letter-spacing: .3em; text-transform: uppercase; margin-bottom: 8px; opacity: .9; }
 .hero-arch-names { text-transform: uppercase; letter-spacing: .06em; line-height: 1.15; overflow-wrap: anywhere; }
