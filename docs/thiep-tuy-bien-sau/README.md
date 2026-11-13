@@ -15,7 +15,7 @@
 | T5 | Test API pytest | `server/tests/test_api.py` | py-backend | 3 | T2 | không | xong |
 | T6 | commitState, undo/redo, autosave, JSON, upload | `js/store.js`, `js/editor.js` | frontend-ui | 4 | T3, T4 | có | chờ |
 | T7 | Thêm/nhân bản/xoá section + preset toàn thiệp | `js/section_ops.js`, `js/render.js`, `js/state.js` | frontend-ui | 4 | T3 | không | chờ |
-| T8 | Client API + modal Xuất bản | `js/api.js`, `index.html` | frontend-ui | 4 | T2, T3 | có | chờ |
+| T8 | Client API + modal Xuất bản | `js/api.js`, `index.html` | frontend-ui | 4 | T2, T3 | có | xong (T8.1 đang sửa) |
 | T9 | Section story + video | `js/sections/story.js`, `js/sections/video.js` | frontend-ui | 5 | T7 | không | chờ |
 | T10 | Section map + dresscode | `js/sections/map.js`, `js/sections/dresscode.js` | frontend-ui | 5 | T7 | không | chờ |
 | T11 | Section wishes + gift (VietQR) | `js/sections/wishes.js`, `js/sections/gift.js` | frontend-ui | 5 | T7, T8 | có | chờ |
@@ -35,3 +35,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T5** (2026-11-13): `py -m pytest server/tests -q` cho 27 passed (warning chỉ là DeprecationWarning của thư viện), không tạo `data/` trong repo. Chưa phủ: 503 PermissionError, rate limit GET wishes/upload.
 - **T2.2** (2026-11-13): chỉ cách ly xlsx khi thật sự hỏng; OSError trả 503 và không đổi tên tệp; tên tệp cách ly thêm 4 hex. pytest: 29 passed. reviewer-code: ĐẠT.
 - **T3** (2026-11-13): kiểm bằng vm: đủ 6 loại theo hợp đồng, migrate idempotent, XSS cơ bản bị chặn. Ảnh chụp headless editor sau T3 giống hệt mốc trước T1. reviewer-code: ĐẠT, có 4 mục NÊN SỬA (N1 injection qua id trong onclick, N2 CSS injection, N3 focusout ghi lại khi không sửa/IN HOA, N4 render không chịu lỗi), giao phiếu T3.1 sửa trước đợt 4.
+- **T8** (2026-11-13): chạy tích hợp thật với backend: publish lần 1 có editKey và lưu lại, lần 2 dùng lại key, sai key báo lỗi tiếng Việt, wishes/rsvp chạy, state gửi lên đã bỏ trường editor. reviewer-code: ĐẠT, có 3 mục NÊN SỬA (timeout request, race khi vẽ QR, SRI), giao T8.1. Đưa vào backlog: ô nhập edit key thủ công cho slug đã tồn tại (G3); CSP cho /c/ (đề xuất kiểm ở T15).
