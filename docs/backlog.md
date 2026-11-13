@@ -9,3 +9,10 @@ Mỗi dòng: việc — lý do — ưu tiên (Cao / Trung bình / Thấp).
 - Kiểm thử `handleAlbumFileUpload` và upload nhạc trên trình duyệt thật — chưa kiểm tay — Trung bình.
 - Kiểm tay toàn bộ trên trình duyệt thật (Chrome extension bị chặn localhost trong phiên làm); danh sách kiểm ở `PLAN_THUC_HIEN.md` mục Kiểm thử — chưa có xác nhận hành vi thực tế — Cao.
 - Thêm test DOM tự động (CDP/Playwright) cho mount RSVP/wishes, intro, undo — hiện chỉ có test API, phần front-end chưa được kiểm tự động — Trung bình.
+- Export HTML khi mở bằng file:// đang bị chặn (vi phạm Điều 7 Hiến pháp) — chờ người dùng quyết: duyệt ngoại lệ (AD-003 + sửa Điều 7) hoặc làm cơ chế nhúng nguồn JS sẵn trong index.html — Cao.
+- Hộp "Mẹo sử dụng nhanh" tĩnh ở `index.html`:~106 — thêm nút đóng + nhớ trạng thái — Thấp.
+- `POST /api/upload` không cần edit key (chỉ rate limit) — cân nhắc yêu cầu key/slug để tránh làm đầy đĩa — Trung bình.
+- `GET export.xlsx?key=` — key lọt vào log/lịch sử trình duyệt; chỉ nhận header, front-end tải bằng fetch + blob — Trung bình.
+- Tailwind Play CDN chưa ghim phiên bản (Điều 2) — ghim hoặc build CSS tĩnh (gộp với mục CSP ở trên) — Trung bình.
+- Markup khung/modal mừng cưới lặp ở `invite.html` và chuỗi export trong `editor.js` — gộp thành một nguồn — Trung bình.
+- `CLAUDE.md` viết tiếng Anh trong khi Điều 1 yêu cầu tài liệu tiếng Việt — quyết định giữ hay dịch — Thấp.

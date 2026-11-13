@@ -205,11 +205,6 @@ function updateBankInfo(side, field, value) {
     commitState('bank:' + side + ':' + field, { skipInspector: true, mergeKey: 'bank:' + side + ':' + field });
 }
 
-// Section đầu tiên theo type (không tra theo id)
-function getFirstSectionOfType(state, type) {
-    return ((state && state.sections) || []).find(s => s && s.type === type) || null;
-}
-
 // 8. CHẾ ĐỘ XEM THỰC TẾ (PREVIEW) & KHÔI PHỤC MẶC ĐỊNH
 function setPreviewMode(isPreview) {
     appState.isPreviewMode = isPreview;
@@ -244,7 +239,10 @@ function resetToDefault() {
 // 9. TRÌNH XUẤT FILE HTML ĐỘC LẬP (1-CLICK EXPORT STANDALONE WEB PAGE)
 // Export = CDN + inline css/app.css + js/state.js + api.js + runtime.js + sections/*.js + render.js
 // + window.__CARD_STATE__ + bootstrap (renderCardHtml mode 'export' rồi CardRuntime.init).
-const EXPORT_SECTION_FILES = ['hero', 'family', 'events', 'countdown', 'rsvp', 'album', 'story', 'video', 'map', 'dresscode', 'wishes', 'gift', 'thanks'];
+// Suy từ registry: mỗi type [a-z]+ tương ứng js/sections/<type>.js
+function getExportSectionFiles() {
+    return Object.keys(window.SECTION_TYPES || {}).filter(t => /^[a-z]+$/.test(t));
+}
 
 function _exportEsc(s) {
     if (typeof escapeHtml === 'function') return escapeHtml(s);
@@ -285,7 +283,7 @@ async function openExportModal() {
     }
 
     const jsFiles = ['js/state.js', 'js/api.js', 'js/runtime.js']
-        .concat(EXPORT_SECTION_FILES.map(n => 'js/sections/' + n + '.js'))
+        .concat(getExportSectionFiles().map(n => 'js/sections/' + n + '.js'))
         .concat(['js/render.js']);
 
     let css, scripts;
@@ -303,9 +301,8 @@ async function openExportModal() {
     state.isPreviewMode = false;
 
     const g = state.globalStyle || {};
-    const heroSec = getFirstSectionOfType(state, 'hero');
-    const pageTitle = heroSec && heroSec.data && heroSec.data.coupleShortName
-        ? `Thiệp Cưới ${heroSec.data.coupleShortName}` : 'Thiệp Cưới Online';
+    const titleName = typeof cardPageTitle === 'function' ? cardPageTitle(state) : '';
+    const pageTitle = titleName ? `Thiệp Cưới ${titleName}` : 'Thiệp Cưới Online';
     const audioSrc = (typeof safeAudioUrl === 'function' ? safeAudioUrl(g.audioUrl) : (typeof safeUrl === 'function' ? safeUrl(g.audioUrl) : g.audioUrl)) || '';
 
     const inlineScripts = scripts.map(code => `<script>\n${_exportInlineJs(code)}\n<\/script>`).join('\n');

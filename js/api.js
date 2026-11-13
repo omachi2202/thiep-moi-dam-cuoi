@@ -122,8 +122,7 @@
     function suggestSlug() {
         let name = '';
         try {
-            const hero = (appState.sections || []).find(s => s.type === 'hero');
-            name = hero && hero.data && hero.data.coupleShortName || '';
+            name = (typeof window.cardPageTitle === 'function' ? window.cardPageTitle(appState) : '') || '';
         } catch (e) { /* appState chưa sẵn sàng */ }
         const s = slugify(name);
         return s.length >= 3 ? s : '';

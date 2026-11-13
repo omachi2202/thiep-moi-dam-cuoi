@@ -43,6 +43,11 @@ registerSection({
         weddingIsoDate: '2026-10-24T16:00:00',
         calendarTitle: 'THÁNG 10 / 2026'
     }),
+    // Hook tuỳ chọn: ngày giờ cưới + tiêu đề dự phòng cho nút thêm vào lịch
+    calendarEvent(sec) {
+        const d = (sec && sec.data) || {};
+        return { title: d.quoteTitle || '', iso: d.weddingIsoDate || null };
+    },
     renderCanvas(sec, ctx) {
         const v = sectionVars(sec, ctx);
         const d = sec.data;

@@ -17,6 +17,11 @@ registerSection({
         event2Venue: 'Tại Tư Gia Nhà Trai - Cẩm Lý, Lục Nam, Bắc Giang',
         event2MapUrl: 'https://maps.google.com/?q=Cam+Ly+Luc+Nam+Bac+Giang'
     }),
+    // Hook tuỳ chọn: sự kiện 1 cho nút thêm vào lịch (không có ngày giờ riêng)
+    calendarEvent(sec) {
+        const d = (sec && sec.data) || {};
+        return { title: d.event1Title || '', location: d.event1Venue || '', iso: null };
+    },
     renderCanvas(sec, ctx) {
         const v = sectionVars(sec, ctx);
         const d = sec.data;

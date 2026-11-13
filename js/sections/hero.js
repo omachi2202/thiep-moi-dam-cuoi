@@ -10,6 +10,8 @@ registerSection({
         heroImage: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=900&q=80',
         subNote: 'Trân trọng báo tin lễ thành hôn của chúng mình'
     }),
+    // Hook tuỳ chọn: tiêu đề trang = tên cặp đôi
+    pageTitle(sec) { return (sec && sec.data && sec.data.coupleShortName) || ''; },
     renderCanvas(sec, ctx) {
         const v = sectionVars(sec, ctx);
         const d = sec.data;

@@ -180,9 +180,9 @@
                         frame.style.color = safeColor(g.textColor, '#3d312a');
                         frame.style.fontFamily = safeFontCss(g.bodyFont, "'Noto Serif', serif");   // chuỗi không escape cho CSSOM
 
-                        var hero = state.sections.filter(function (s) { return s.type === 'hero' && s.data; })[0];
-                        if (hero && hero.data.coupleShortName) {
-                            document.title = 'Thiệp Cưới ' + String(hero.data.coupleShortName);
+                        var pageName = (typeof window.cardPageTitle === 'function') ? window.cardPageTitle(state) : '';
+                        if (pageName) {
+                            document.title = 'Thiệp Cưới ' + pageName;
                         }
 
                         var ctx = { appState: state, mode: 'invite', guestName: guestName, slug: slug };

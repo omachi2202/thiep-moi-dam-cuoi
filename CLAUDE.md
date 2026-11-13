@@ -8,7 +8,7 @@ Web app for customizing wedding invitations (thiệp cưới online), in the spi
 
 ## Running
 
-No build step, no npm, no bundler (Hiến pháp Điều 2). Front-end is plain `<script>` files; libs (Tailwind, Font Awesome, Google Fonts, pinned versions) load from CDN. Backend is FastAPI. From the repo root:
+No build step, no npm, no bundler (Hiến pháp Điều 2). Front-end is plain `<script>` files; libs load from CDN: Font Awesome 6.5.1 and qrcodejs 1.0.0 (with SRI) are pinned; Tailwind Play CDN (`cdn.tailwindcss.com`) is NOT pinned yet (see docs/backlog.md); Google Fonts. Backend is FastAPI. From the repo root:
 
 ```bash
 py -m pip install -r server/requirements.txt
@@ -30,15 +30,17 @@ py -m pytest server/tests -q
 
 ## Section registry
 
-Each section type is exactly one file `js/sections/<type>.js` calling `registerSection({type, label, icon, defaults, renderCanvas(sec, ctx), renderInspector(sec), mount?(root, sec, ctx), migrate?(data)})`. `ctx = {appState, mode, guestName, slug}`, `mode` is `editor | invite | export`. `renderCanvas` is pure (no fetch/side effects, no `contenteditable` outside editor mode).
+Each section type is exactly one file `js/sections/<type>.js` calling `registerSection({type, label, icon, defaults, renderCanvas(sec, ctx), renderInspector(sec), mount?(root, sec, ctx), migrate?(data), pageTitle?(sec), calendarEvent?(sec)})`. `ctx = {appState, mode, guestName, slug}`, `mode` is `editor | invite | export`. `renderCanvas` is pure (no fetch/side effects, no `contenteditable` outside editor mode).
 
-Adding a type = create the file + add a `<script>` tag in **both** `index.html` and `invite.html`. Never branch on `sec.id`/`sec.type` in `render.js`, `editor.js`, `runtime.js`. In sections use `sectionVars(sec, ctx)` for per-section style, `fieldAttr(ctx, key)` for inline-editable fields (`data-field`), and sanitize every user value with `escapeHtml`, URLs with `safeUrl`, colors with `safeColor`, fonts with `safeFont`.
+Optional hooks: `pageTitle(sec)` gives the page title (page, export, slug suggestion); `calendarEvent(sec)` returns `{title, location, iso}` (calendar buttons). Runtime/editor/invite read them via `cardPageTitle(state)` / `cardCalendarEvent(state)` in `runtime.js` — the correct way to pull info from sections without comparing `type` (being implemented in ticket T18).
+
+Adding a type = create the file + add a `<script>` tag in **both** `index.html` and `invite.html`. The section file list for export is derived from the registry (`Object.keys(SECTION_TYPES)`), so nothing else is needed. Never branch on `sec.id`/`sec.type` in `render.js`, `editor.js`, `runtime.js`. In sections use `sectionVars(sec, ctx)` for per-section style, `fieldAttr(ctx, key)` for inline-editable fields (`data-field`), and sanitize every user value with `escapeHtml`, URLs with `safeUrl`, colors with `safeColor`, fonts with `safeFont`.
 
 ## State, migrate, undo
 
 `appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 3) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
 
-All mutations go through a mutator ending in `commitState(label)` (undo snapshot, autosave to localStorage `thiep:draft`, re-render). Never assign `appState` from UI code. Undo stack is capped (50 entries / ~30M chars).
+All mutations go through a mutator ending in `commitState(label)` (undo snapshot, autosave to localStorage `thiep:draft`, re-render). Never assign `appState` from UI code. Exception (Điều 5): `selectedSectionId` and `isPreviewMode` are UI state and change without `commitState`; read-only pages (`invite.html`, exported file) assign `appState` directly. Undo stack is capped (50 entries / ~30M chars).
 
 ## Shared runtime
 
@@ -47,7 +49,7 @@ All mutations go through a mutator ending in `commitState(label)` (undo snapshot
 ## Guest page and export
 
 - Guest page `/c/<slug>?khach=<tên>`: `invite.html` fetches `GET /api/cards/<slug>`, `migrate`, renders `mode:'invite'`; guest name is decoded, cut to 60 chars, escaped, replaces `{khach}`.
-- Export HTML (`openExportModal` in `editor.js`) builds a self-contained file by inlining CSS + `state/api/runtime/sections/render` JS + `window.__CARD_STATE__` + a bootstrap that reuses the same runtime. It fetches those files, so it needs the server (not `file://`).
+- Export HTML (`openExportModal` in `editor.js`) builds a self-contained file by inlining CSS + `state/api/runtime/sections/render` JS + `window.__CARD_STATE__` + a bootstrap that reuses the same runtime. It fetches those files, so it needs the server (not `file://`) — pending decision (Điều 7), see docs/backlog.md.
 - RSVP/wishes post only via `window.api.postRsvp/postWish/getWishes`.
 
 ## Backend

@@ -363,19 +363,15 @@ let countdownInterval = null;
         if (!slots.length || !st || !st.sections) return;
         const primary = (typeof safeColor === 'function' && st.globalStyle)
             ? safeColor(st.globalStyle.primaryColor, '#8c6239') : '#8c6239';
-        const evSec = st.sections.find(function (s) { return s.type === 'events' && s.data; });
+        const calEv = window.cardCalendarEvent(st);
 
         slots.forEach(function (slot) {
             slot.textContent = '';
-            const holder = slot.closest('[data-section-id]');
-            const sid = holder ? holder.getAttribute('data-section-id') : '';
-            const sec = st.sections.find(function (s) { return s.id === sid; });
-            if (!sec || !sec.data) return;
-            const start = parseVnLocal(sec.data.weddingIsoDate);
+            const start = parseVnLocal(calEv.iso);
             if (!start) return;
             const end = new Date(start.getTime() + EVENT_HOURS * 3600000);
-            const title = String((evSec && evSec.data.event1Title) || sec.data.quoteTitle || 'Lễ cưới').trim();
-            const place = String((evSec && evSec.data.event1Venue) || '').trim();
+            const title = String(calEv.title || 'Lễ cưới').trim();
+            const place = String(calEv.location || '').trim();
 
             const gUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
                 '&text=' + encodeURIComponent(title) +
@@ -570,6 +566,42 @@ let countdownInterval = null;
         }
     }
 
+    // ---------- Hook section dùng chung (không rẽ nhánh theo type) ----------
+    function visibleDefs(state, hook) {
+        const out = [];
+        ((state && state.sections) || []).forEach(function (sec) {
+            if (!sec || sec.visible === false) return;
+            const def = typeof window.getSectionDef === 'function' ? window.getSectionDef(sec.type) : null;
+            if (def && typeof def[hook] === 'function') out.push({ def: def, sec: sec });
+        });
+        return out;
+    }
+
+    // Tiêu đề trang: section hiển thị đầu tiên có pageTitle khác rỗng ('' nếu không có)
+    function cardPageTitle(state) {
+        const list = visibleDefs(state, 'pageTitle');
+        for (let i = 0; i < list.length; i++) {
+            const t = list[i].def.pageTitle(list[i].sec);
+            if (t !== undefined && t !== null && String(t) !== '') return String(t);
+        }
+        return '';
+    }
+
+    // Sự kiện lịch: iso từ section đầu tiên có iso; title/location từ section đầu tiên có giá trị
+    function cardCalendarEvent(state) {
+        const res = { title: '', location: '', iso: null };
+        visibleDefs(state, 'calendarEvent').forEach(function (x) {
+            const e = x.def.calendarEvent(x.sec);
+            if (!e) return;
+            if (!res.iso && e.iso) res.iso = e.iso;
+            if (!res.title && e.title) res.title = e.title;
+            if (!res.location && e.location) res.location = e.location;
+        });
+        return res;
+    }
+
+    window.cardPageTitle = cardPageTitle;
+    window.cardCalendarEvent = cardCalendarEvent;
     window.CardRuntime = { init: init, destroy: destroy };
     window.showToast = showToast;
     window.startCountdownTimer = startCountdownTimer;
