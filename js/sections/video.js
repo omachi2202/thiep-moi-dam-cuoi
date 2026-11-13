@@ -49,7 +49,7 @@
                 <div class="py-10 px-6 text-center space-y-5" style="color: ${v.secColor};">
                     <div class="space-y-1">
                         <h3 class="font-bold tracking-widest uppercase" style="font-family: ${v.secFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${fieldAttr(ctx, 'title')}>${escapeHtml(d.title)}</h3>
-                        <p class="text-[11px] tracking-[0.22em] uppercase opacity-70" ${fieldAttr(ctx, 'subtitle')}>${escapeHtml(d.subtitle)}</p>
+                        <p class="text-xs tracking-[0.22em] uppercase opacity-80" ${fieldAttr(ctx, 'subtitle')}>${escapeHtml(d.subtitle)}</p>
                     </div>
                     <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-sm border border-white bg-black/5">
                         ${player}
@@ -72,7 +72,7 @@
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1">Đường dẫn video (YouTube hoặc .mp4)</label>
                     <input type="text" value="${escapeHtml(d.url)}" placeholder="https://www.youtube.com/watch?v=..." oninput="updateSectionField('${id}','url',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs">
-                    <p class="text-[11px] mt-1 ${bad ? 'text-red-600' : 'text-slate-400'}">${bad ? 'Đường dẫn chưa hợp lệ.' : 'Hỗ trợ YouTube (watch, youtu.be, embed, shorts) và tệp .mp4 (http/https hoặc /uploads/).'}</p>
+                    <p class="text-[11px] mt-1 ${bad ? 'text-red-600' : 'text-slate-500'}">${bad ? 'Đường dẫn chưa hợp lệ.' : 'Hỗ trợ YouTube (watch, youtu.be, embed, shorts) và tệp .mp4 (http/https hoặc /uploads/).'}</p>
                 </div>
             `;
         }

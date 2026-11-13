@@ -51,12 +51,12 @@ registerSection({
         const cell = (id, label) => `
                             <div class="bg-white rounded-xl py-3 px-2 shadow-sm border border-amber-900/10">
                                 <span id="${id}" class="block text-xl font-bold" style="color: ${v.pc}; font-family: ${v.secFont};">00</span>
-                                <span class="text-[10px] uppercase opacity-70">${label}</span>
+                                <span class="text-[11px] uppercase opacity-80">${label}</span>
                             </div>`;
         return `
                 <div class="py-10 px-6 text-center space-y-6" style="color: ${v.secColor};">
                     <div class="space-y-2">
-                        <h3 class="font-bold" style="font-family: ${v.scriptFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${fieldAttr(ctx, 'quoteTitle')}>${escapeHtml(d.quoteTitle)}</h3>
+                        <h3 style="font-family: ${v.scriptFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${fieldAttr(ctx, 'quoteTitle')}>${escapeHtml(d.quoteTitle)}</h3>
                         <p class="text-xs italic leading-relaxed px-2 opacity-85" ${fieldAttr(ctx, 'quoteText')}>${escapeHtml(d.quoteText)}</p>
                     </div>
 

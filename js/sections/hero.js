@@ -20,7 +20,7 @@ registerSection({
                         <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
                         <div class="absolute bottom-8 inset-x-4 text-white">
                             <p class="tracking-[0.28em] text-xs uppercase mb-2 opacity-90" ${fieldAttr(ctx, 'tagline')}>${escapeHtml(d.tagline)}</p>
-                            <h1 class="font-bold mb-2 drop-shadow" style="font-family: ${v.scriptFont}; font-size: ${v.titleSize};" ${fieldAttr(ctx, 'coupleShortName')}>${escapeHtml(d.coupleShortName)}</h1>
+                            <h1 class="mb-2 drop-shadow" style="font-family: ${v.scriptFont}; font-size: ${v.titleSize};" ${fieldAttr(ctx, 'coupleShortName')}>${escapeHtml(d.coupleShortName)}</h1>
                             <div class="w-16 h-[1px] bg-white/70 mx-auto my-3"></div>
                             <p class="text-xl tracking-[0.2em] font-semibold" style="font-family: ${v.secFont};" ${fieldAttr(ctx, 'dateDisplay')}>${escapeHtml(d.dateDisplay)}</p>
                         </div>

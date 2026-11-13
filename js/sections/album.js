@@ -34,7 +34,7 @@ registerSection({
                 <div class="py-10 px-6 text-center space-y-6" style="color: ${v.secColor};">
                     <div class="space-y-1">
                         <h3 class="font-bold tracking-widest uppercase" style="font-family: ${v.secFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${fieldAttr(ctx, 'albumTitle')}>${escapeHtml(d.albumTitle)}</h3>
-                        <p class="text-[11px] tracking-[0.22em] uppercase opacity-70" ${fieldAttr(ctx, 'albumSubtitle')}>${escapeHtml(d.albumSubtitle)}</p>
+                        <p class="text-xs tracking-[0.22em] uppercase opacity-80" ${fieldAttr(ctx, 'albumSubtitle')}>${escapeHtml(d.albumSubtitle)}</p>
                     </div>
 
                     <!-- Lưới 6 ảnh cưới -->
@@ -49,7 +49,7 @@ registerSection({
                     </div>
 
                     <!-- Footer Credit -->
-                    <div class="pt-4 text-[10px] tracking-[0.2em] uppercase opacity-50" ${fieldAttr(ctx, 'footerCredit')}>
+                    <div class="pt-4 text-[11px] tracking-[0.2em] uppercase opacity-60" ${fieldAttr(ctx, 'footerCredit')}>
                         ${escapeHtml(d.footerCredit)}
                     </div>
                 </div>`;

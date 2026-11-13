@@ -109,7 +109,7 @@
                 <div class="py-10 px-6 space-y-6" style="color: ${v.secColor};">
                     <div class="text-center space-y-1">
                         <h3 class="font-bold tracking-widest uppercase" style="font-family: ${v.secFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${fieldAttr(ctx, 'title')}>${escapeHtml(d.title)}</h3>
-                        <p class="text-[11px] tracking-[0.22em] uppercase opacity-70" ${fieldAttr(ctx, 'subtitle')}>${escapeHtml(d.subtitle)}</p>
+                        <p class="text-xs tracking-[0.22em] uppercase opacity-80" ${fieldAttr(ctx, 'subtitle')}>${escapeHtml(d.subtitle)}</p>
                     </div>
                     <div class="relative">
                         <span class="absolute left-[12px] top-2 bottom-2 w-px" style="background: ${v.pc}; opacity: .35;"></span>
@@ -155,7 +155,7 @@
                 </div>
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1.5">Các mốc thời gian</label>
-                    <div class="space-y-2">${cards || '<p class="text-[11px] text-slate-400">Chưa có mốc nào.</p>'}</div>
+                    <div class="space-y-2">${cards || '<p class="text-[11px] text-slate-500">Chưa có mốc nào.</p>'}</div>
                     <button type="button" onclick="storyAddItem('${id}')" class="mt-2 w-full py-2 rounded-lg border border-dashed border-slate-400 text-slate-600 hover:bg-slate-50 text-xs font-semibold"><i class="fa-solid fa-plus mr-1"></i> Thêm mốc</button>
                 </div>
             `;

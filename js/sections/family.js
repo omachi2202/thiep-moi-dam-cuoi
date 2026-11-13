@@ -24,23 +24,23 @@ registerSection({
                         <div class="space-y-1 pr-2 border-r border-amber-900/15">
                             <p class="font-bold uppercase tracking-wider text-[11px]" style="color: ${v.pc};">Nhà Trai</p>
                             <p class="whitespace-pre-line font-semibold leading-relaxed" ${fieldAttr(ctx, 'groomParents')}>${escapeHtml(d.groomParents)}</p>
-                            <p class="text-[11px] opacity-75" ${fieldAttr(ctx, 'groomAddress')}>${escapeHtml(d.groomAddress)}</p>
+                            <p class="text-xs opacity-80" ${fieldAttr(ctx, 'groomAddress')}>${escapeHtml(d.groomAddress)}</p>
                         </div>
                         <div class="space-y-1 pl-2">
                             <p class="font-bold uppercase tracking-wider text-[11px]" style="color: ${v.pc};">Nhà Gái</p>
                             <p class="whitespace-pre-line font-semibold leading-relaxed" ${fieldAttr(ctx, 'brideParents')}>${escapeHtml(d.brideParents)}</p>
-                            <p class="text-[11px] opacity-75" ${fieldAttr(ctx, 'brideAddress')}>${escapeHtml(d.brideAddress)}</p>
+                            <p class="text-xs opacity-80" ${fieldAttr(ctx, 'brideAddress')}>${escapeHtml(d.brideAddress)}</p>
                         </div>
                     </div>
 
                     <!-- Lời mời -->
                     <div class="space-y-1.5">
                         <h3 class="font-bold tracking-[0.15em] text-sm" style="font-family: ${v.secFont}; color: ${v.pc};" ${fieldAttr(ctx, 'inviteHeader')}>${escapeHtml(d.inviteHeader)}</h3>
-                        <p class="text-[11px] uppercase tracking-widest opacity-75" ${fieldAttr(ctx, 'inviteSub')}>${escapeHtml(d.inviteSub)}</p>
+                        <p class="text-xs uppercase tracking-widest opacity-80" ${fieldAttr(ctx, 'inviteSub')}>${escapeHtml(d.inviteSub)}</p>
                     </div>
 
                     <!-- Tên đầy đủ Cô Dâu & Chú Rể -->
-                    <div class="py-2 space-y-1" style="font-family: ${v.scriptFont}; font-size: ${v.titleSize};">
+                    <div class="py-2 space-y-1" style="font-family: ${v.secFont}; font-size: ${v.titleSize};">
                         <div class="font-bold" ${fieldAttr(ctx, 'groomFullName')}>${escapeHtml(d.groomFullName)}</div>
                         <div class="text-base opacity-70">&amp;</div>
                         <div class="font-bold" ${fieldAttr(ctx, 'brideFullName')}>${escapeHtml(d.brideFullName)}</div>
