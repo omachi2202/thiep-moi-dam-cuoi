@@ -156,6 +156,9 @@ const FONT_OPTIONS = [
     { label: 'Playfair Display (Tạp chí)', value: "'Playfair Display', serif" },
     { label: 'Cormorant Garamond (Tinh tế)', value: "'Cormorant Garamond', serif" },
     { label: 'Oswald (Hiện đại in hoa)', value: "'Oswald', sans-serif" },
+    { label: 'Roboto Slab (Rõ nét)', value: "'Roboto Slab', serif" },
+    { label: 'Tinos (Cổ điển sắc nét)', value: "'Tinos', serif" },
+    { label: 'Open Sans (Dễ đọc, hiện đại)', value: "'Open Sans', sans-serif" },
     { label: 'Montserrat (Trẻ trung)', value: "'Montserrat', sans-serif" }
 ];
 
@@ -197,7 +200,14 @@ const THEME_PRESETS = {
 
 // 2. REGISTRY SECTION, TIỆN ÍCH CHUNG & MIGRATE (giao kèo G2/G4)
 const SCHEMA_VERSION = 2;
-window.SECTION_TYPES = {};
+window.SECTION_TYPES = Object.create(null);
+
+// Tra registry an toàn: chỉ trả def hợp lệ (có renderCanvas là hàm), ngược lại null
+function getSectionDef(type) {
+    const def = window.SECTION_TYPES[type];
+    return (def && typeof def.renderCanvas === 'function') ? def : null;
+}
+window.getSectionDef = getSectionDef;
 
 // Mỗi tệp js/sections/<type>.js gọi đúng một lần để tự đăng ký
 function registerSection(def) {
@@ -224,7 +234,8 @@ function safeUrl(u) {
 
 // Biến dùng chung cho renderCanvas của các section (giá trị đã escape, dùng được trong thuộc tính style)
 // Whitelist giá trị state trước khi chèn vào thuộc tính style= (chống CSS injection)
-// Màu: chỉ #rgb/#rrggbb/#rrggbbaa; sai trả fallback
+// Màu: chỉ #rgb/#rrggbb/#rrggbbaa; sai trả fallback.
+// Lưu ý: màu không phải #hex (rgb(), tên màu...) từ JSON cũ sẽ về màu mặc định.
 function safeColor(c, fallback) {
     const s = String(c === undefined || c === null ? '' : c).trim();
     return /^#[0-9a-f]{3,8}$/i.test(s) ? s : (fallback === undefined ? '' : fallback);
@@ -246,8 +257,8 @@ function safeFont(f, fallback) {
 // Cỡ chữ: số, kẹp 12-72; rỗng/không phải số trả fallback (mặc định 28)
 function safeSize(n, fallback) {
     const fb = fallback === undefined ? 28 : fallback;
-    if (n === '' || n === null || n === undefined) return fb;
-    const x = Number(n);
+    if ((typeof n === 'string' && n.trim() === '') || n === null || n === undefined) return fb;
+    const x = Number(typeof n === 'string' ? n.trim() : n);
     if (!isFinite(x)) return fb;
     return Math.min(72, Math.max(12, x));
 }
@@ -271,7 +282,8 @@ function sectionVars(sec, ctx) {
 
 // Thuộc tính cho trường sửa inline: chỉ có ở mode editor
 function fieldAttr(ctx, key) {
-    return ctx.mode === 'editor' ? `data-field="${escapeHtml(key)}" contenteditable="true"` : '';
+    if (ctx.mode !== 'editor' || (ctx.appState && ctx.appState.isPreviewMode)) return '';
+    return `data-field="${escapeHtml(key)}" contenteditable="true"`;
 }
 
 function defaultSectionStyle() {
@@ -305,18 +317,18 @@ function migrate(state) {
             bad.push(sec);
         }
     });
-    const idMap = {};
+    const idMap = new Map();
     bad.forEach(sec => {
         const base = (typeof sec.type === 'string' && /^[a-z]{1,30}$/.test(sec.type)) ? sec.type : 'section';
         let n = 1;
         while (seen.has(`${base}-${n}`)) n++;
         const newId = `${base}-${n}`;
         seen.add(newId);
-        if (typeof sec.id === 'string' && !(sec.id in idMap)) idMap[sec.id] = newId;
+        if (typeof sec.id === 'string' && !idMap.has(sec.id)) idMap.set(sec.id, newId);
         sec.id = newId;
     });
-    if (typeof state.selectedSectionId === 'string' && Object.prototype.hasOwnProperty.call(idMap, state.selectedSectionId)) {
-        state.selectedSectionId = idMap[state.selectedSectionId];
+    if (typeof state.selectedSectionId === 'string' && idMap.has(state.selectedSectionId)) {
+        state.selectedSectionId = idMap.get(state.selectedSectionId);
     }
     if (state.sections.length && !seen.has(state.selectedSectionId)) {
         state.selectedSectionId = state.sections[0].id;
@@ -331,7 +343,7 @@ function migrate(state) {
         sec.style = Object.assign(defaultSectionStyle(), plain(sec.style) ? sec.style : {});
         if (!plain(sec.data)) sec.data = {};
 
-        const def = window.SECTION_TYPES[sec.type];
+        const def = getSectionDef(sec.type);
         if (!def) return; // loại lạ: giữ nguyên, không render
         if (!sec.name) sec.name = def.label;
         if (!sec.icon) sec.icon = def.icon;

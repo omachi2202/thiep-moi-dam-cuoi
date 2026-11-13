@@ -10,7 +10,7 @@
 | L1–L7 | Luật, agents, skill, hồ sơ | `.agents/`, `.claude/`, `docs/` | phiên chính | 0 | — | — | xong |
 | T1 | Tách index.html thành css/js (không đổi hành vi) | index.html, css/, js/ (tách) | frontend-ui | 2 | không | có | xong |
 | T2 | Backend FastAPI + Excel store | `server/app.py`, `server/excel_store.py`, `server/requirements.txt` | py-backend | 2 | không | có | xong |
-| T3 | Registry section + chuyển 6 loại cũ + migrate | `js/render.js`, `js/state.js`, `js/sections/{hero,family,events,countdown,rsvp,album}.js` | frontend-ui | 3 | T1 | có | xong (T3.1 đang sửa) |
+| T3 | Registry section + chuyển 6 loại cũ + migrate | `js/render.js`, `js/state.js`, `js/sections/{hero,family,events,countdown,rsvp,album}.js` | frontend-ui | 3 | T1 | có | xong |
 | T4 | CardRuntime dùng chung + export không nhân đôi | `js/runtime.js`, `js/editor.js` | frontend-ui | 3 | T1 | không | xong |
 | T5 | Test API pytest | `server/tests/test_api.py` | py-backend | 3 | T2 | không | xong |
 | T6 | commitState, undo/redo, autosave, JSON, upload | `js/store.js`, `js/editor.js` | frontend-ui | 4 | T3, T4 | có | chờ |
@@ -38,3 +38,4 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T8** (2026-11-13): chạy tích hợp thật với backend: publish lần 1 có editKey và lưu lại, lần 2 dùng lại key, sai key báo lỗi tiếng Việt, wishes/rsvp chạy, state gửi lên đã bỏ trường editor. reviewer-code: ĐẠT, có 3 mục NÊN SỬA (timeout request, race khi vẽ QR, SRI), giao T8.1. Đưa vào backlog: ô nhập edit key thủ công cho slug đã tồn tại (G3); CSP cho /c/ (đề xuất kiểm ở T15).
 - **T3.1** (2026-11-13): kiểm bằng vm đạt (chặn injection qua id/CSS, render không chịu ảnh hưởng khi thiếu photos, migrate idempotent, HTML mặc định không đổi). Re-review: ĐẠT nhưng phát hiện hồi quy M1 (safeFont loại Roboto Slab), giao T3.2 (vòng 2, vòng cuối).
 - **T8.1** (2026-11-13): thêm timeout AbortController, chống race QR, SRI cho qrcodejs, copyFrom báo đúng kết quả, xoá edit key khi đóng modal, gọi lại checkHealth. Chạy lại tích hợp với backend: đạt. Re-review: ĐẠT.
+- **T3.2** (2026-11-13): thêm Roboto Slab/Tinos/Open Sans vào FONT_OPTIONS, SECTION_TYPES dùng Object.create(null) kèm getSectionDef, inspector chịu lỗi, preview không cho sửa. Kiểm bằng vm: Roboto Slab hiển thị, type 'constructor' an toàn, các kiểm của T3.1 vẫn đạt. Re-review vòng 2: ĐẠT.

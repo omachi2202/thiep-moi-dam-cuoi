@@ -29,7 +29,7 @@ function renderSectionListSidebar() {
     const container = document.getElementById('sectionListContainer');
     container.innerHTML = appState.sections.map((sec, idx) => {
         const isSelected = appState.selectedSectionId === sec.id;
-        const unknown = !SECTION_TYPES[sec.type];
+        const unknown = !getSectionDef(sec.type);
         const subLabel = unknown
             ? '<span class="text-amber-600"><i class="fa-solid fa-triangle-exclamation"></i> Loại section không được hỗ trợ</span>'
             : (sec.visible ? 'Đang hiển thị' : 'Đang ẩn');
@@ -89,11 +89,11 @@ function renderCardHtml(state, ctx) {
     const isEditor = c.mode === 'editor';
 
     return state.sections
-        .filter(sec => sec.visible && SECTION_TYPES[sec.type])
+        .filter(sec => sec.visible && getSectionDef(sec.type))
         .map(sec => {
             let innerHtml;
             try {
-                innerHtml = SECTION_TYPES[sec.type].renderCanvas(sec, c);
+                innerHtml = getSectionDef(sec.type).renderCanvas(sec, c);
             } catch (err) {
                 console.error('renderCanvas lỗi ở section', sec.id, err);
                 if (!isEditor) return '';
@@ -198,10 +198,18 @@ function renderRightInspector() {
         `<option value="${escapeHtml(opt.value)}" ${sec.customFont === opt.value ? 'selected' : ''}>${escapeHtml(opt.label)}</option>`
     ).join('');
 
-    const def = SECTION_TYPES[sec.type];
-    const specificFieldsHtml = def
-        ? def.renderInspector(sec)
-        : '<div class="text-amber-600 text-xs">Loại section này không được hỗ trợ ở phiên bản hiện tại; dữ liệu được giữ nguyên.</div>';
+    const def = getSectionDef(sec.type);
+    let specificFieldsHtml;
+    if (def && typeof def.renderInspector === 'function') {
+        try {
+            specificFieldsHtml = def.renderInspector(sec);
+        } catch (err) {
+            console.error('renderInspector lỗi ở section', sec.id, err);
+            specificFieldsHtml = '<div class="text-amber-600 text-xs">Không hiển thị được bảng thuộc tính của phần này. Kiểm tra lại dữ liệu.</div>';
+        }
+    } else {
+        specificFieldsHtml = '<div class="text-amber-600 text-xs">Loại section này không được hỗ trợ ở phiên bản hiện tại; dữ liệu được giữ nguyên.</div>';
+    }
     const sid = escapeHtml(sec.id);
 
     document.getElementById('inspectorContent').innerHTML = `
