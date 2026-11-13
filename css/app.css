@@ -125,6 +125,47 @@
         url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 72 72'%3E%3Cg transform='translate(72 72) scale(-1 -1)'%3E%3Cg fill='none' stroke='%23c0566b' stroke-opacity='0.7' stroke-width='1.5'%3E%3Ccircle cx='24' cy='24' r='5'/%3E%3Cpath d='M24 14c8 0 14 6 14 14s-6 12-14 12-14-6-14-14'/%3E%3Cpath d='M24 8c14 0 24 10 24 24'/%3E%3C/g%3E%3Cg fill='%237a9a6a' fill-opacity='0.5'%3E%3Cpath d='M44 44c10 2 18 8 22 18-10 0-20-6-22-18z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
 
+/* Nền toàn thiệp trên khung (G2/G3): chồng lớp từ trên xuống = texture, lớp phủ sáng, ảnh nền.
+   Biến --card-bg-* do cardBgVars() đặt; không ảnh thì ảnh = none, lớp phủ trong suốt => y như trước.
+   Mỗi lớp có đủ size/repeat/position riêng (số lớp phải khớp nhau). */
+#weddingCardFrame {
+    background-image: linear-gradient(var(--card-bg-veil, rgba(255, 255, 255, 0)), var(--card-bg-veil, rgba(255, 255, 255, 0))), var(--card-bg-image, none);
+    background-size: 100% 100%, var(--card-bg-size, cover);
+    background-repeat: no-repeat, var(--card-bg-repeat, no-repeat);
+    background-position: 0 0, center;
+}
+
+#weddingCardFrame.tex-paper {
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
+        linear-gradient(rgba(120, 90, 50, 0.04), rgba(120, 90, 50, 0.04)),
+        linear-gradient(var(--card-bg-veil, rgba(255, 255, 255, 0)), var(--card-bg-veil, rgba(255, 255, 255, 0))),
+        var(--card-bg-image, none);
+    background-size: 120px 120px, 100% 100%, 100% 100%, var(--card-bg-size, cover);
+    background-repeat: repeat, no-repeat, no-repeat, var(--card-bg-repeat, no-repeat);
+    background-position: 0 0, 0 0, 0 0, center;
+}
+
+#weddingCardFrame.tex-floral {
+    background-image:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cg fill='%23c9a27a' fill-opacity='0.16'%3E%3Ccircle cx='18' cy='18' r='4'/%3E%3Ccircle cx='18' cy='10' r='3'/%3E%3Ccircle cx='18' cy='26' r='3'/%3E%3Ccircle cx='10' cy='18' r='3'/%3E%3Ccircle cx='26' cy='18' r='3'/%3E%3Ccircle cx='54' cy='54' r='4'/%3E%3Ccircle cx='54' cy='46' r='3'/%3E%3Ccircle cx='54' cy='62' r='3'/%3E%3Ccircle cx='46' cy='54' r='3'/%3E%3Ccircle cx='62' cy='54' r='3'/%3E%3C/g%3E%3C/svg%3E"),
+        linear-gradient(var(--card-bg-veil, rgba(255, 255, 255, 0)), var(--card-bg-veil, rgba(255, 255, 255, 0))),
+        var(--card-bg-image, none);
+    background-size: 72px 72px, 100% 100%, var(--card-bg-size, cover);
+    background-repeat: repeat, no-repeat, var(--card-bg-repeat, no-repeat);
+    background-position: 0 0, 0 0, center;
+}
+
+#weddingCardFrame.tex-silk {
+    background-image:
+        linear-gradient(115deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 30%, rgba(160, 120, 80, 0.07) 55%, rgba(255, 255, 255, 0.3) 80%, rgba(255, 255, 255, 0) 100%),
+        linear-gradient(var(--card-bg-veil, rgba(255, 255, 255, 0)), var(--card-bg-veil, rgba(255, 255, 255, 0))),
+        var(--card-bg-image, none);
+    background-size: 100% 100%, 100% 100%, var(--card-bg-size, cover);
+    background-repeat: no-repeat, no-repeat, var(--card-bg-repeat, no-repeat);
+    background-position: 0 0, 0 0, center;
+}
+
 /* Trong editor, khung ngoài đã mang lớp; .card-root bên trong không vẽ lại để tránh chồng đôi */
 #weddingCardFrame .card-root {
     background-image: none;
