@@ -26,7 +26,10 @@ Mỗi dòng: việc — lý do — ưu tiên (Cao / Trung bình / Thấp).
 - Ảnh mép cong ở section cảm ơn — ngoài phạm vi đợt này — Thấp.
 - Ô màu ở section dress code — ngoài phạm vi đợt này — Thấp.
 - Chế độ nền `fixed` (ảnh nền đứng yên khi cuộn) — ngoài phạm vi đợt này, hay lỗi trên iOS — Thấp.
-- Ảnh nền `cover` trên thiệp rất dài sẽ bị phóng to mạnh — cân nhắc chế độ "phủ theo bề ngang" — Trung bình.
+- ~~Ảnh nền `cover` trên thiệp rất dài bị phóng to mạnh~~ — ĐÃ XONG (T30: `cover` = phủ theo bề ngang, lặp dọc).
+- Ô link hình nền (toàn thiệp/section): dán URL không hợp lệ vẫn lưu nhưng không hiện ảnh, không báo — thêm toast "Liên kết ảnh không hợp lệ" (review T29) — Thấp.
+- Ô link hình nền hiện cả chuỗi base64 dài sau khi tải từ máy — hiển thị rút gọn "(ảnh đã tải lên)" — Thấp.
+- Màn intro phong bì/rèm chỉ dùng `bgColor`, không có hình nền toàn thiệp — cân nhắc (review T28) — Thấp.
 
 ## Tồn đọng khi tạm dừng (2026-11-13)
 
