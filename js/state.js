@@ -334,6 +334,15 @@ function safeFont(f, fallback) {
     return allowed.has(f) ? escapeHtml(f) : escapeHtml(fallback === undefined ? '' : fallback);
 }
 
+// Như safeFont nhưng trả chuỗi KHÔNG escape, dùng cho gán CSSOM (.style.fontFamily = ...)
+function safeFontCss(value, fallback) {
+    const unesc = function (s) {
+        return String(s).replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+    };
+    return unesc(safeFont(value, fallback));
+}
+window.safeFontCss = safeFontCss;
+
 // Cỡ chữ: số, kẹp 12-72; rỗng/không phải số trả fallback (mặc định 28)
 function safeSize(n, fallback) {
     const fb = fallback === undefined ? 28 : fallback;

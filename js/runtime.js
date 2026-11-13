@@ -25,6 +25,7 @@ let countdownInterval = null;
         const msgEl = byId('toastMessage');
         if (!toast || !msgEl) return;
         msgEl.textContent = msg;
+        toast.style.zIndex = '200';   // nổi trên intro (z-index 100)
         toast.classList.remove('translate-y-20', 'opacity-0');
         if (_toastTimer) clearTimeout(_toastTimer);
         _toastTimer = setTimeout(() => {
@@ -36,7 +37,9 @@ let countdownInterval = null;
     function pad2(n) { return String(n).padStart(2, '0'); }
 
     function calcParts(iso) {
-        const target = new Date(iso).getTime();
+        // Giờ cưới luôn là giờ Việt Nam (UTC+7), không phụ thuộc múi giờ thiết bị
+        const vn = parseVnLocal(iso);
+        const target = vn ? vn.getTime() : NaN;
         const diff = Math.max(0, (isNaN(target) ? Date.now() : target) - Date.now());
         return {
             days: pad2(Math.floor(diff / 86400000)),
@@ -52,12 +55,26 @@ let countdownInterval = null;
     function fillSlot(slot, parts) {
         if (!slot.querySelector('[data-cd]')) {
             const st = getState();
-            const color = st && st.globalStyle ? st.globalStyle.primaryColor : '#8c6239';
-            slot.innerHTML = '<div class="grid grid-cols-4 gap-2 text-center">' + CD_LABELS.map(function (p) {
-                return '<div class="rounded-xl py-3 text-white shadow" style="background-color:' + color + '">' +
-                    '<div data-cd="' + p[0] + '" class="text-2xl font-bold">00</div>' +
-                    '<div class="text-[10px] uppercase tracking-wider opacity-90">' + p[1] + '</div></div>';
-            }).join('') + '</div>';
+            const color = safeColor(st && st.globalStyle ? st.globalStyle.primaryColor : '', '#8c6239');
+            slot.textContent = '';
+            const grid = document.createElement('div');
+            grid.className = 'grid grid-cols-4 gap-2 text-center';
+            CD_LABELS.forEach(function (p) {
+                const cell = document.createElement('div');
+                cell.className = 'rounded-xl py-3 text-white shadow';
+                cell.style.backgroundColor = color;
+                const num = document.createElement('div');
+                num.setAttribute('data-cd', p[0]);
+                num.className = 'text-2xl font-bold';
+                num.textContent = '00';
+                const lab = document.createElement('div');
+                lab.className = 'text-[10px] uppercase tracking-wider opacity-90';
+                lab.textContent = p[1];
+                cell.appendChild(num);
+                cell.appendChild(lab);
+                grid.appendChild(cell);
+            });
+            slot.appendChild(grid);
         }
         slot.querySelectorAll('[data-cd]').forEach(function (el) {
             el.textContent = parts[el.getAttribute('data-cd')] || '00';
@@ -97,19 +114,40 @@ let countdownInterval = null;
     }
 
     // ---------- Nhạc nền ----------
+    // Phân biệt lỗi tải nhạc (sự kiện 'error') với lỗi bị chặn phát
+    function bindAudioError(audio) {
+        if (audio.__errBound) return;
+        audio.__errBound = true;
+        audio.addEventListener('error', function () { audio.__loadError = true; });
+        audio.addEventListener('loadeddata', function () { audio.__loadError = false; });
+    }
+
+    // silent=true: không toast khi lỗi (dùng khi phát tự động sau bấm "Mở thiệp")
+    function playAudio(silent) {
+        const audio = byId('weddingAudio');
+        const btn = byId('floatingMusicBtn');
+        const icon = byId('musicIcon');
+        if (!audio || !btn || !icon) return;
+        bindAudioError(audio);
+        audio.play().then(function () {
+            btn.classList.add('spin-music');
+            icon.className = 'fa-solid fa-compact-disc text-base';
+            if (!silent) showToast('Đang phát nhạc nền thiệp cưới ♫');
+        }).catch(function () {
+            if (silent) return;
+            showToast(audio.__loadError
+                ? 'Không tải được nhạc nền này.'
+                : 'Không thể phát nhạc. Hãy thử bấm lại nút nhạc.');
+        });
+    }
+
     function toggleAudioPlayback() {
         const audio = byId('weddingAudio');
         const btn = byId('floatingMusicBtn');
         const icon = byId('musicIcon');
         if (!audio || !btn || !icon) return;
         if (audio.paused) {
-            audio.play().then(function () {
-                btn.classList.add('spin-music');
-                icon.className = 'fa-solid fa-compact-disc text-base';
-                showToast('Đang phát nhạc nền thiệp cưới ♫');
-            }).catch(function () {
-                showToast('Không thể phát đường dẫn nhạc này.');
-            });
+            playAudio(false);
         } else {
             audio.pause();
             btn.classList.remove('spin-music');
@@ -158,7 +196,7 @@ let countdownInterval = null;
         const info = st.bankInfo[side];
         const modal = byId('giftModal');
         if (!modal) return;
-        const primary = st.globalStyle ? st.globalStyle.primaryColor : '#8c6239';
+        const primary = safeColor(st.globalStyle ? st.globalStyle.primaryColor : '', '#8c6239');
 
         const badge = byId('giftModalBadge');
         const copyBtn = byId('giftModalCopyBtn');
@@ -169,10 +207,20 @@ let countdownInterval = null;
         byId('giftModalAcc').textContent = info.acc;
         byId('giftModalOwner').textContent = info.owner;
 
-        const qrUrl = 'https://img.vietqr.io/image/' + encodeURIComponent(String(info.bank).trim()) + '-' +
-            encodeURIComponent(String(info.acc).trim()) + '-compact2.png?accountName=' +
-            encodeURIComponent(String(info.owner).trim());
-        byId('giftModalQrImg').src = qrUrl;
+        // URL QR qua whitelist của gift.js; rỗng thì ẩn ảnh, vẫn hiện STK + nút copy
+        const qrUrl = typeof window.buildVietQrUrl === 'function'
+            ? window.buildVietQrUrl(info.bank, info.acc, info.owner) : '';
+        const img = byId('giftModalQrImg');
+        if (img) {
+            img.setAttribute('referrerpolicy', 'no-referrer');
+            if (qrUrl) {
+                img.src = qrUrl;
+                img.classList.remove('hidden');
+            } else {
+                img.removeAttribute('src');
+                img.classList.add('hidden');
+            }
+        }
 
         modal.classList.remove('hidden');
     }
@@ -254,7 +302,29 @@ let countdownInterval = null;
     function icsEscape(s) {
         return String(s == null ? '' : s)
             .replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,')
-            .replace(/\r?\n/g, '\\n');
+            .replace(/\r\n|\r|\n/g, '\\n');
+    }
+
+    // Gập dòng theo RFC 5545: tối đa 75 octet UTF-8 mỗi dòng, dòng tiếp bắt đầu bằng 1 khoảng trắng
+    function foldIcsLine(line) {
+        const out = [];
+        let cur = '';
+        let bytes = 0;
+        let limit = 75;
+        Array.from(line).forEach(function (ch) {
+            const cp = ch.codePointAt(0);
+            const len = cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+            if (bytes + len > limit) {
+                out.push(cur);
+                cur = ' ';
+                bytes = 1;
+                limit = 75;
+            }
+            cur += ch;
+            bytes += len;
+        });
+        out.push(cur);
+        return out.join('\r\n');
     }
 
     function buildIcs(title, location, start, end) {
@@ -272,7 +342,7 @@ let countdownInterval = null;
             'LOCATION:' + icsEscape(location),
             'END:VEVENT',
             'END:VCALENDAR'
-        ].join('\r\n') + '\r\n';
+        ].map(foldIcsLine).join('\r\n') + '\r\n';
     }
 
     function downloadIcs(text) {
@@ -287,7 +357,8 @@ let countdownInterval = null;
         setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     }
 
-    function setupCalendar(root, st) {
+    function setupCalendar(root, st, mode) {
+        const isEditor = mode === 'editor';
         const slots = root.querySelectorAll('[data-slot="calendar-actions"]');
         if (!slots.length || !st || !st.sections) return;
         const primary = (typeof safeColor === 'function' && st.globalStyle)
@@ -324,17 +395,26 @@ let countdownInterval = null;
                 return el;
             };
             const a = mk(document.createElement('a'), 'fa-brands fa-google', 'Thêm vào Google Calendar');
-            a.href = gUrl;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
             const b = mk(document.createElement('button'), 'fa-solid fa-calendar-plus', 'Tải tệp lịch (.ics)');
             b.type = 'button';
-            const onClick = function () { downloadIcs(buildIcs(title, place, start, end)); };
-            b.addEventListener('click', onClick);
+            if (isEditor) {
+                // Editor: chỉ để xem bố cục, không mở link / tải tệp
+                [a, b].forEach(function (x) {
+                    x.style.pointerEvents = 'none';
+                    x.setAttribute('aria-disabled', 'true');
+                    x.setAttribute('tabindex', '-1');
+                });
+            } else {
+                a.href = gUrl;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                const onClick = function () { downloadIcs(buildIcs(title, place, start, end)); };
+                b.addEventListener('click', onClick);
+                _cleanups.push(function () { b.removeEventListener('click', onClick); });
+            }
             wrap.appendChild(a);
             wrap.appendChild(b);
             slot.appendChild(wrap);
-            _cleanups.push(function () { b.removeEventListener('click', onClick); });
         });
     }
 
@@ -413,15 +493,21 @@ let countdownInterval = null;
         _introEl = el;
 
         let opened = false;
-        btn.addEventListener('click', function () {
+        const open = function () {
             if (opened) return;
             opened = true;
             el.classList.add('is-opening');
-            // Bấm của người dùng -> được phép phát nhạc (vượt chặn autoplay)
+            // Bấm của người dùng -> được phép phát nhạc (vượt chặn autoplay); lỗi thì im lặng, không toast
             const audio = byId('weddingAudio');
-            if (audio && audio.getAttribute('src') && audio.paused) toggleAudioPlayback();
+            if (audio && audio.getAttribute('src') && audio.paused) playAudio(true);
             unlockScroll();
             _introTimer = setTimeout(removeIntro, 1100);
+        };
+        btn.addEventListener('click', open);
+        // Enter/Esc mở thiệp; Tab giữ focus trên nút (hộp thoại modal)
+        el.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); open(); }
+            else if (e.key === 'Tab') { e.preventDefault(); btn.focus(); }
         });
         try { btn.focus(); } catch (e) { /* bỏ qua */ }
     }
@@ -462,16 +548,18 @@ let countdownInterval = null;
         }
 
         startCountdownTimer();
-        setupCalendar(_root, st);
+        setupCalendar(_root, st, mode);
 
         if (mode !== 'editor') {
             // Bản khách/export: đồng bộ nhạc + màu nút, hiệu ứng rơi, {khach}, reveal, intro
             const g = st && st.globalStyle ? st.globalStyle : null;
             const audio = byId('weddingAudio');
-            const audioUrl = g ? (typeof safeUrl === 'function' ? safeUrl(g.audioUrl) : g.audioUrl) : '';
+            const audioUrl = g ? (typeof safeAudioUrl === 'function' ? safeAudioUrl(g.audioUrl)
+                : (typeof safeUrl === 'function' ? safeUrl(g.audioUrl) : '')) : '';
             if (audio && audioUrl && audio.getAttribute('src') !== audioUrl) audio.src = audioUrl;
+            if (audio) bindAudioError(audio);
             const musicBtn = byId('floatingMusicBtn');
-            if (musicBtn && g) musicBtn.style.backgroundColor = g.primaryColor;
+            if (musicBtn && g) musicBtn.style.backgroundColor = safeColor(g.primaryColor, '#8c6239');
             if (g && _fallKey !== g.fallingEffect) buildFalling(g.fallingEffect);
             replaceGuestPlaceholder(_root, _ctx.guestName);
             setupReveal(_root);

@@ -22,8 +22,8 @@
 | T12 | Section thanks + nâng cấp RSVP | `js/sections/thanks.js`, `js/sections/rsvp.js` | frontend-ui | 5 | T7, T8 | có | xong |
 | T13 | Style toàn thiệp mới: state + điều khiển | `js/state.js`, `index.html`, `js/editor.js` | frontend-ui | 6 | đợt 5 | có | xong |
 | T14 | Áp texture/khung/ornament/reveal + override nền section | `js/render.js`, `css/app.css` | frontend-ui | 6 | đợt 5 | không | xong |
-| T15 | Trang khách invite.html + intro, {khach}, lịch, reveal, hiệu ứng rơi | `invite.html`, `js/runtime.js`, `css/invite.css` | frontend-ui | 6 | đợt 5 | có | xong (T15.1 đang sửa) |
-| T16 | Rà thẩm mỹ desktop + 390px | (chỉ đọc) | ui-aesthetic-reviewer | 7 | T13–T15 | — | chờ |
+| T15 | Trang khách invite.html + intro, {khach}, lịch, reveal, hiệu ứng rơi | `invite.html`, `js/runtime.js`, `css/invite.css` | frontend-ui | 6 | đợt 5 | có | xong |
+| T16 | Rà thẩm mỹ desktop + 390px | (chỉ đọc) | ui-aesthetic-reviewer | 7 | T13–T15 | — | xong |
 | T17 | Cập nhật CLAUDE.md + biên bản | `CLAUDE.md`, `docs/thiep-tuy-bien-sau/README.md` | memoryer | 7 | T15 | không | xong |
 
 Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học, đa số là stub). T13 trong kế hoạch được tách thành T13 (state + điều khiển) và T14 (áp lớp + CSS) để không trùng tệp với T15 trong cùng đợt.
@@ -50,3 +50,5 @@ Ngoại lệ đã duyệt: T1 sửa nhiều hơn 3 tệp (tách tệp cơ học,
 - **T15** (2026-11-13): E2E qua CDP Chrome headless ở 390px với thiệp đủ 13 loại: intro envelope mở được, {khach} được thay bằng Anh Nam, có 2 nút lịch, không tràn ngang, không lỗi JS; RSVP và lời chúc qua form thật ghi đúng 1 dòng mỗi loại vào guests.xlsx; lời chúc chứa <script>/<img onerror> hiển thị dạng chữ (ảnh `moc/khach_390_*.png`). reviewer-code: ĐẠT, không tìm thấy XSS đang khai thác được; có 5 NÊN SỬA (N1 innerHTML chứa primaryColor, N2 modal QR chưa có whitelist, N3 font thân bị bỏ qua, N4 safeAudioUrl, N5 ICS chứa 
 ), giao T15.1. Ngoài kế hoạch (báo người dùng khi bàn giao): CSP + bỏ handler inline (N6), tách origin trang khách khỏi editor để bảo vệ editKey.
 - **T17** (2026-11-13): viết lại CLAUDE.md theo kiến trúc mới, tạo docs/backlog.md (7 việc). Phiên chính đối chiếu với code: route khớp app.py, danh sách tệp inline khi export khớp editor.js, data/ đã có trong gitignore.
+- **T15.1** (2026-11-13): sửa N1–N5 cùng G1–G3. E2E chạy lại đạt: font khung Noto Serif (N3 hết), Google Calendar 09:00Z–12:00Z, file .ics dùng CRLF, dòng ≤ 70 octet, dấu phẩy được escape, icon FA hiển thị (ảnh trước chụp lúc font chưa tải). Re-review: ĐẠT.
+- **T16** (2026-11-13): ui-aesthetic-reviewer: không có mục CHẶN, 4 NÊN và 6 GỢI Ý. NÊN 1 (icon intro) là ảnh chụp lúc font chưa tải, không phải lỗi. Giao T16.1a (chữ trong section) và T16.1b (sidebar, inspector, whitelist font, CSS chống tràn, intro).

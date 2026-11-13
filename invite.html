@@ -69,7 +69,7 @@
                 <h4 id="giftModalTitle" class="text-lg font-bold text-slate-800 mb-1">Gửi Mừng Cưới</h4>
                 <p class="text-xs text-slate-500 mb-4">Quét mã QR ngân hàng bên dưới để gửi lời chúc phúc</p>
                 <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 inline-block mb-3">
-                    <img id="giftModalQrImg" src="" alt="VietQR" class="w-48 h-48 object-contain mx-auto rounded-lg"
+                    <img id="giftModalQrImg" alt="VietQR" referrerpolicy="no-referrer" class="hidden w-48 h-48 object-contain mx-auto rounded-lg"
                         onerror="this.src='https://placehold.co/250x250/f8fafc/64748b?text=VietQR'">
                 </div>
                 <div class="text-xs space-y-1 text-slate-700 bg-amber-50/70 p-3 rounded-xl border border-amber-200/70">
@@ -163,9 +163,13 @@
                     .then(function (state) {
                         if (!state || typeof state !== 'object' || !Array.isArray(state.sections)) throw new Error('bad');
 
-                        // Có phản hồi từ backend: cho phép gửi RSVP/lời chúc qua window.api
-                        if (window.api) window.api.available = true;
-
+                        // Xác nhận backend qua api.checkHealth() (đặt api.available); lỗi thì để api tự báo khi gửi
+                        var healthP = (window.api && typeof window.api.checkHealth === 'function')
+                            ? window.api.checkHealth().catch(function () { return false; })
+                            : Promise.resolve(false);
+                        return healthP.then(function () { return state; });
+                    })
+                    .then(function (state) {
                         state = migrate(state);
                         appState = state;   // biến toàn cục của state.js: runtime và section đọc từ đây
                         window.__stateMigrated = true;
@@ -174,7 +178,7 @@
                         var frame = $('weddingCardFrame');
                         frame.style.backgroundColor = safeColor(g.bgColor, '#fdfbf7');
                         frame.style.color = safeColor(g.textColor, '#3d312a');
-                        frame.style.fontFamily = safeFont(g.bodyFont, "'Noto Serif', serif");
+                        frame.style.fontFamily = safeFontCss(g.bodyFont, "'Noto Serif', serif");   // chuỗi không escape cho CSSOM
 
                         var hero = state.sections.filter(function (s) { return s.type === 'hero' && s.data; })[0];
                         if (hero && hero.data.coupleShortName) {
