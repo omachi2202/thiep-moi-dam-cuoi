@@ -82,10 +82,28 @@ class WishBody(BaseModel):
 
 
 class _NoSniffStatic(StaticFiles):
+    """StaticFiles + nosniff; `cache_control` (nếu có) chỉ đặt cho 200/304."""
+
+    cache_control: str | None = None
+
     async def get_response(self, path, scope):
         resp = await super().get_response(path, scope)
         resp.headers["X-Content-Type-Options"] = "nosniff"
+        if self.cache_control and resp.status_code in (200, 304):
+            resp.headers["Cache-Control"] = self.cache_control
         return resp
+
+
+class _RevalidateStatic(_NoSniffStatic):
+    """/js, /css: luôn hỏi lại (ETag/Last-Modified -> 304), tránh CDN giữ bản cũ."""
+
+    cache_control = "no-cache"
+
+
+class _ImmutableStatic(_NoSniffStatic):
+    """/uploads: tên tệp ngẫu nhiên, nội dung không đổi."""
+
+    cache_control = "public, max-age=31536000, immutable"
 
 
 def _err(code: int, msg: str):
@@ -397,7 +415,7 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
         p = REPO_ROOT / name
         if not p.is_file():
             raise _err(404, f"Chưa có tệp {name}.")
-        return FileResponse(p, media_type="text/html")
+        return FileResponse(p, media_type="text/html", headers={"Cache-Control": "no-cache"})
 
     @app.get("/")
     def index():
@@ -408,9 +426,9 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
         card_paths(slug)
         return serve_page("invite.html")
 
-    app.mount("/css", StaticFiles(directory=str(REPO_ROOT / "css"), check_dir=False), name="css")
-    app.mount("/js", StaticFiles(directory=str(REPO_ROOT / "js"), check_dir=False), name="js")
-    app.mount("/uploads", _NoSniffStatic(directory=str(uploads_dir)), name="uploads")
+    app.mount("/css", _RevalidateStatic(directory=str(REPO_ROOT / "css"), check_dir=False), name="css")
+    app.mount("/js", _RevalidateStatic(directory=str(REPO_ROOT / "js"), check_dir=False), name="js")
+    app.mount("/uploads", _ImmutableStatic(directory=str(uploads_dir)), name="uploads")
     return app
 
 
