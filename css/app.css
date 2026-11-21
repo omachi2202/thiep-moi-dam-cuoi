@@ -637,6 +637,31 @@
 @keyframes heroArrow { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(6px); } }
 @media (prefers-reduced-motion: reduce) { .hero-full-arrow { animation: none; } }
 
+/* Tab cột phải + thư viện ảnh đã tải (editor) */
+.right-tabs { display: flex; border-bottom: 1px solid #e2e8f0; background: #fff; }
+.right-tab {
+    flex: 1; min-height: 44px; padding: 8px 6px; font-size: 12px; font-weight: 600;
+    color: #64748b; border-bottom: 2px solid transparent; cursor: pointer;
+}
+.right-tab:hover { color: #6d28d9; }
+.right-tab.is-active { color: #6d28d9; border-bottom-color: #7c3aed; background: #f5f3ff; }
+.upload-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.upload-item { border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px; background: #fff; min-width: 0; }
+.upload-thumb { display: block; width: 100%; aspect-ratio: 1 / 1; object-fit: cover; border-radius: 6px; background: #f1f5f9; }
+.upload-thumb-icon { display: flex; align-items: center; justify-content: center; font-size: 28px; color: #7c3aed; }
+.upload-name { margin-top: 6px; font-size: 10px; font-weight: 600; color: #334155; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload-meta { font-size: 10px; color: #94a3b8; min-height: 14px; }
+.upload-actions { display: flex; gap: 6px; margin-top: 4px; }
+.upload-btn {
+    flex: 1; min-height: 32px; display: flex; align-items: center; justify-content: center;
+    border: 1px solid #e2e8f0; border-radius: 6px; color: #475569; background: #f8fafc; cursor: pointer; font-size: 12px;
+}
+.upload-btn:hover { background: #ede9fe; color: #6d28d9; }
+.upload-refresh {
+    min-height: 32px; padding: 4px 10px; border: 1px solid #ddd6fe; border-radius: 6px;
+    color: #6d28d9; background: #f5f3ff; font-weight: 600; cursor: pointer;
+}
+
 /* Tiến độ tải tệp (editor) */
 @keyframes upload-spin-kf { to { transform: rotate(360deg); } }
 .upload-spin { display: inline-block; animation: upload-spin-kf 0.9s linear infinite; }

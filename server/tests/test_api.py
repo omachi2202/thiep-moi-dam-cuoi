@@ -304,6 +304,6 @@ def test_upload_wrong_type(client):
 
 
 def test_upload_too_large_413(client):
-    blob = PNG + b"\x00" * (11 * 1024 * 1024)
+    blob = PNG + b"\x00" * (31 * 1024 * 1024)
     r = client.post("/api/upload", files={"file": ("a.png", blob, "image/png")})
     assert r.status_code == 413
