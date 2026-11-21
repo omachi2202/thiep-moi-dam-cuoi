@@ -125,13 +125,162 @@ function readFileAsDataUrl(file) {
 
 const MAX_BASE64_BYTES = 1.5 * 1024 * 1024;
 
-async function uploadOrDataUrl(file) {
+// ---------- Nén ảnh trước khi gửi ----------
+const IMG_MAX_EDGE = 2000;
+const IMG_SKIP_BYTES = 500 * 1024;
+const IMG_EXT = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+
+function loadImageForCompress(file) {
+    if (typeof createImageBitmap === 'function') {
+        return createImageBitmap(file, { imageOrientation: 'from-image' }).then(
+            bmp => ({ src: bmp, w: bmp.width, h: bmp.height, done: () => { if (bmp.close) bmp.close(); } }),
+            () => loadImageViaElement(file)
+        );
+    }
+    return loadImageViaElement(file);
+}
+
+function loadImageViaElement(file) {
+    return new Promise((resolve, reject) => {
+        const u = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => resolve({ src: img, w: img.naturalWidth, h: img.naturalHeight, done: () => URL.revokeObjectURL(u) });
+        img.onerror = () => { URL.revokeObjectURL(u); reject(new Error('decode')); };
+        img.src = u;
+    });
+}
+
+// Trả File mới (nhỏ hơn) hoặc đúng tệp gốc; không bao giờ ném lỗi
+async function compressImageIfNeeded(file) {
+    let img = null;
+    try {
+        if (!file || !IMG_EXT[file.type]) return file;
+        img = await loadImageForCompress(file);
+        const w = img.w, h = img.h;
+        if (!w || !h) return file;
+        const longEdge = Math.max(w, h);
+        if (file.size <= IMG_SKIP_BYTES && longEdge <= IMG_MAX_EDGE) return file;
+        const scale = longEdge > IMG_MAX_EDGE ? IMG_MAX_EDGE / longEdge : 1;
+        const cw = Math.max(1, Math.round(w * scale));
+        const ch = Math.max(1, Math.round(h * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = cw;
+        canvas.height = ch;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return file;
+        const outType = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+        if (outType === 'image/jpeg') { ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, cw, ch); }
+        ctx.drawImage(img.src, 0, 0, cw, ch);
+        const blob = await new Promise(res => canvas.toBlob(res, outType, 0.85));
+        if (!blob || blob.type !== outType || blob.size >= file.size) return file;
+        const base = (file.name || 'anh').replace(/\.[^.]*$/, '') || 'anh';
+        return new File([blob], base + '.' + IMG_EXT[outType], { type: outType, lastModified: Date.now() });
+    } catch (e) {
+        return file;
+    } finally {
+        if (img && img.done) { try { img.done(); } catch (e) { /* bỏ qua */ } }
+    }
+}
+
+// ---------- Hiệu ứng tiến độ tải tệp ----------
+let uploadIndicatorEl = null;
+let uploadActive = 0;
+
+function getUploadIndicator() {
+    if (uploadIndicatorEl && document.body.contains(uploadIndicatorEl)) return uploadIndicatorEl;
+    const el = document.createElement('div');
+    el.className = 'upload-indicator';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
+    el.innerHTML = '<i class="fa-solid fa-spinner upload-spin"></i><span class="upload-indicator-text"></span>' +
+        '<span class="upload-indicator-bar"><span class="upload-indicator-fill"></span></span>';
+    document.body.appendChild(el);
+    uploadIndicatorEl = el;
+    return el;
+}
+
+// Bắt đầu hiệu ứng; trả {set(text, pct|null), end()}
+function beginUploadUi(trigger, label) {
+    const ind = getUploadIndicator();
+    uploadActive++;
+    ind.classList.add('is-visible');
+    let lab = null;
+    let status = null;
+    let saved = [];
+    let mini = false;
+    try {
+        lab = trigger && trigger.closest ? trigger.closest('label') : null;
+        if (trigger && 'disabled' in trigger) trigger.disabled = true;
+        if (lab) {
+            lab.classList.add('is-uploading');
+            mini = lab.textContent.trim() === '';
+            status = document.createElement('span');
+            status.className = mini ? 'upload-mini-overlay' : 'upload-status';
+            if (!mini) {
+                saved = Array.prototype.filter.call(lab.childNodes, n => n !== trigger);
+                saved.forEach(n => lab.removeChild(n));
+                lab.insertBefore(status, trigger && trigger.parentNode === lab ? trigger : lab.firstChild);
+            } else {
+                lab.appendChild(status);
+            }
+        }
+    } catch (e) { /* label có thể đã bị gỡ */ }
+
+    function set(text, pct) {
+        const hasPct = typeof pct === 'number';
+        const p = hasPct ? Math.round(pct * 100) : 0;
+        try {
+            ind.querySelector('.upload-indicator-text').textContent = text;
+            ind.querySelector('.upload-indicator-fill').style.width = (hasPct ? p : 0) + '%';
+            ind.classList.toggle('is-indeterminate', !hasPct);
+            if (status) {
+                status.innerHTML = mini
+                    ? '<span class="upload-mini-text">' + (hasPct ? p + '%' : '') + '</span>'
+                    : '<i class="fa-solid fa-spinner upload-spin"></i> ' + text;
+                if (mini && !hasPct) status.innerHTML = '<i class="fa-solid fa-spinner upload-spin"></i>';
+            }
+        } catch (e) { /* bỏ qua */ }
+    }
+    set(label || 'Đang xử lý…', null);
+
+    return {
+        set,
+        end() {
+            uploadActive = Math.max(0, uploadActive - 1);
+            if (uploadActive === 0 && uploadIndicatorEl) uploadIndicatorEl.classList.remove('is-visible');
+            try {
+                if (status && status.parentNode) status.parentNode.removeChild(status);
+                if (lab) {
+                    lab.classList.remove('is-uploading');
+                    saved.forEach(n => lab.insertBefore(n, trigger && trigger.parentNode === lab ? trigger : null));
+                }
+                if (trigger && 'disabled' in trigger) trigger.disabled = false;
+            } catch (e) { /* bỏ qua */ }
+        }
+    };
+}
+
+async function uploadOrDataUrl(file, opts) {
+    const ui = beginUploadUi(opts && opts.trigger, 'Đang xử lý…');
+    try {
+        return await uploadOrDataUrlInner(file, ui);
+    } finally {
+        ui.end();
+    }
+}
+
+async function uploadOrDataUrlInner(file, ui) {
     let apiFailed = false;
     let failStatus = 0;
     let failMsg = '';
+    if (IMG_EXT[file.type]) {
+        ui.set('Đang nén ảnh…', null);
+        file = await compressImageIfNeeded(file);
+    }
     if (window.api && window.api.available) {
         try {
-            const url = await window.api.uploadFile(file);
+            ui.set('Đang tải lên 0%', 0);
+            const url = await window.api.uploadFile(file, p => ui.set('Đang tải lên ' + Math.round(p * 100) + '%', p));
             if (url) return url;
         } catch (err) {
             apiFailed = true;
@@ -168,11 +317,13 @@ async function handleLocalImageUpload(event, secId, fieldKey) {
     const file = event.target.files[0];
     if (!file) return;
     try {
-        const url = await uploadOrDataUrl(file);
+        const url = await uploadOrDataUrl(file, { trigger: event.target });
         updateSectionField(secId, fieldKey, url, false);
         showToast("Đã tải ảnh lên thành công!");
     } catch (err) {
         if (!err || !err.handled) showToast("Không tải được ảnh, vui lòng thử lại.");
+    } finally {
+        event.target.value = '';
     }
 }
 
@@ -181,7 +332,7 @@ async function handleGlobalBgUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     try {
-        const url = await uploadOrDataUrl(file);
+        const url = await uploadOrDataUrl(file, { trigger: event.target });
         updateGlobalStyle('bgImage', url);
         showToast("Đã đặt hình nền thiệp!");
     } catch (err) {
@@ -196,7 +347,7 @@ async function handleSectionBgUpload(event, secId) {
     const file = event.target.files[0];
     if (!file) return;
     try {
-        const url = await uploadOrDataUrl(file);
+        const url = await uploadOrDataUrl(file, { trigger: event.target });
         setSectionDecor(secId, 'bgImage', url);
         showToast("Đã đặt ảnh nền cho phần này!");
     } catch (err) {
@@ -214,11 +365,13 @@ async function handleAlbumFileUpload(event, idx, secId) {
     if (!file) return;
     const sid = secId || appState.selectedSectionId;
     try {
-        const url = await uploadOrDataUrl(file);
+        const url = await uploadOrDataUrl(file, { trigger: event.target });
         updateAlbumPhoto(sid, idx, url, false);
         showToast(`Đã cập nhật ảnh Album #${idx + 1}!`);
     } catch (err) {
         if (!err || !err.handled) showToast("Không tải được ảnh, vui lòng thử lại.");
+    } finally {
+        event.target.value = '';
     }
 }
 
@@ -226,13 +379,15 @@ async function handleAudioFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     try {
-        const url = await uploadOrDataUrl(file);
+        const url = await uploadOrDataUrl(file, { trigger: event.target });
         const input = document.getElementById('inputAudioUrl');
         if (input) input.value = url;
         updateGlobalStyle('audioUrl', url);
         showToast("Đã đổi nhạc nền thiệp cưới!");
     } catch (err) {
         if (!err || !err.handled) showToast("Không tải được nhạc, vui lòng thử lại.");
+    } finally {
+        event.target.value = '';
     }
 }
 
