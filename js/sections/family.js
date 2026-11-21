@@ -12,11 +12,17 @@ registerSection({
         inviteSub: 'THAM DỰ LỄ CƯỚI CỦA CHÚNG MÌNH',
         groomFullName: 'Nguyễn Thanh Tùng',
         brideFullName: 'Trần Khánh Ngọc',
-        coupleAvatar: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=700&q=80'
+        coupleAvatar: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?auto=format&fit=crop&w=700&q=80',
+        imageShape: ''
     }),
+    migrate(data) {
+        if (!IMAGE_SHAPES.some(s => s[0] === data.imageShape)) data.imageShape = '';
+        return data;
+    },
     renderCanvas(sec, ctx) {
         const v = sectionVars(sec, ctx);
         const d = sec.data;
+        const shape = imageShapeClass(d.imageShape);
         return `
                 <div class="py-10 px-6 text-center space-y-6" style="color: ${v.secColor};">
                     <!-- Nhà Trai & Nhà Gái -->
@@ -47,9 +53,11 @@ registerSection({
                     </div>
 
                     <!-- Ảnh tròn cặp đôi -->
-                    <div class="w-48 h-60 mx-auto rounded-t-full overflow-hidden border-4 border-white shadow-lg">
+                    ${shape
+                        ? `<img src="${escapeHtml(safeUrl(d.coupleAvatar))}" alt="Couple" class="${shape} block w-48 mx-auto object-cover" onerror="this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Couple'">`
+                        : `<div class="w-48 h-60 mx-auto rounded-t-full overflow-hidden border-4 border-white shadow-lg">
                         <img src="${escapeHtml(safeUrl(d.coupleAvatar))}" alt="Couple" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Couple'">
-                    </div>
+                    </div>`}
                 </div>`;
     },
     renderInspector(sec) {
@@ -83,7 +91,13 @@ registerSection({
                 <input type="text" value="${escapeHtml(d.brideAddress)}" oninput="updateSectionField('${id}','brideAddress',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
             </div>
             <div>
-                <label class="block font-semibold text-slate-700 mb-1">Ảnh Cặp Đôi (Khung vòm)</label>
+                <label class="block font-semibold text-slate-700 mb-1">Khung ảnh</label>
+                <select onchange="updateSectionField('${id}','imageShape',this.value,false)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    ${IMAGE_SHAPES.map(s => `<option value="${escapeHtml(s[0])}" ${s[0] === d.imageShape ? 'selected' : ''}>${escapeHtml(s[1])}</option>`).join('')}
+                </select>
+            </div>
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Ảnh Cặp Đôi</label>
                 <input type="text" value="${escapeHtml(d.coupleAvatar)}" oninput="updateSectionField('${id}','coupleAvatar',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300 mb-1.5">
                 <label class="w-full py-2 px-3 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 font-semibold border border-violet-200 cursor-pointer flex items-center justify-center gap-1.5 transition">
                     <i class="fa-solid fa-upload"></i> Đổi ảnh từ máy tính

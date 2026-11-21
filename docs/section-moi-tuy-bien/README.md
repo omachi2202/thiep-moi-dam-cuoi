@@ -18,15 +18,19 @@ Giao kèo chung: `dac_ta_section_moi.md`.
 
 | Mã | Việc | Tệp | Sub-agent | Đợt | Phụ thuộc | Review | Trạng thái |
 |---|---|---|---|---|---|---|---|
-| T41 | Luật khung ảnh / thời lượng / hiệu ứng lặp; backlog đợt 2 | `.agents/rules/domain_sections.md`, `docs/backlog.md` | memoryer | 1 | không | không | Chờ |
-| T42 | Section Lịch tháng + thẻ script 3 section mới | `js/sections/calendar.js`, `index.html`, `invite.html` | frontend-ui | 1 | không | có | Chờ |
-| T43 | Section Trình chiếu ảnh | `js/sections/slideshow.js` | frontend-ui | 1 | không | có | Chờ |
-| T44 | Section Trang trí / ngăn cách | `js/sections/divider.js` | frontend-ui | 1 | không | có | Chờ |
-| T45 | Hiệu ứng xuất hiện mới + thời lượng; CSS loop-* và img-shape-* | `js/render.js`, `js/runtime.js`, `css/app.css` | frontend-ui | 1 | không | có | Chờ |
-| T46 | Khung ảnh theo hình (hero/family/thanks), schema 6 | `js/state.js`, `js/sections/hero.js`, `js/sections/family.js`, `js/sections/thanks.js` | frontend-ui | 1 | không | có | Chờ |
+| T41 | Luật khung ảnh / thời lượng / hiệu ứng lặp; backlog đợt 2 | `.agents/rules/domain_sections.md`, `docs/backlog.md` | memoryer | 1 | không | không | Đạt |
+| T42 | Section Lịch tháng + thẻ script 3 section mới | `js/sections/calendar.js`, `index.html`, `invite.html` | frontend-ui | 1 | không | có | Đạt |
+| T43 | Section Trình chiếu ảnh | `js/sections/slideshow.js` | frontend-ui | 1 | không | có | Đạt |
+| T44 | Section Trang trí / ngăn cách | `js/sections/divider.js` | frontend-ui | 1 | không | có | Đạt |
+| T45 | Hiệu ứng xuất hiện mới + thời lượng; CSS loop-* và img-shape-* | `js/render.js`, `js/runtime.js`, `css/app.css` | frontend-ui | 1 | không | có | Đạt |
+| T46 | Khung ảnh theo hình (hero/family/thanks), schema 6 | `js/state.js`, `js/sections/hero.js`, `js/sections/family.js`, `js/sections/thanks.js` | frontend-ui | 1 | không | có | Đạt |
 
 T46 sửa 4 tệp (ngoại lệ đã duyệt): ba section dùng chung helper mới ở `state.js`.
 
 ## Nhật ký nghiệm thu
 
-(chưa có)
+- 2026-11-22 — T41 Đạt (memoryer). T42–T46 xong lần đầu; T42 được giao thêm 3 option hiệu ứng trong `#select_revealAnimation` của `index.html` (ô nằm ở index.html chứ không phải render.js).
+- T46.1: thiếu dấu phẩy ở `family.js` (`node --check` báo) — sửa xong.
+- reviewer-code: ĐẠT, không có mục chặn; 3 mục nên sửa → T44.1 (bọc IIFE, chữ dài xuống dòng + maxlength 60, loop chỉ áp lên hoạ tiết/chữ), T43.1 (pointer capture khi vuốt, không vuốt khi bấm nút), T46.2 (chiều cao cố định cho khung vòm/bo góc ở thanks). Đã sửa.
+- autotest: ĐẠT (node --check, registry vm 4 mode + ca biên ngày sai/ảnh rỗng/giá trị độc, migrate idempotent schema 5→6, tham chiếu HTML, bundle --check, pytest 64 passed, whitelist revealAnimation khớp 3 nơi).
+- Kiểm tay (localhost, phiên chính): thêm 3 section, lịch tháng 10/2026 bắt đầu T5 đúng, khung tim cho ảnh cặp đôi, divider đung đưa, "Xem thực tế" hiệu ứng lật hoạt động, slideshow bấm nút và tự chuyển ~4s; không lỗi console mới.

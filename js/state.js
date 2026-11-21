@@ -1,6 +1,6 @@
 // 1. DỮ LIỆU GỐC (MÔ PHỎNG CHUẨN ZIUWEDDING.SITE/MM03 - TÙNG & NGỌC)
 const DEFAULT_STATE = {
-    schemaVersion: 5,
+    schemaVersion: 6,
     selectedSectionId: 'hero',
     isPreviewMode: false,
     globalStyle: {
@@ -282,7 +282,7 @@ const THEME_PRESETS = {
 };
 
 // 2. REGISTRY SECTION, TIỆN ÍCH CHUNG & MIGRATE (giao kèo G2/G4)
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 window.SECTION_TYPES = Object.create(null);
 
 // Whitelist giá trị G5 của globalStyle (giá trị đầu tiên không phải mặc định; mặc định lấy từ DEFAULT_STATE)
@@ -290,12 +290,21 @@ const G5_OPTIONS = {
     bgTexture: ['none', 'paper', 'floral', 'silk'],
     frameStyle: ['none', 'single', 'double', 'floral-corner'],
     cornerOrnament: ['none', 'leaf', 'rose'],
-    revealAnimation: ['none', 'fade-up', 'zoom', 'slide'],
+    revealAnimation: ['none', 'fade-up', 'zoom', 'slide', 'fade', 'flip', 'pop'],
     fallingEffect: ['none', 'hearts', 'sparkles', 'petals', 'snow', 'stars'],
     introStyle: ['none', 'envelope', 'curtain'],
     bgImageFit: ['cover', 'repeat']
 };
 window.G5_OPTIONS = G5_OPTIONS;
+
+// Khung ảnh theo hình (lớp CSS img-shape-* nằm ở css/app.css)
+const IMAGE_SHAPES = [['', 'Mặc định'], ['circle', 'Tròn'], ['arch', 'Vòm'], ['heart', 'Trái tim'], ['hexagon', 'Lục giác'], ['rounded', 'Bo góc lớn']];
+function imageShapeClass(v) {
+    if (typeof v !== 'string' || v === '') return '';
+    return IMAGE_SHAPES.some(s => s[0] === v) ? 'img-shape-' + v : '';
+}
+window.IMAGE_SHAPES = IMAGE_SHAPES;
+window.imageShapeClass = imageShapeClass;
 
 // Tra registry an toàn: chỉ trả def hợp lệ (có renderCanvas là hàm), ngược lại null
 function getSectionDef(type) {
@@ -433,7 +442,7 @@ function cardBgStyleText(g) {
 window.cardBgStyleText = cardBgStyleText;
 
 function defaultSectionStyle() {
-    return { bgColor: '', bgImage: '', bgOverlayOpacity: 0, paddingY: '', align: '', animation: '', ornament: '' };
+    return { bgColor: '', bgImage: '', bgOverlayOpacity: 0, paddingY: '', align: '', animation: '', animDuration: '', ornament: '' };
 }
 
 // Chuẩn hoá state cũ/mới về schema hiện tại. Idempotent, sửa trực tiếp và trả về chính state.

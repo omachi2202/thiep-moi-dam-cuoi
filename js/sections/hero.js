@@ -45,9 +45,11 @@ registerSection({
         weekday: 'Thứ Bảy',
         timeText: '17:00',
         venueText: 'Tư gia nhà gái · Cẩm Lý, Lục Nam, Bắc Giang',
-        closingNote: 'Sự hiện diện của bạn là niềm vinh hạnh của chúng mình!'
+        closingNote: 'Sự hiện diện của bạn là niềm vinh hạnh của chúng mình!',
+        imageShape: ''
     }),
     migrate(data) {
+        if (!IMAGE_SHAPES.some(s => s[0] === data.imageShape)) data.imageShape = '';
         if (!HERO_LAYOUTS.some(l => l.key === data.layout)) data.layout = 'classic';
         return data;
     },
@@ -126,11 +128,17 @@ registerSection({
                 </div>`;
         }
 
-        // classic: giữ nguyên HTML cũ
+        // classic: giữ nguyên HTML cũ khi chưa chọn khung ảnh
+        const shape = imageShapeClass(d.imageShape);
+        // Có khung: ảnh thu vào giữa (bỏ h-full để khung 1:1 không méo), nền ô là màu chủ đạo để chữ trắng vẫn đọc được
+        const classicImgCls = shape
+            ? `${shape} block mx-auto mt-5 w-[82%] object-cover${(d.imageShape === 'arch' || d.imageShape === 'rounded') ? ' h-[400px]' : ''}`
+            : 'w-full h-full object-cover';
+        const classicBoxStyle = shape ? ` style="background: ${v.pc};"` : '';
         return `
                 <div class="relative text-center pb-8">
-                    <div class="relative h-[470px] overflow-hidden">
-                        <img src="${escapeHtml(safeUrl(d.heroImage))}" alt="Wedding Banner" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/600x800/e2d9d0/5c4938?text=Wedding+Photo'">
+                    <div class="relative h-[470px] overflow-hidden"${classicBoxStyle}>
+                        <img src="${escapeHtml(safeUrl(d.heroImage))}" alt="Wedding Banner" class="${classicImgCls}" onerror="this.src='https://placehold.co/600x800/e2d9d0/5c4938?text=Wedding+Photo'">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
                         <div class="absolute bottom-8 inset-x-4 text-white">
                             <p class="tracking-[0.28em] text-xs uppercase mb-2 opacity-90" ${fieldAttr(ctx, 'tagline')}>${escapeHtml(d.tagline)}</p>
@@ -161,6 +169,13 @@ registerSection({
                 <input type="text" value="${escapeHtml(d[key])}" oninput="updateSectionField('${id}','${key}',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
             </div>`;
         const extras = cur.extra.map(textInput).join('');
+        const shapeSel = cur.key === 'classic' ? `
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Khung ảnh</label>
+                <select onchange="updateSectionField('${id}','imageShape',this.value,false)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
+                    ${IMAGE_SHAPES.map(s => `<option value="${escapeHtml(s[0])}" ${s[0] === d.imageShape ? 'selected' : ''}>${escapeHtml(s[1])}</option>`).join('')}
+                </select>
+            </div>` : '';
         return `
             <div>
                 <label class="block font-semibold text-slate-700 mb-1">Kiểu trang bìa</label>
@@ -181,6 +196,7 @@ registerSection({
                 </div>
             </div>
             ${extras}
+            ${shapeSel}
             <div>
                 <label class="block font-semibold text-slate-700 mb-1">Lời nhắn dưới ảnh</label>
                 <input type="text" value="${escapeHtml(d.subNote)}" oninput="updateSectionField('${id}','subNote',this.value,true)" class="w-full px-3 py-2 rounded-lg border border-slate-300">
