@@ -80,7 +80,8 @@
             return api.available;
         },
 
-        uploadFile(file) {
+        uploadFile(file, onProgress) {
+            if (!api.available) return Promise.reject(new Error(NO_BACKEND));
             const fd = new FormData();
             fd.append('file', file);
             const headers = {};
@@ -95,7 +96,37 @@
                     headers['X-Edit-Key'] = key;
                 }
             }
-            return request('/api/upload', { method: 'POST', body: fd, headers }, 60000).then(j => j.url);
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', '/api/upload');
+                Object.keys(headers).forEach(k => xhr.setRequestHeader(k, headers[k]));
+                xhr.timeout = 60000;
+                xhr.responseType = 'text';
+                if (typeof onProgress === 'function' && xhr.upload) {
+                    xhr.upload.onprogress = (e) => {
+                        if (e.lengthComputable && e.total > 0) {
+                            try { onProgress(Math.min(1, e.loaded / e.total)); } catch (x) { /* bỏ qua */ }
+                        }
+                    };
+                }
+                xhr.onerror = () => reject(new Error('Không kết nối được máy chủ. Vui lòng thử lại.'));
+                xhr.ontimeout = () => reject(new Error('Máy chủ phản hồi quá chậm, vui lòng thử lại.'));
+                xhr.onload = () => {
+                    let body = null;
+                    try { body = JSON.parse(xhr.responseText); } catch (e) { body = null; }
+                    if (xhr.status < 200 || xhr.status >= 300) {
+                        let msg = body && body.detail;
+                        if (Array.isArray(msg)) msg = 'Dữ liệu gửi lên không hợp lệ.';
+                        const err = new Error(msg || ('Lỗi máy chủ (' + xhr.status + ').'));
+                        err.status = xhr.status;
+                        reject(err);
+                        return;
+                    }
+                    if (typeof onProgress === 'function') { try { onProgress(1); } catch (x) { /* bỏ qua */ } }
+                    resolve(body && body.url);
+                };
+                xhr.send(fd);
+            });
         },
 
         // true | ném Error (.status)

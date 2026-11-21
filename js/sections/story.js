@@ -55,7 +55,7 @@
         try {
             let url;
             if (typeof uploadOrDataUrl === 'function') {
-                url = await uploadOrDataUrl(file);
+                url = await uploadOrDataUrl(file, { trigger: event.target });
             } else {
                 url = await new Promise((resolve, reject) => {
                     const r = new FileReader();
@@ -67,7 +67,9 @@
             window.storyUpdateItem(secId, i, 'image', url, true);
             if (typeof showToast === 'function') showToast('Đã cập nhật ảnh mốc #' + (i + 1) + '!');
         } catch (err) {
-            if (typeof showToast === 'function') showToast('Không tải được ảnh, vui lòng thử lại.');
+            if (typeof showToast === 'function' && !(err && err.handled)) showToast('Không tải được ảnh, vui lòng thử lại.');
+        } finally {
+            try { event.target.value = ''; } catch (e) { /* bỏ qua */ }
         }
     };
 
