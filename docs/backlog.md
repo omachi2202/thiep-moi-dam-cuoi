@@ -57,3 +57,4 @@ Trạng thái: `master` = `cb640f4` (đã push GitHub `omachi2202/thiep-moi-dam-
 - `export.xlsx` còn nhận khoá qua `?key=` — bỏ, chỉ nhận header (khoá có thể lọt log proxy) — Trung bình.
 - ~~T36 — gắn thiệp vào portal (compose service `thiep_cuoi`, ingress Tunnel, `C:/dev/thiep_data`)~~ — ĐÃ XONG (2026-11-21: chạy trên tên miền riêng + www qua Tunnel portal; mã tạo thiệp trong env_file ngoài repo; DNS tạo tay vì `cert.pem` không có quyền zone mới — xem `docs/deploy.md` §3.3).
 - Sao lưu định kỳ thư mục dữ liệu thiệp trên máy chủ (`guests.xlsx`, `cards/`, `uploads/`) — chưa có lịch sao lưu tự động — Trung bình.
+- Phong bì: `filter: brightness` trên nắp/thân (`css/app.css`, khối `.intro-env-*`) làm màu hiển thị lệch nhẹ so với màu người dùng chọn ở `envFlapColor`/`envBodyColor` — bỏ filter khi có màu riêng hoặc ghi chú trong UI (review đợt 2) — Thấp.

@@ -27,6 +27,7 @@ Thứ tự nạp: `state.js` → `api.js` → `runtime.js` → `sections/*.js` �
 
 ## 3. Giao diện
 - Tailwind CDN + Font Awesome 6.5.1 + Google Fonts. Font mới phải thêm vào `FONT_OPTIONS` và link Google Fonts của cả editor, `invite.html`, export.
+- Phông mới chỉ lấy phông Google Fonts có subset `vietnamese` (kiểm trước khi thêm). Link Google Fonts phải giống hệt từng ký tự ở `index.html`, `invite.html` và chuỗi export trong `js/editor.js`. Giá trị `FONT_OPTIONS` dạng `'<Tên>', <generic>` (vd `'Lora', serif`) để `safeFont` nhận.
 - Canvas thiệp rộng như điện thoại (≈ 390–430px); trang khách responsive, kiểm ở 390px.
 - Vùng chạm ≥ 44px trên mobile; tương phản chữ/nền đủ đọc.
 - Chữ giao diện tiếng Việt, có dấu đầy đủ.

@@ -1,6 +1,6 @@
 // 1. DỮ LIỆU GỐC (MÔ PHỎNG CHUẨN ZIUWEDDING.SITE/MM03 - TÙNG & NGỌC)
 const DEFAULT_STATE = {
-    schemaVersion: 6,
+    schemaVersion: 7,
     selectedSectionId: 'hero',
     isPreviewMode: false,
     globalStyle: {
@@ -19,6 +19,14 @@ const DEFAULT_STATE = {
         bgImage: "",
         bgImageOverlay: 0,
         bgImageFit: "cover",
+        // Phong bì / màn mở (v7): màu rỗng = theo primaryColor
+        envFlapColor: "",
+        envBodyColor: "",
+        envCardImage: "",
+        envSeal: "heart",
+        envMonogram: "",
+        introToText: "",
+        introBtnText: "",
         audioUrl: "https://media.vocaroo.com/mp3/15iKnK2wEfyY"
     },
     bankInfo: {
@@ -173,7 +181,29 @@ const FONT_OPTIONS = [
     { label: 'Roboto Slab (Rõ nét)', value: "'Roboto Slab', serif" },
     { label: 'Tinos (Cổ điển sắc nét)', value: "'Tinos', serif" },
     { label: 'Open Sans (Dễ đọc, hiện đại)', value: "'Open Sans', sans-serif" },
-    { label: 'Montserrat (Trẻ trung)', value: "'Montserrat', sans-serif" }
+    { label: 'Montserrat (Trẻ trung)', value: "'Montserrat', sans-serif" },
+    // Viết tay mềm
+    { label: 'Bonheur Royale (Viết tay mềm, thanh lịch)', value: "'Bonheur Royale', cursive" },
+    { label: 'Imperial Script (Viết tay mềm, trang trọng)', value: "'Imperial Script', cursive" },
+    { label: 'Ephesis (Viết tay mềm, bay bổng)', value: "'Ephesis', cursive" },
+    { label: 'Alex Brush (Viết tay mềm, nét cọ)', value: "'Alex Brush', cursive" },
+    { label: 'Allura (Viết tay mềm, uyển chuyển)', value: "'Allura', cursive" },
+    { label: 'Pinyon Script (Viết tay mềm, cổ điển)', value: "'Pinyon Script', cursive" },
+    { label: 'Corinthia (Viết tay mềm, mảnh)', value: "'Corinthia', cursive" },
+    { label: 'Moon Dance (Viết tay mềm, nhẹ nhàng)', value: "'Moon Dance', cursive" },
+    // Viết tay hiện đại
+    { label: 'Playball (Viết tay hiện đại, thể thao)', value: "'Playball', cursive" },
+    { label: 'Lobster (Viết tay hiện đại, đậm nét)', value: "'Lobster', cursive" },
+    { label: 'Pacifico (Viết tay hiện đại, vui tươi)', value: "'Pacifico', cursive" },
+    { label: 'Charm (Viết tay hiện đại, duyên dáng)', value: "'Charm', cursive" },
+    { label: 'Patrick Hand (Viết tay hiện đại, thân mật)', value: "'Patrick Hand', cursive" },
+    { label: 'Beau Rivage (Viết tay hiện đại, mềm mại)', value: "'Beau Rivage', cursive" },
+    { label: 'Hurricane (Viết tay hiện đại, phóng khoáng)', value: "'Hurricane', cursive" },
+    // Có chân
+    { label: 'Lora (Có chân, dễ đọc)', value: "'Lora', serif" },
+    { label: 'Prata (Có chân, thời trang)', value: "'Prata', serif" },
+    { label: 'Spectral (Có chân, tinh gọn)', value: "'Spectral', serif" },
+    { label: 'Rokkitt (Có chân, chữ dày)', value: "'Rokkitt', serif" }
 ];
 
 // Bộ phối màu & font mẫu (chuyển từ biến cục bộ `presets` của applyThemePreset)
@@ -282,7 +312,7 @@ const THEME_PRESETS = {
 };
 
 // 2. REGISTRY SECTION, TIỆN ÍCH CHUNG & MIGRATE (giao kèo G2/G4)
-const SCHEMA_VERSION = 6;
+const SCHEMA_VERSION = 7;
 window.SECTION_TYPES = Object.create(null);
 
 // Whitelist giá trị G5 của globalStyle (giá trị đầu tiên không phải mặc định; mặc định lấy từ DEFAULT_STATE)
@@ -459,6 +489,14 @@ function migrate(state) {
     let ov = parseFloat(state.globalStyle.bgImageOverlay);
     if (!isFinite(ov)) ov = 0;
     state.globalStyle.bgImageOverlay = Math.min(0.9, Math.max(0, ov));
+    // Phong bì / màn mở (v7): màu hợp lệ hoặc '', URL hợp lệ hoặc '', tem trong whitelist, chữ cắt độ dài
+    const gs = state.globalStyle;
+    ['envFlapColor', 'envBodyColor'].forEach(k => { gs[k] = safeColor(gs[k], ''); });
+    gs.envCardImage = safeUrl(gs.envCardImage);
+    if (['heart', 'rings', 'monogram'].indexOf(gs.envSeal) < 0) gs.envSeal = 'heart';
+    [['envMonogram', 4], ['introToText', 40], ['introBtnText', 24]].forEach(p => {
+        gs[p[0]] = (typeof gs[p[0]] === 'string') ? gs[p[0]].slice(0, p[1]) : '';
+    });
 
     const bank = state.bankInfo || {};
     state.bankInfo = {
