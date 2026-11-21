@@ -469,6 +469,18 @@ let countdownInterval = null;
         el.setAttribute('aria-label', 'Mở thiệp mời');
         el.style.setProperty('--intro-color', primary);
         el.style.setProperty('--intro-bg', bg);
+        // Tuỳ biến phong bì (tự chuẩn hoá, không tin state): rỗng/sai -> màu chủ đạo
+        const gg = g || {};
+        const cut = function (v, n) { return String(v === undefined || v === null ? '' : v).trim().slice(0, n); };
+        const flapColor = (typeof safeColor === 'function') ? safeColor(gg.envFlapColor, '') : '';
+        const bodyColor = (typeof safeColor === 'function') ? safeColor(gg.envBodyColor, '') : '';
+        el.style.setProperty('--env-flap', flapColor || primary);
+        el.style.setProperty('--env-body', bodyColor || primary);
+        const cardImg = (typeof safeUrl === 'function') ? safeUrl(gg.envCardImage) : '';
+        const sealKind = (gg.envSeal === 'rings' || gg.envSeal === 'monogram') ? gg.envSeal : 'heart';
+        const monogram = cut(gg.envMonogram, 4);
+        const toText = cut(gg.introToText, 40) || 'Thiệp mời dành cho';
+        const btnText = cut(gg.introBtnText, 24) || 'Mở thiệp';
 
         const mkEl = function (tag, cls, text) {
             const x = document.createElement(tag);
@@ -485,20 +497,35 @@ let countdownInterval = null;
         if (style === 'envelope') {
             const env = mkEl('div', 'intro-env');
             env.appendChild(mkEl('div', 'intro-env-back'));
-            env.appendChild(mkEl('div', 'intro-env-card'));
+            const envCard = mkEl('div', 'intro-env-card');
+            if (cardImg) {
+                const im = document.createElement('img');
+                im.src = cardImg;
+                im.alt = '';
+                im.addEventListener('error', function () { im.style.display = 'none'; });
+                envCard.appendChild(im);
+            }
+            env.appendChild(envCard);
             env.appendChild(mkEl('div', 'intro-env-front'));
             env.appendChild(mkEl('div', 'intro-env-flap'));
             const seal = mkEl('div', 'intro-env-seal');
-            seal.appendChild(mkEl('i', 'fa-solid fa-heart'));
+            if (sealKind === 'monogram' && monogram) {
+                seal.classList.add('is-monogram');
+                seal.appendChild(mkEl('span', 'intro-env-mono', monogram));
+            } else if (sealKind === 'rings') {
+                seal.appendChild(mkEl('i', 'fa-solid fa-ring'));
+            } else {
+                seal.appendChild(mkEl('i', 'fa-solid fa-heart'));
+            }
             env.appendChild(seal);
             stage.appendChild(env);
         }
-        stage.appendChild(mkEl('p', 'intro-to', 'Thiệp mời dành cho'));
+        stage.appendChild(mkEl('p', 'intro-to', toText));
         stage.appendChild(mkEl('p', 'intro-name', String(guestName || '').trim() || 'Quý khách'));   // textContent: không cần escape HTML
         const btn = mkEl('button', 'intro-btn');
         btn.type = 'button';
         btn.appendChild(mkEl('i', 'fa-solid fa-envelope-open-text'));
-        btn.appendChild(document.createTextNode(' Mở thiệp'));
+        btn.appendChild(document.createTextNode(' ' + btnText));
         stage.appendChild(btn);
         el.appendChild(stage);
 

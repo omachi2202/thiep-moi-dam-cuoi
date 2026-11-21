@@ -492,7 +492,7 @@
 .intro-env-back {
     inset: 0;
     border-radius: 6px;
-    background: var(--intro-color, #8c6239);
+    background: var(--env-body, var(--intro-color, #8c6239));
     filter: brightness(.88);
 }
 
@@ -511,7 +511,7 @@
     bottom: 0;
     height: 100%;
     border-radius: 6px;
-    background: var(--intro-color, #8c6239);
+    background: var(--env-body, var(--intro-color, #8c6239));
     filter: brightness(.96);
     clip-path: polygon(0 0, 50% 55%, 100% 0, 100% 100%, 0 100%);
 }
@@ -519,7 +519,7 @@
 .intro-env-flap {
     top: 0;
     height: 60%;
-    background: var(--intro-color, #8c6239);
+    background: var(--env-flap, var(--intro-color, #8c6239));
     filter: brightness(1.15) drop-shadow(0 2px 2px rgba(0, 0, 0, .18));
     clip-path: polygon(0 0, 100% 0, 50% 100%);
     transform-origin: top center;
@@ -542,6 +542,34 @@
     box-shadow: 0 2px 6px rgba(0, 0, 0, .25);
     z-index: 3;
     transition: opacity .3s ease;
+}
+
+/* Tem monogram: nền màu chủ đạo, chữ script sáng */
+.intro-env-seal.is-monogram {
+    background: var(--intro-color, #8c6239);
+    color: #fff8e1;
+    box-shadow: 0 0 0 2px rgba(255, 248, 225, .7), 0 2px 6px rgba(0, 0, 0, .3);
+}
+
+.intro-env-mono {
+    font-family: 'Great Vibes', 'Dancing Script', cursive;
+    font-size: 15px;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    max-width: 34px;
+    text-shadow: 0 1px 1px rgba(0, 0, 0, .35);
+}
+
+/* Ảnh nhỏ trên tấm thiệp nhô ra khỏi phong bì */
+.intro-env-card { overflow: hidden; }
+
+.intro-env-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
 }
 
 .is-opening .intro-env-flap { transform: rotateX(180deg); }
