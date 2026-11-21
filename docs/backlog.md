@@ -21,6 +21,15 @@ Mỗi dòng: việc — lý do — ưu tiên (Cao / Trung bình / Thấp).
 - Markup khung/modal mừng cưới lặp ở `invite.html` và chuỗi export trong `editor.js` — gộp thành một nguồn — Trung bình.
 - `CLAUDE.md` viết tiếng Anh trong khi Điều 1 yêu cầu tài liệu tiếng Việt — quyết định giữ hay dịch — Thấp.
 
+## Đợt 2: tuỳ biến (sau T41–T46)
+
+- Font chữ ký hỗ trợ tiếng Việt — thêm vào `FONT_OPTIONS` và link Google Fonts ở editor/invite/export — Trung bình.
+- Phong bì tuỳ màu nắp, ảnh tem, chữ "Chạm để mở" — Trung bình.
+- Bố cục mới cho Gia đình, Lịch trình, Album, Cảm ơn theo mẫu `HERO_LAYOUTS` — Trung bình.
+- Nút liên kết (ý ngoài phạm vi ghi nhận từ m-invite) — Thấp.
+- QR thiệp tuỳ màu (từ m-invite) — Thấp.
+- Chữ hiệu ứng gõ (typewriter) (từ m-invite) — Thấp.
+
 ## Ý ngoài phạm vi: hình nền & ảnh bìa (T25)
 
 - Trình phát nhạc dạng thẻ — ngoài phạm vi đợt hình nền/ảnh bìa — Thấp.

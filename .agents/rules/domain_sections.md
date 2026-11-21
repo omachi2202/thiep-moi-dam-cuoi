@@ -30,7 +30,7 @@ registerSection({
 ```js
 { id: 'story-1', type: 'story', name: '…', icon: '…', visible: true,
   customFont: '', customTitleSize: '24', customTextColor: '',
-  style: { bgColor: '', bgImage: '', bgOverlayOpacity: 0, paddingY: '', align: '', animation: '', ornament: '' },
+  style: { bgColor: '', bgImage: '', bgOverlayOpacity: 0, paddingY: '', align: '', animation: '', animDuration: '', ornament: '' },
   data: { ... } }
 ```
 - `id` duy nhất. Section cũ giữ id cũ (`hero`, `family`…); section thêm mới có id `<type>-<n>` với n nhỏ nhất chưa dùng.
@@ -38,6 +38,13 @@ registerSection({
 
 ### Biến thể bố cục trong một section
 Section có nhiều bố cục khai báo trường `data.layout` và danh sách kiểu ngay trong tệp section (vd `HERO_LAYOUTS`); `migrate` riêng của loại đó đưa giá trị lạ về mặc định. Không rẽ nhánh bố cục ở ngoài tệp section (`render.js`, `editor.js`, `runtime.js`). Ví dụ: hero (`classic|fade|arch|fullscreen`).
+
+### Hiệu ứng, khung ảnh, trang trí
+- `style.animation` và `globalStyle.revealAnimation` nhận thêm `fade|flip|pop`; `style.animDuration ∈ ''|fast|slow`. Whitelist ở `render.js` và `G5_OPTIONS` (`state.js`) phải khớp nhau.
+- Khung ảnh: trường `data.imageShape` của từng section; lớp CSS lấy qua `imageShapeClass()` (`state.js`), danh sách kiểu là `IMAGE_SHAPES`. `migrate` riêng của loại đó đưa giá trị lạ về `''`.
+- Hiệu ứng lặp chỉ dùng các lớp `loop-swing|loop-pulse|loop-heartbeat` của `css/app.css`; phải tắt khi `prefers-reduced-motion`.
+- Hoạ tiết SVG trang trí viết sẵn trong tệp section, tô bằng `currentColor`, không tải nguồn ngoài, không nhận SVG do người dùng nhập.
+- Section nhiều ảnh dùng chung `data.photos` có thể dùng lại `updateAlbumPhoto` / `handleAlbumFileUpload` của editor.
 
 ## 3. `migrate(state)` (trong `js/state.js`)
 - Gọi ở mọi điểm nạp state: khởi động, khôi phục nháp, nhập JSON, `invite.html` tải từ API.
