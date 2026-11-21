@@ -37,7 +37,7 @@ registerSection({
 - `name` hiển thị ở sidebar, sửa được; không đánh số cứng ("1. …") cho section mới.
 
 ### Biến thể bố cục trong một section
-Section có nhiều bố cục khai báo trường `data.layout` và danh sách kiểu ngay trong tệp section (vd `HERO_LAYOUTS`); `migrate` riêng của loại đó đưa giá trị lạ về mặc định. Không rẽ nhánh bố cục ở ngoài tệp section (`render.js`, `editor.js`, `runtime.js`). Ví dụ: hero (`classic|fade|arch|fullscreen`).
+Section có nhiều bố cục khai báo trường `data.layout` và danh sách kiểu ngay trong tệp section (vd `HERO_LAYOUTS`); `migrate` riêng của loại đó đưa giá trị lạ về mặc định. Không rẽ nhánh bố cục ở ngoài tệp section (`render.js`, `editor.js`, `runtime.js`). Bố cục hiện có: hero `classic|fade|arch|fullscreen`; family `classic|split|traditional`; events `cards|timeline|carousel`; album `grid|masonry|feature`; thanks `classic|overlay|curved`. Bố cục mặc định phải render y hệt bản trước khi có `layout`.
 
 ### Hiệu ứng, khung ảnh, trang trí
 - `style.animation` và `globalStyle.revealAnimation` nhận thêm `fade|flip|pop`; `style.animDuration ∈ ''|fast|slow`. Whitelist ở `render.js` và `G5_OPTIONS` (`state.js`) phải khớp nhau.

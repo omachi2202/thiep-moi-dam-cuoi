@@ -13,6 +13,7 @@
 - Không tìm thấy thiệp: hiện trang báo lỗi thân thiện tiếng Việt, không lộ chi tiết server.
 - Tên khách: `decodeURIComponent`, cắt tối đa 60 ký tự, `escapeHtml`; thay `{khach}` trong mọi trường văn bản; mặc định "Quý khách". Tự điền vào ô tên RSVP/lời chúc.
 - Intro (`globalStyle.introStyle`: `none|envelope|curtain`): bấm mở → ẩn intro + phát nhạc (để vượt chặn autoplay).
+- Màn mở đọc thêm `globalStyle.envFlapColor`/`envBodyColor` (qua `safeColor`, rỗng = màu chủ đạo), `envCardImage` (qua `safeUrl`, dựng bằng `<img>`, rỗng thì bỏ qua), `envSeal` (`heart|rings|monogram`), `envMonogram` (≤4 ký tự), `introToText` (≤40), `introBtnText` (≤24). Mọi chữ chèn bằng `textContent`; áp cho cả phong bì và rèm.
 
 ## 3. Lịch
 - Google Calendar: `https://calendar.google.com/calendar/render?action=TEMPLATE&text=…&dates=<UTC>/<UTC>&location=…`.
