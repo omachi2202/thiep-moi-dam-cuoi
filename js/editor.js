@@ -263,13 +263,13 @@ function beginUploadUi(trigger, label) {
 async function uploadOrDataUrl(file, opts) {
     const ui = beginUploadUi(opts && opts.trigger, 'Đang xử lý…');
     try {
-        return await uploadOrDataUrlInner(file, ui);
+        return await uploadOrDataUrlInner(file, ui, opts && opts.label);
     } finally {
         ui.end();
     }
 }
 
-async function uploadOrDataUrlInner(file, ui) {
+async function uploadOrDataUrlInner(file, ui, label) {
     let apiFailed = false;
     let failStatus = 0;
     let failMsg = '';
@@ -280,7 +280,7 @@ async function uploadOrDataUrlInner(file, ui) {
     if (window.api && window.api.available) {
         try {
             ui.set('Đang tải lên 0%', 0);
-            const url = await window.api.uploadFile(file, p => ui.set('Đang tải lên ' + Math.round(p * 100) + '%', p));
+            const url = await window.api.uploadFile(file, p => ui.set('Đang tải lên ' + Math.round(p * 100) + '%', p), label);
             if (url) return url;
         } catch (err) {
             apiFailed = true;
@@ -317,7 +317,7 @@ async function handleLocalImageUpload(event, secId, fieldKey) {
     const file = event.target.files[0];
     if (!file) return;
     try {
-        const url = await uploadOrDataUrl(file, { trigger: event.target });
+        const url = await uploadOrDataUrl(file, { trigger: event.target, label: secId });
         updateSectionField(secId, fieldKey, url, false);
         showToast("Đã tải ảnh lên thành công!");
     } catch (err) {
@@ -332,7 +332,7 @@ async function handleGlobalBgUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     try {
-        const url = await uploadOrDataUrl(file, { trigger: event.target });
+        const url = await uploadOrDataUrl(file, { trigger: event.target, label: 'nen' });
         updateGlobalStyle('bgImage', url);
         showToast("Đã đặt hình nền thiệp!");
     } catch (err) {
@@ -347,7 +347,7 @@ async function handleSectionBgUpload(event, secId) {
     const file = event.target.files[0];
     if (!file) return;
     try {
-        const url = await uploadOrDataUrl(file, { trigger: event.target });
+        const url = await uploadOrDataUrl(file, { trigger: event.target, label: secId + '-nen' });
         setSectionDecor(secId, 'bgImage', url);
         showToast("Đã đặt ảnh nền cho phần này!");
     } catch (err) {
@@ -365,7 +365,7 @@ async function handleAlbumFileUpload(event, idx, secId) {
     if (!file) return;
     const sid = secId || appState.selectedSectionId;
     try {
-        const url = await uploadOrDataUrl(file, { trigger: event.target });
+        const url = await uploadOrDataUrl(file, { trigger: event.target, label: sid });
         updateAlbumPhoto(sid, idx, url, false);
         showToast(`Đã cập nhật ảnh Album #${idx + 1}!`);
     } catch (err) {
@@ -379,7 +379,7 @@ async function handleAudioFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     try {
-        const url = await uploadOrDataUrl(file, { trigger: event.target });
+        const url = await uploadOrDataUrl(file, { trigger: event.target, label: 'nhac' });
         const input = document.getElementById('inputAudioUrl');
         if (input) input.value = url;
         updateGlobalStyle('audioUrl', url);
@@ -390,6 +390,104 @@ async function handleAudioFileUpload(event) {
         event.target.value = '';
     }
 }
+
+// ---------- Cột phải: tab "Chỉnh sửa" / "Ảnh đã tải" (trạng thái UI, không commitState) ----------
+let rightTab = 'edit';
+let uploadsReqId = 0;
+
+function setRightTab(tab) {
+    rightTab = tab === 'uploads' ? 'uploads' : 'edit';
+    const isUp = rightTab === 'uploads';
+    const ins = document.getElementById('inspectorContent');
+    const pnl = document.getElementById('uploadsPanel');
+    if (ins) ins.classList.toggle('hidden', isUp);
+    if (pnl) pnl.classList.toggle('hidden', !isUp);
+    [['rightTabEdit', !isUp], ['rightTabUploads', isUp]].forEach(p => {
+        const b = document.getElementById(p[0]);
+        if (!b) return;
+        b.classList.toggle('is-active', p[1]);
+        b.setAttribute('aria-selected', p[1] ? 'true' : 'false');
+    });
+    if (isUp) refreshUploadsPanel();
+}
+
+function formatUploadSize(n) {
+    n = Number(n) || 0;
+    if (n >= 1048576) return (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
+    if (n >= 1024) return Math.round(n / 1024) + ' KB';
+    return n + ' B';
+}
+
+function uploadItemHtml(it) {
+    const url = String(it.url || '');
+    const name = String(it.name || url.split('/').pop() || '');
+    const isAudio = /\.(mp3|m4a|ogg|wav)$/i.test(name);
+    const isVideo = /\.mp4$/i.test(name);
+    const thumb = (isAudio || isVideo)
+        ? '<div class="upload-thumb upload-thumb-icon"><i class="fa-solid ' + (isAudio ? 'fa-music' : 'fa-film') + '"></i></div>'
+        : '<img class="upload-thumb" loading="lazy" alt="" src="' + escapeHtml(url) + '">';
+    const size = it.size ? ' · ' + formatUploadSize(it.size) : '';
+    return '<div class="upload-item">' + thumb +
+        '<div class="upload-name" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</div>' +
+        '<div class="upload-meta">' + escapeHtml(size.replace(/^ · /, '')) + '</div>' +
+        '<div class="upload-actions">' +
+        '<a href="' + escapeHtml(url) + '" target="_blank" rel="noopener" class="upload-btn" title="Mở trong tab mới" aria-label="Mở trong tab mới"><i class="fa-solid fa-up-right-from-square"></i></a>' +
+        '<button type="button" class="upload-btn" data-copy-url="' + escapeHtml(url) + '" title="Sao chép đường dẫn" aria-label="Sao chép đường dẫn"><i class="fa-regular fa-copy"></i></button>' +
+        '</div></div>';
+}
+
+function copyUploadUrl(url) {
+    const full = /^https?:/i.test(url) ? url : location.origin + url;
+    const done = () => showToast('Đã sao chép đường dẫn!');
+    const fail = () => showToast('Không sao chép được, hãy sao chép thủ công.');
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(full).then(done, fail);
+    else fail();
+}
+
+async function refreshUploadsPanel() {
+    const pnl = document.getElementById('uploadsPanel');
+    if (!pnl || rightTab !== 'uploads') return;
+    const api = window.api;
+    const reqId = ++uploadsReqId;
+    const refreshBtn = '<button type="button" class="upload-refresh" onclick="refreshUploadsPanel()"><i class="fa-solid fa-rotate"></i> Làm mới</button>';
+    const grid = items => '<div class="upload-grid">' + items.map(uploadItemHtml).join('') + '</div>';
+    const note = t => '<p class="text-[11px] text-slate-500 leading-relaxed">' + t + '</p>';
+    let html;
+    if (!api || !api.available) {
+        html = note('Chưa kết nối máy chủ nên chưa có thư viện ảnh. Ảnh đang được nhúng trực tiếp vào thiệp.');
+    } else {
+        const card = api.currentCard();
+        if (!card) {
+            const pend = api.getPendingUploads().map(u => ({ url: u, name: u.split('/').pop() }));
+            html = note('Xuất bản thiệp để lưu danh sách ảnh theo thiệp.') +
+                (pend.length ? '<div class="mt-3">' + grid(pend) + '</div>' : note('<br>Chưa có ảnh nào được tải lên.'));
+        } else {
+            pnl.innerHTML = note('<i class="fa-solid fa-spinner upload-spin"></i> Đang tải danh sách ảnh…');
+            try {
+                const j = await api.listUploads(card.slug);
+                if (reqId !== uploadsReqId) return;
+                const items = (j && Array.isArray(j.items)) ? j.items : [];
+                html = '<div class="flex items-center justify-between mb-3"><span class="font-semibold text-slate-700">' +
+                    items.length + ' tệp của thiệp ' + escapeHtml(card.slug) + '</span>' + refreshBtn + '</div>' +
+                    (items.length ? grid(items) : note('Chưa có ảnh nào được lưu cho thiệp này.'));
+            } catch (e) {
+                if (reqId !== uploadsReqId) return;
+                html = note(escapeHtml((e && e.message) || 'Không tải được danh sách ảnh.')) + '<div class="mt-2">' + refreshBtn + '</div>';
+            }
+        }
+    }
+    if (reqId !== uploadsReqId || rightTab !== 'uploads') return;
+    pnl.innerHTML = html;
+}
+
+window.setRightTab = setRightTab;
+window.refreshUploadsPanel = refreshUploadsPanel;
+window.addEventListener('uploads:changed', () => { if (rightTab === 'uploads') refreshUploadsPanel(); });
+window.addEventListener('api:ready', () => { if (rightTab === 'uploads') refreshUploadsPanel(); });
+document.addEventListener('click', e => {
+    const b = e.target && e.target.closest ? e.target.closest('[data-copy-url]') : null;
+    if (b) copyUploadUrl(b.getAttribute('data-copy-url') || '');
+});
 
 function updateGlobalStyle(key, val) {
     // Khoá G5: chỉ nhận giá trị thuộc whitelist

@@ -55,7 +55,7 @@
         try {
             let url;
             if (typeof uploadOrDataUrl === 'function') {
-                url = await uploadOrDataUrl(file, { trigger: event.target });
+                url = await uploadOrDataUrl(file, { trigger: event.target, label: secId });
             } else {
                 url = await new Promise((resolve, reject) => {
                     const r = new FileReader();

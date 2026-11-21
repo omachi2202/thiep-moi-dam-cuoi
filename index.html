@@ -442,10 +442,20 @@
                     id="inspectorBadge">Hero</span>
             </div>
 
+            <div class="right-tabs" role="tablist">
+                <button type="button" id="rightTabEdit" class="right-tab is-active" role="tab" aria-selected="true"
+                    onclick="setRightTab('edit')"><i class="fa-solid fa-sliders"></i> Chỉnh sửa</button>
+                <button type="button" id="rightTabUploads" class="right-tab" role="tab" aria-selected="false"
+                    onclick="setRightTab('uploads')"><i class="fa-regular fa-images"></i> Ảnh đã tải</button>
+            </div>
+
             <!-- Nội dung Inspector thay đổi động theo Section đang chọn -->
             <div id="inspectorContent" class="flex-1 overflow-y-auto p-4 space-y-4 text-xs">
                 <!-- Được render tự động bằng JS -->
             </div>
+
+            <!-- Tab "Ảnh đã tải": thư viện ảnh của thiệp đang sửa -->
+            <div id="uploadsPanel" class="hidden flex-1 overflow-y-auto p-4 text-xs"></div>
         </aside>
 
     </div>

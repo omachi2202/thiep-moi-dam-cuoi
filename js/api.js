@@ -57,6 +57,34 @@
         };
     }
 
+    const PENDING_KEY = 'thiep:uploads:pending';
+    const PENDING_MAX = 200;
+
+    // Duyệt sâu mọi chuỗi bắt đầu bằng /uploads/ trong state (không rẽ nhánh theo type)
+    function collectUploadUrls(node, out, depth) {
+        if (depth > 12 || out.length >= 400) return;
+        if (typeof node === 'string') {
+            if (node.indexOf('/uploads/') === 0 && node.length < 200 && !/\s/.test(node)) out.push(node);
+        } else if (Array.isArray(node)) {
+            node.forEach(v => collectUploadUrls(v, out, depth + 1));
+        } else if (node && typeof node === 'object') {
+            Object.keys(node).forEach(k => collectUploadUrls(node[k], out, depth + 1));
+        }
+    }
+
+    // Gắn ảnh đã tải (pending + đang dùng) vào chỉ mục của thiệp; lỗi không làm hỏng xuất bản
+    async function attachAfterPublish(slug, stateCopy) {
+        try {
+            const urls = api.getPendingUploads();
+            collectUploadUrls(stateCopy, urls, 0);
+            const uniq = Array.from(new Set(urls)).slice(0, 200);
+            if (!uniq.length) { window.dispatchEvent(new CustomEvent('uploads:changed')); return; }
+            await api.attachUploads(slug, uniq);
+            api.clearPendingUploads();
+        } catch (e) { /* giữ pending để thử lại lần xuất bản sau */ }
+        try { window.dispatchEvent(new CustomEvent('uploads:changed')); } catch (e) { /* bỏ qua */ }
+    }
+
     const api = {
         available: false,
         needCreateCode: false,
@@ -80,21 +108,57 @@
             return api.available;
         },
 
-        uploadFile(file, onProgress) {
+        // Thiệp đang sửa đã xuất bản và máy có khoá: {slug, key} | null
+        currentCard() {
+            const last = lsGet(LAST_SLUG);
+            const key = SLUG_RE.test(last) ? lsGet(KEY_PREFIX + last) : '';
+            return key ? { slug: last, key } : null;
+        },
+
+        // Danh sách URL ảnh tải lên khi thiệp chưa có khoá (localStorage)
+        getPendingUploads() {
+            try {
+                const a = JSON.parse(lsGet(PENDING_KEY) || '[]');
+                return Array.isArray(a) ? a.filter(u => typeof u === 'string') : [];
+            } catch (e) { return []; }
+        },
+        addPendingUpload(url) {
+            if (typeof url !== 'string' || url.indexOf('/uploads/') !== 0) return;
+            try {
+                const a = api.getPendingUploads().filter(u => u !== url);
+                a.push(url);
+                lsSet(PENDING_KEY, JSON.stringify(a.slice(-PENDING_MAX)));
+            } catch (e) { /* bỏ qua */ }
+        },
+        clearPendingUploads() {
+            try { localStorage.removeItem(PENDING_KEY); } catch (e) { /* bỏ qua */ }
+        },
+
+        listUploads(slug) {
+            const key = lsGet(KEY_PREFIX + slug);
+            return request('/api/cards/' + encodeURIComponent(slug) + '/uploads',
+                { headers: { 'X-Edit-Key': key } });
+        },
+        attachUploads(slug, urls) {
+            const key = lsGet(KEY_PREFIX + slug);
+            return request('/api/cards/' + encodeURIComponent(slug) + '/uploads/attach',
+                jsonOpts('POST', { urls: (urls || []).slice(0, 200) }, { 'X-Edit-Key': key }));
+        },
+
+        // Trả URL (chuỗi). label: nhãn tên tệp (vd hero-1, nen, nhac)
+        uploadFile(file, onProgress, label) {
             if (!api.available) return Promise.reject(new Error(NO_BACKEND));
             const fd = new FormData();
+            if (label) fd.append('label', String(label));
             fd.append('file', file);
             const headers = {};
             const code = lsGet(CODE_KEY);
             if (code) headers['X-Create-Code'] = code;
-            // Quyền dự phòng (G2): chỉ khi server cần mã và máy chưa có mã
-            if (api.needCreateCode && !code) {
-                const last = lsGet(LAST_SLUG);
-                const key = SLUG_RE.test(last) ? lsGet(KEY_PREFIX + last) : '';
-                if (key) {
-                    headers['X-Card-Slug'] = last;
-                    headers['X-Edit-Key'] = key;
-                }
+            // Thiệp đã xuất bản có khoá: luôn kèm để server ghi vào chỉ mục ảnh (và làm quyền dự phòng)
+            const card = api.currentCard();
+            if (card) {
+                headers['X-Card-Slug'] = card.slug;
+                headers['X-Edit-Key'] = card.key;
             }
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
@@ -123,7 +187,10 @@
                         return;
                     }
                     if (typeof onProgress === 'function') { try { onProgress(1); } catch (x) { /* bỏ qua */ } }
-                    resolve(body && body.url);
+                    const url = body && body.url;
+                    if (url && !card) api.addPendingUpload(url);
+                    try { window.dispatchEvent(new CustomEvent('uploads:changed')); } catch (x) { /* bỏ qua */ }
+                    resolve(url);
                 };
                 xhr.send(fd);
             });
@@ -159,6 +226,7 @@
             const j = await request('/api/cards/' + encodeURIComponent(slug), jsonOpts('PUT', copy, headers), 60000);
             if (j && j.editKey) lsSet(KEY_PREFIX + slug, j.editKey);
             lsSet(LAST_SLUG, slug);
+            await attachAfterPublish(slug, copy);
             return { url: location.origin + '/c/' + slug, editKey: (j && j.editKey) || undefined };
         },
 

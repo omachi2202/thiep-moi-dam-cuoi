@@ -13,7 +13,9 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import Literal
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from datetime import datetime, timezone
+
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -24,7 +26,24 @@ from . import excel_store
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SLUG_RE = re.compile(r"^[a-z0-9-]{3,50}$")
 MAX_STATE_BYTES = 2 * 1024 * 1024
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_UPLOAD_BYTES = 30 * 1024 * 1024
+MAX_INDEX_ITEMS = 500
+MAX_ATTACH_URLS = 200
+_EXT_ALT = "jpg|jpeg|png|webp|gif|mp3|m4a|mp4|ogg|wav"
+UPLOAD_URL_RE = re.compile(
+    rf"^/uploads/(?:[a-z0-9-]{{1,40}}_[0-9a-f]{{8}}|[0-9a-f]{{32}})\.(?:{_EXT_ALT})$")
+EXT_CTYPE = {
+    ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".png": "image/png", ".webp": "image/webp",
+    ".gif": "image/gif", ".mp3": "audio/mpeg", ".m4a": "audio/mp4", ".mp4": "audio/mp4",
+    ".ogg": "audio/ogg", ".wav": "audio/wav",
+}
+
+
+def normalize_label(value) -> str:
+    """Chuẩn hoá nhãn tên tệp: [a-z0-9-], gộp '-', tối đa 40 ký tự; rỗng -> 'anh'."""
+    s = re.sub(r"[^a-z0-9-]", "", str(value or "").lower())
+    s = re.sub(r"-{2,}", "-", s).strip("-")[:40].strip("-")
+    return s or "anh"
 
 # Loại tệp upload: content-type -> phần mở rộng hợp lệ
 UPLOAD_TYPES = {
@@ -257,12 +276,54 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
         return JSONResponse(status_code=503, content={
             "detail": "Tệp dữ liệu khách đang được mở ở nơi khác, vui lòng thử lại sau"})
 
+    index_lock = threading.Lock()
+
+    def index_path(slug: str) -> Path:
+        p = cards_dir / f"{slug}.uploads.json"
+        if data.resolve() not in p.resolve().parents:
+            raise _err(400, "Mã thiệp (slug) không hợp lệ.")
+        return p
+
+    def read_index(slug: str) -> list:
+        try:
+            raw = json.loads(index_path(slug).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return []
+        return [x for x in raw if isinstance(x, dict) and isinstance(x.get("name"), str)] \
+            if isinstance(raw, list) else []
+
+    def add_to_index(slug: str, entries: list) -> None:
+        """Thêm mục (bỏ trùng name), giữ tối đa MAX_INDEX_ITEMS (bỏ cũ nhất)."""
+        if not entries:
+            return
+        with index_lock:
+            items = read_index(slug)
+            have = {x["name"] for x in items}
+            for e in entries:
+                if e["name"] not in have:
+                    items.append(e)
+                    have.add(e["name"])
+            items = items[-MAX_INDEX_ITEMS:]
+            atomic_write(index_path(slug), json.dumps(items, ensure_ascii=False).encode("utf-8"))
+
+    def iso_utc(ts: float | None = None) -> str:
+        dt = datetime.fromtimestamp(ts, timezone.utc) if ts is not None else datetime.now(timezone.utc)
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    def existing_items(slug: str) -> list:
+        out = []
+        for x in reversed(read_index(slug)):
+            n = x["name"]
+            if UPLOAD_URL_RE.fullmatch(f"/uploads/{n}") and (uploads_dir / n).is_file():
+                out.append(x)
+        return out
+
     @app.middleware("http")
     async def _limit_upload_size(request: Request, call_next):
         if request.url.path == "/api/upload":
             cl = request.headers.get("content-length")
             if cl and cl.isdigit() and int(cl) > MAX_UPLOAD_BYTES + 64 * 1024:
-                return JSONResponse(status_code=413, content={"detail": "Tệp quá lớn (tối đa 10MB)."})
+                return JSONResponse(status_code=413, content={"detail": "Tệp quá lớn (tối đa 30MB)."})
         return await call_next(request)
 
     # ---- API ----
@@ -323,20 +384,21 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
         return {"editKey": new_key}
 
     @app.post("/api/upload")
-    async def upload(request: Request, file: UploadFile = File(...)):
+    async def upload(request: Request, file: UploadFile = File(...), label: str = Form(default="")):
         rate_check(request, "-", "upload", 20)
-        if codes and not code_ok(request.headers.get("X-Create-Code")):
-            denied = _err(403, "Cần mã tạo thiệp hoặc khoá chỉnh sửa để tải tệp lên.")
-            slug_h = (request.headers.get("X-Card-Slug") or "").strip()
-            if not SLUG_RE.fullmatch(slug_h):
-                raise denied
+        # Khoá hợp lệ cho thiệp đã tồn tại -> được ghi vào chỉ mục ảnh của thiệp
+        index_slug = None
+        slug_h = (request.headers.get("X-Card-Slug") or "").strip()
+        if SLUG_RE.fullmatch(slug_h):
             jp_u, kp_u = card_paths(slug_h)
-            if not jp_u.exists():
-                raise denied
-            try:
-                check_key(kp_u, request.headers.get("X-Edit-Key"))
-            except HTTPException:
-                raise denied
+            if jp_u.exists():
+                try:
+                    check_key(kp_u, request.headers.get("X-Edit-Key"))
+                    index_slug = slug_h
+                except HTTPException:
+                    index_slug = None
+        if codes and not code_ok(request.headers.get("X-Create-Code")) and index_slug is None:
+            raise _err(403, "Cần mã tạo thiệp hoặc khoá chỉnh sửa để tải tệp lên.")
         ctype = (file.content_type or "").lower().split(";")[0].strip()
         ext = Path(file.filename or "").suffix.lower()
         if ctype not in UPLOAD_TYPES or ext not in UPLOAD_TYPES[ctype]:
@@ -348,7 +410,7 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
                 break
             size += len(chunk)
             if size > MAX_UPLOAD_BYTES:
-                raise _err(413, "Tệp quá lớn (tối đa 10MB).")
+                raise _err(413, "Tệp quá lớn (tối đa 30MB).")
             chunks.append(chunk)
         blob = b"".join(chunks)
         if not _magic_ok(ext, blob[:16]):
@@ -365,9 +427,53 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
                     continue
         if used + len(blob) > quota_bytes:
             raise _err(507, "Máy chủ đã hết dung lượng lưu tệp, vui lòng liên hệ quản trị.")
-        name = f"{uuid.uuid4().hex}{ext}"
+        base = normalize_label(label)
+        name = f"{base}_{secrets.token_hex(4)}{ext}"
+        while (uploads_dir / name).exists():
+            name = f"{base}_{secrets.token_hex(4)}{ext}"
         atomic_write(uploads_dir / name, blob)
-        return {"url": f"/uploads/{name}"}
+        if index_slug:
+            add_to_index(index_slug, [{
+                "name": name, "url": f"/uploads/{name}", "size": len(blob), "type": ctype,
+                "label": base, "createdAt": iso_utc(),
+            }])
+        return {"url": f"/uploads/{name}", "name": name, "size": len(blob)}
+
+    @app.get("/api/cards/{slug}/uploads")
+    def list_uploads(slug: str, request: Request):
+        jp, kp = require_card(slug)
+        rate_check(request, slug, "uploads_get", 60)
+        check_key(kp, request.headers.get("X-Edit-Key"))
+        return {"items": existing_items(slug)}
+
+    class AttachBody(BaseModel):
+        urls: list[str] = Field(max_length=MAX_ATTACH_URLS)
+
+    @app.post("/api/cards/{slug}/uploads/attach")
+    def attach_uploads(slug: str, body: AttachBody, request: Request):
+        jp, kp = require_card(slug)
+        rate_check(request, slug, "uploads_attach", 30)
+        check_key(kp, request.headers.get("X-Edit-Key"))
+        entries = []
+        for u in body.urls:
+            if not isinstance(u, str) or not UPLOAD_URL_RE.fullmatch(u):
+                continue
+            name = u[len("/uploads/"):]
+            p = uploads_dir / name
+            try:
+                if not p.is_file() or p.is_symlink() or uploads_dir.resolve() not in p.resolve().parents:
+                    continue
+                st = p.stat()
+            except OSError:
+                continue
+            ext = Path(name).suffix.lower()
+            entries.append({
+                "name": name, "url": u, "size": st.st_size, "type": EXT_CTYPE.get(ext, ""),
+                "label": name.rsplit("_", 1)[0] if "_" in name else "anh",
+                "createdAt": iso_utc(st.st_mtime),
+            })
+        add_to_index(slug, entries)
+        return {"items": existing_items(slug)}
 
     @app.post("/api/cards/{slug}/verify-key")
     def verify_key(slug: str, request: Request):
