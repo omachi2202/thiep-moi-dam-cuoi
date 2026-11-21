@@ -1,7 +1,13 @@
 // Section: Lịch trình sự kiện & chỉ đường (danh sách sự kiện động, 0..10)
 
 const EVENTS_MAX = 10;
-const EVENTS_FIELDS = ['title', 'time', 'date', 'lunar', 'venue', 'mapUrl'];
+// Kiểu bố cục lịch trình
+const EVENTS_LAYOUTS = [
+    { key: 'cards', label: 'Thẻ' },
+    { key: 'timeline', label: 'Dòng thời gian' },
+    { key: 'carousel', label: 'Lướt ngang' }
+];
+const EVENTS_FIELDS =['title', 'time', 'date', 'lunar', 'venue', 'mapUrl'];
 
 function eventsDefaultItems() {
     return [
@@ -100,7 +106,7 @@ registerSection({
     type: 'events',
     label: 'Lịch trình & Chỉ đường',
     icon: 'fa-location-dot',
-    defaults: () => ({ items: eventsDefaultItems() }),
+    defaults: () => ({ items: eventsDefaultItems(), layout: 'cards' }),
     // Hook: sự kiện đầu tiên cho nút thêm vào lịch (không có ngày giờ riêng)
     calendarEvent(sec) {
         const items = sec && sec.data && Array.isArray(sec.data.items) ? sec.data.items : [];
@@ -118,7 +124,7 @@ registerSection({
             const url = safeUrl(it.mapUrl);
             if (!/^https?:\/\//i.test(url)) return '';
             return `<div class="pt-2">
-                            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold text-white shadow transition hover:opacity-90" style="background-color: ${v.pc};">
+                            <a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-5 py-2 min-h-[44px] rounded-full text-xs font-semibold text-white shadow transition hover:opacity-90" style="background-color: ${v.pc};">
                                 <i class="fa-solid fa-location-dot"></i> XEM CHỈ ĐƯỜNG
                             </a>
                         </div>`;
@@ -138,6 +144,46 @@ registerSection({
             return `
                 <div class="py-10 px-6 text-center" style="color: ${v.secColor};">
                     <div class="rounded-2xl border-2 border-dashed border-slate-300 p-6 text-sm text-slate-500">Chưa có sự kiện — thêm ở cột phải</div>
+                </div>`;
+        }
+        const layout = EVENTS_LAYOUTS.some(l => l.key === sec.data.layout) ? sec.data.layout : 'cards';
+        if (layout === 'timeline') {
+            const icons = ['fa-champagne-glasses', 'fa-ring', 'fa-heart', 'fa-utensils', 'fa-music', 'fa-camera', 'fa-cake-candles', 'fa-gift', 'fa-star', 'fa-location-dot'];
+            const row = (it, i) => `
+                    <div class="relative pl-14 pb-8 last:pb-0">
+                        <div class="absolute left-0 top-0 w-10 h-10 rounded-full flex items-center justify-center text-white shadow ring-4 ring-white" style="background-color: ${v.pc};"><i class="fa-solid ${icons[i % icons.length]} text-sm"></i></div>
+                        <div class="bg-white/90 rounded-2xl p-4 shadow-sm border border-amber-900/10 space-y-1.5 text-left">
+                            <h3 class="font-bold tracking-widest uppercase" style="font-family: ${v.secFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${evAttr(i, 'title')}>${escapeHtml(it.title)}</h3>
+                            <p class="font-bold text-sm tracking-wide" ${evAttr(i, 'time')}>${escapeHtml(it.time)}</p>
+                            <p class="text-xl font-bold tracking-wider" style="color: ${v.pc}; font-family: ${v.secFont};" ${evAttr(i, 'date')}>${escapeHtml(it.date)}</p>
+                            <p class="text-xs italic opacity-75" ${evAttr(i, 'lunar')}>${escapeHtml(it.lunar)}</p>
+                            <p class="text-xs font-medium pt-1" ${evAttr(i, 'venue')}>${escapeHtml(it.venue)}</p>
+                            ${mapBtn(it)}
+                        </div>
+                    </div>`;
+            return `
+                <div class="py-10 px-6 bg-black/[0.02]" style="color: ${v.secColor};">
+                    <div class="relative">
+                        <div class="absolute left-5 top-2 bottom-2 w-0.5 -ml-px opacity-50" style="background-color: ${v.pc};"></div>${items.map(row).join('\n')}
+                    </div>
+                </div>`;
+        }
+        if (layout === 'carousel') {
+            const card = (it, i) => `
+                    <div class="shrink-0 w-[80%] snap-center bg-white/90 rounded-2xl p-5 shadow-sm border border-amber-900/10 space-y-2 text-center">
+                        <h3 class="font-bold tracking-widest uppercase" style="font-family: ${v.secFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${evAttr(i, 'title')}>${escapeHtml(it.title)}</h3>
+                        <div class="w-10 h-0.5 mx-auto opacity-40" style="background-color: ${v.pc};"></div>
+                        <p class="font-bold text-sm tracking-wide" ${evAttr(i, 'time')}>${escapeHtml(it.time)}</p>
+                        <p class="text-2xl font-bold tracking-wider" style="color: ${v.pc}; font-family: ${v.secFont};" ${evAttr(i, 'date')}>${escapeHtml(it.date)}</p>
+                        <p class="text-xs italic opacity-75" ${evAttr(i, 'lunar')}>${escapeHtml(it.lunar)}</p>
+                        <p class="text-xs font-medium pt-1" ${evAttr(i, 'venue')}>${escapeHtml(it.venue)}</p>
+                        ${mapBtn(it)}
+                    </div>`;
+            return `
+                <div class="py-10 text-center bg-black/[0.02]" style="color: ${v.secColor};">
+                    <div tabindex="0" role="region" aria-label="Lịch trình — lướt ngang" class="flex gap-3 px-6 pb-3" style="overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding: 0 24px; -webkit-overflow-scrolling: touch;">${items.map(card).join('\n')}
+                    </div>
+                    ${items.length > 1 ? '<p class="text-[11px] opacity-60 pt-1"><i class="fa-solid fa-arrows-left-right"></i> Lướt ngang để xem thêm</p>' : ''}
                 </div>`;
         }
         return `
@@ -165,7 +211,16 @@ registerSection({
                 ${inp(i, 'mapUrl', it.mapUrl, 'Link Google Maps')}
             </div>`;
         const full = items.length >= EVENTS_MAX;
-        return items.map(group).join('\n') + `
+        const curLayout = EVENTS_LAYOUTS.some(l => l.key === sec.data.layout) ? sec.data.layout : 'cards';
+        const picker = `
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Kiểu hiển thị</label>
+                <div class="grid grid-cols-3 gap-1.5">${EVENTS_LAYOUTS.map(l => {
+                    const on = l.key === curLayout;
+                    return `<button type="button" onclick="updateSectionField('${id}','layout','${l.key}',false)" aria-pressed="${on}" class="px-2 py-2 rounded-lg border text-xs font-semibold transition ${on ? 'bg-violet-600 text-white border-violet-600' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'}">${escapeHtml(l.label)}</button>`;
+                }).join('')}</div>
+            </div>`;
+        return picker + items.map(group).join('\n') + `
             <button type="button" ${full ? 'disabled' : ''} onclick="eventsAddItem('${id}')" class="w-full py-2 rounded-lg bg-violet-50 hover:bg-violet-100 text-violet-700 font-semibold border border-violet-200 transition disabled:opacity-40"><i class="fa-solid fa-plus"></i> Thêm sự kiện (${items.length}/${EVENTS_MAX})</button>`;
     },
     // Chỉ sửa inline trên canvas editor: focusin lưu giá trị gốc, focusout ghi khi đổi
@@ -219,6 +274,7 @@ registerSection({
         }
         Object.keys(data).forEach(k => { if (/^event[12]/.test(k)) delete data[k]; });
         data.items = data.items.slice(0, EVENTS_MAX).map(eventsNormItem);
+        if (!EVENTS_LAYOUTS.some(l => l.key === data.layout)) data.layout = 'cards';
         return data;
     }
 });
