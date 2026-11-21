@@ -68,6 +68,16 @@ function syncLeftControlsWithState() {
     if (ovEl) ovEl.value = appState.globalStyle.bgImageOverlay || 0;
     const ovLbl = document.getElementById('bgImageOverlayLabel');
     if (ovLbl) ovLbl.textContent = Math.round((Number(appState.globalStyle.bgImageOverlay) || 0) * 100) + '%';
+    // Phong bì / màn mở (v7): bỏ qua nếu ô chưa có; ô màu rỗng hiện màu chủ đạo
+    const gsEnv = appState.globalStyle;
+    const setEnvVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    setEnvVal('env_flapColor', gsEnv.envFlapColor || gsEnv.primaryColor);
+    setEnvVal('env_bodyColor', gsEnv.envBodyColor || gsEnv.primaryColor);
+    setEnvVal('env_cardImage', gsEnv.envCardImage || '');
+    setEnvVal('env_seal', gsEnv.envSeal || 'heart');
+    setEnvVal('env_monogram', gsEnv.envMonogram || '');
+    setEnvVal('intro_toText', gsEnv.introToText || '');
+    setEnvVal('intro_btnText', gsEnv.introBtnText || '');
     document.getElementById('inputAudioUrl').value = appState.globalStyle.audioUrl;
 
     document.getElementById('groomBankName').value = appState.bankInfo.groom.bank;
@@ -356,6 +366,22 @@ async function handleSectionBgUpload(event, secId) {
         event.target.value = '';
     }
 }
+// Ảnh toàn thiệp theo khoá cho phép (hiện chỉ ảnh thiệp trong phong bì)
+async function handleGlobalImageUpload(event, key, label) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+        if (['envCardImage'].indexOf(key) < 0) return;
+        const url = await uploadOrDataUrl(file, { trigger: event.target, label: label || 'anh' });
+        updateGlobalStyle(key, url);
+        showToast("Đã đặt ảnh!");
+    } catch (err) {
+        if (!err || !err.handled) showToast("Không tải được ảnh, vui lòng thử lại.");
+    } finally {
+        event.target.value = '';
+    }
+}
+window.handleGlobalImageUpload = handleGlobalImageUpload;
 window.handleGlobalBgUpload = handleGlobalBgUpload;
 window.handleSectionBgUpload = handleSectionBgUpload;
 
@@ -667,7 +693,7 @@ async function openExportModal() {
     <title>${_exportEsc(pageTitle)}</title>
     <script src="https://cdn.tailwindcss.com"><\/script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Slab:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Slab:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Alex+Brush&family=Allura&family=Beau+Rivage&family=Bonheur+Royale&family=Charm:wght@400;700&family=Corinthia:wght@400;700&family=Ephesis&family=Hurricane&family=Imperial+Script&family=Lobster&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Moon+Dance&family=Pacifico&family=Patrick+Hand&family=Pinyon+Script&family=Playball&family=Prata&family=Rokkitt:wght@400;600;700&family=Spectral:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
 ${_exportInlineCss(css)}
     </style>
