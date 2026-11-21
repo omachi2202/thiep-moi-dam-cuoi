@@ -25,7 +25,7 @@ py -m pytest server/tests -q
 - `js/` (all globals on `window`, load order matters, same in `index.html` and `invite.html`):
   `state.js` (DEFAULT_STATE, `migrate`, `SCHEMA_VERSION`, `escapeHtml/safeUrl/safeColor/safeFont`, `sectionVars`, `fieldAttr`) → `api.js` (`window.api`) → `runtime.js` (`CardRuntime`) → `sections/*.js` → `render.js` → editor-only: `store.js`, `section_ops.js`, `editor.js`.
   `invite.html` stops after `render.js` and has its own boot script.
-- `js/sections/`: hero, family, events, countdown, rsvp, album, story, video, map, dresscode, wishes, gift, thanks.
+- `js/sections/`: hero, family, events, countdown, rsvp, album, story, video, map, dresscode, wishes, gift, thanks, calendar, slideshow, divider.
 - `server/app.py` (routes), `server/excel_store.py` (all xlsx I/O), `server/tests/` (pytest). Runtime data in `data/` (git-ignored): `guests.xlsx`, `cards/<slug>.json`, `uploads/`.
 
 ## Section registry
@@ -34,11 +34,13 @@ Each section type is exactly one file `js/sections/<type>.js` calling `registerS
 
 Optional hooks: `pageTitle(sec)` gives the page title (page, export, slug suggestion); `calendarEvent(sec)` returns `{title, location, iso}` (calendar buttons). Runtime/editor/invite read them via `cardPageTitle(state)` / `cardCalendarEvent(state)` in `runtime.js` — the correct way to pull info from sections without comparing `type`. Need new per-type info outside a section file? Add another optional hook (see `.agents/rules/domain_sections.md` §1).
 
+Image frame shapes: `imageShapeClass()` / `IMAGE_SHAPES` in `state.js` (per-section `data.imageShape`). Animation: `style.animDuration` (`''|fast|slow`), reveal values `fade|flip|pop`, loop classes `loop-swing|pulse|heartbeat` and `img-shape-*` live in `css/app.css`; see `.agents/rules/domain_sections.md`.
+
 Adding a type = create the file + add a `<script>` tag in **both** `index.html` and `invite.html`. The section file list for export is derived from the registry (`Object.keys(SECTION_TYPES)`), so nothing else is needed. Never branch on `sec.id`/`sec.type` in `render.js`, `editor.js`, `runtime.js`. In sections use `sectionVars(sec, ctx)` for per-section style, `fieldAttr(ctx, key)` for inline-editable fields (`data-field`), and sanitize every user value with `escapeHtml`, URLs with `safeUrl`, colors with `safeColor`, fonts with `safeFont`.
 
 ## State, migrate, undo
 
-`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 5) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
+`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 6) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
 
 All mutations go through a mutator ending in `commitState(label)` (undo snapshot, autosave to localStorage `thiep:draft`, re-render). Never assign `appState` from UI code. Exception (Điều 5): `selectedSectionId` and `isPreviewMode` are UI state and change without `commitState`; read-only pages (`invite.html`, exported file) assign `appState` directly. Undo stack is capped (50 entries / ~30M chars).
 

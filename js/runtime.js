@@ -245,7 +245,7 @@ let countdownInterval = null;
 
     // ---------- Scroll-reveal (chỉ invite/export) ----------
     // CSS (app.css) ẩn `.reveal-on .reveal-x:not(.is-visible)`; runtime thêm .reveal-on lên gốc rồi .is-visible khi cuộn tới
-    const REVEAL_SEL = '.reveal-fade-up, .reveal-zoom, .reveal-slide';
+    const REVEAL_SEL = '.reveal-fade-up, .reveal-zoom, .reveal-slide, .reveal-fade, .reveal-flip, .reveal-pop';
 
     // Tổ tiên gần nhất có thể cuộn dọc (overflow-y auto/scroll); không có thì null
     function findScrollParent(el) {
