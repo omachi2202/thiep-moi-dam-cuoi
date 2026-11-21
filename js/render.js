@@ -157,13 +157,14 @@ const G5_WL = {
     bgTexture: ['none', 'paper', 'floral', 'silk'],
     frameStyle: ['none', 'single', 'double', 'floral-corner'],
     cornerOrnament: ['none', 'leaf', 'rose'],
-    revealAnimation: ['none', 'fade-up', 'zoom', 'slide']
+    revealAnimation: ['none', 'fade-up', 'zoom', 'slide', 'fade', 'flip', 'pop']
 };
 const G5_DEFAULT = { bgTexture: 'none', frameStyle: 'none', cornerOrnament: 'none', revealAnimation: 'fade-up' };
 const SEC_STYLE_WL = {
     paddingY: ['', 'sm', 'md', 'lg'],
     align: ['', 'left', 'center', 'right'],
-    animation: ['', 'none', 'fade-up', 'zoom', 'slide'],
+    animation: ['', 'none', 'fade-up', 'zoom', 'slide', 'fade', 'flip', 'pop'],
+    animDuration: ['', 'fast', 'slow'],
     ornament: ['', 'top', 'bottom', 'both']
 };
 
@@ -209,7 +210,11 @@ function sectionDecor(sec, g) {
     if (orn) cls.push('sec-orn-' + orn);
     let anim = secStyleValue(st, 'animation');
     if (anim === '') anim = g5Value(g, 'revealAnimation');
-    if (anim !== 'none') cls.push('reveal-' + anim);
+    if (anim !== 'none') {
+        cls.push('reveal-' + anim);
+        const dur = secStyleValue(st, 'animDuration');
+        if (dur) cls.push('reveal-dur-' + dur);
+    }
     return { cls: cls.join(' '), style: css.join(';') };
 }
 
@@ -272,7 +277,11 @@ function renderDecorInspectorHtml(sec) {
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Hiệu ứng xuất hiện</label>
-                        ${sel('animation', [['', 'Theo toàn thiệp'], ['none', 'Không'], ['fade-up', 'Hiện dần'], ['zoom', 'Phóng to'], ['slide', 'Trượt']])}
+                        ${sel('animation', [['', 'Theo toàn thiệp'], ['none', 'Không'], ['fade-up', 'Hiện dần'], ['zoom', 'Phóng to'], ['slide', 'Trượt'], ['fade', 'Mờ dần'], ['flip', 'Lật'], ['pop', 'Bật nảy']])}
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">Tốc độ hiệu ứng</label>
+                        ${sel('animDuration', [['', 'Mặc định'], ['fast', 'Nhanh'], ['slow', 'Chậm']])}
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-slate-700 mb-1">Hoa văn viền phần</label>
