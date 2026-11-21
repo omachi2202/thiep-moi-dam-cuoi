@@ -101,6 +101,17 @@ và tên miền phải nằm trong zone của tài khoản đó:
 cloudflared tunnel route dns <ten-tunnel-hoac-id> <ten-mien-cua-ban>
 ```
 
+**Cẩn thận:** `cert.pem` gắn với một zone cụ thể (zone đã chọn khi `tunnel login`). Nếu tên miền thiệp là zone
+khác, lệnh trên **không báo lỗi** mà tạo nhầm CNAME `<ten-mien-cua-ban>.<zone-cu>` trong zone cũ. Khi đó xoá bản ghi
+nhầm trên dashboard và tạo tay trong zone của tên miền thiệp (bật Proxied):
+
+| Type | Name | Target |
+|---|---|---|
+| CNAME | `@` | `<tunnel-id>.cfargotunnel.com` |
+| CNAME | `www` | `<tunnel-id>.cfargotunnel.com` |
+
+Xoá trước các bản ghi A/AAAA trùng tên (nếu có). Kiểm tra: `nslookup <ten-mien-cua-ban> 1.1.1.1` trả địa chỉ Cloudflare.
+
 ### 3.4. Khởi động lại cloudflared để nhận ingress mới
 
 Portal hiện chạy `cloudflared` như một tiến trình ẩn do `start-portal-on-boot.ps1` mở
@@ -126,6 +137,18 @@ Stop-Process -Name cloudflared -Force
 ```
 
 Nếu `validate` báo lỗi hoặc `rule` không trả về `http://127.0.0.1:8095`, khôi phục từ `config.yml.bak` và không khởi động lại.
+
+Nếu chạy `start-portal-on-boot.ps1` từ một phiên PowerShell không tương tác (công cụ tự động, Windows PowerShell 5.1),
+bước `docker compose up -d` có thể bị coi là lỗi vì ghi ra stderr và script dừng **trước khi** mở lại Tunnel
+(log: `Portal startup sequence failed: Container ... Running`). Khi đó mở lại Tunnel trực tiếp (ngắt chỉ vài giây):
+
+```powershell
+Start-Process -FilePath "C:\Program Files (x86)\cloudflared\cloudflared.exe" `
+  -ArgumentList '--config','<portal>\cloudflared\config.yml','tunnel','run' -WindowStyle Hidden
+Get-Process cloudflared
+```
+
+Cập nhật phiên bản thiệp (`docker compose up -d --build thiep_cuoi`) không cần khởi động lại cloudflared.
 
 `start-portal-on-boot.ps1` sẽ chạy `docker compose up -d` (không làm gián đoạn container đã chạy),
 đợi các service healthy rồi mở lại Tunnel. Lưu ý script chỉ chờ health của các container portal đã liệt kê
