@@ -34,3 +34,4 @@ T46 sửa 4 tệp (ngoại lệ đã duyệt): ba section dùng chung helper m�
 - reviewer-code: ĐẠT, không có mục chặn; 3 mục nên sửa → T44.1 (bọc IIFE, chữ dài xuống dòng + maxlength 60, loop chỉ áp lên hoạ tiết/chữ), T43.1 (pointer capture khi vuốt, không vuốt khi bấm nút), T46.2 (chiều cao cố định cho khung vòm/bo góc ở thanks). Đã sửa.
 - autotest: ĐẠT (node --check, registry vm 4 mode + ca biên ngày sai/ảnh rỗng/giá trị độc, migrate idempotent schema 5→6, tham chiếu HTML, bundle --check, pytest 64 passed, whitelist revealAnimation khớp 3 nơi).
 - Kiểm tay (localhost, phiên chính): thêm 3 section, lịch tháng 10/2026 bắt đầu T5 đúng, khung tim cho ảnh cặp đôi, divider đung đưa, "Xem thực tế" hiệu ứng lật hoạt động, slideshow bấm nút và tự chuyển ~4s; không lỗi console mới.
+- inspector: REJECT chỉ vì `CLAUDE.md` chưa cập nhật (schema 6, 3 section mới); mã đạt cả 10 Điều. T47 (memoryer) sửa `CLAUDE.md` → PASS.
