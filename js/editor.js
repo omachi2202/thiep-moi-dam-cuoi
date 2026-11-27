@@ -708,7 +708,7 @@ ${_exportInlineCss(css)}
         <button id="floatingMusicBtn" onclick="toggleAudioPlayback()" class="fixed bottom-5 left-5 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center text-white" style="background-color: ${_exportEsc(g.primaryColor)};" title="Bật/Tắt nhạc cưới">
             <i id="musicIcon" class="fa-solid fa-music text-sm"></i>
         </button>
-        <audio id="weddingAudio" loop preload="auto" src="${_exportEsc(audioSrc)}"></audio>
+        <audio id="weddingAudio" loop preload="none" src="${_exportEsc(audioSrc)}"></audio>
 
         <div id="sectionsViewport"></div>
 
