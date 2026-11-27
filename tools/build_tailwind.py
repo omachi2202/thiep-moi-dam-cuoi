@@ -39,6 +39,8 @@ def source_paths(root: Path) -> list:
 
 
 def source_hash(root=None) -> str:
+    """Hash nguồn. Lưu ý: KHÔNG gồm phiên bản CLI — CLI được ghim v3.4.17 theo AD-005;
+    đổi CLI thì phải chạy lại tool để sinh lại css/tailwind.css."""
     root = Path(root) if root is not None else Path(__file__).resolve().parent.parent
     h = hashlib.sha256()
     for rel in source_paths(root):
@@ -107,7 +109,11 @@ def main(argv=None) -> int:
     try:
         tmp_out = Path(tmpdir) / "out.css"
         cmd = [str(cli), "-c", CONFIG, "-i", INPUT, "-o", str(tmp_out), "--minify"]
-        r = subprocess.run(cmd, cwd=str(root), capture_output=True)
+        try:
+            r = subprocess.run(cmd, cwd=str(root), capture_output=True, timeout=120)
+        except subprocess.TimeoutExpired:
+            _say("LỖI: Tailwind CLI chạy quá 120 giây nên đã dừng. css/tailwind.css không bị thay đổi.")
+            return 4
         if r.returncode != 0 or not tmp_out.is_file():
             _say("LỖI: Tailwind CLI thất bại.\n" + r.stderr.decode("utf-8", "replace"))
             return 3
