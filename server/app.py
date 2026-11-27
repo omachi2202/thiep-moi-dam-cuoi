@@ -10,8 +10,10 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
+from html import escape as _html_escape
 from pathlib import Path
 from typing import Literal
+from urllib.parse import parse_qs
 
 from datetime import datetime, timezone
 
@@ -152,7 +154,7 @@ def _parse_quota_mb(value) -> int:
 
 
 def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
-               create_codes=None, upload_quota_mb=None, trust_cf=None) -> FastAPI:
+               create_codes=None, upload_quota_mb=None, trust_cf=None, public_url=None) -> FastAPI:
     data = Path(data_dir or os.environ.get("THIEP_DATA_DIR") or (REPO_ROOT / "data")).resolve()
     codes = _parse_codes(create_codes)
     quota_bytes = _parse_quota_mb(upload_quota_mb) * 1024 * 1024
@@ -517,23 +519,198 @@ def create_app(data_dir=None, rate_limit: int = 10, rate_window: float = 60.0,
         )
 
     # ---- Trang & tệp tĩnh ----
-    def serve_page(name: str):
+    hash_cache: dict = {}
+    page_cache: dict = {}
+    asset_roots = {"js": (REPO_ROOT / "js").resolve(), "css": (REPO_ROOT / "css").resolve()}
+
+    def asset_hash(kind: str, rel: str) -> str | None:
+        """8 hex đầu sha256 nội dung tệp /js|/css; None nếu không có. Cache theo (đường dẫn, mtime, size)."""
+        root = asset_roots.get(kind)
+        if root is None or not rel or "\\" in rel or "\x00" in rel:
+            return None
+        try:
+            p = (root / rel).resolve()
+            if root not in p.parents or not p.is_file():
+                return None
+            st = p.stat()
+            key = (str(p), st.st_mtime_ns, st.st_size)
+            hit = hash_cache.get(str(p))
+            if hit and hit[0] == key:
+                return hit[1]
+            h = hashlib.sha256(p.read_bytes()).hexdigest()[:8]
+            hash_cache[str(p)] = (key, h)
+            return h
+        except OSError:
+            return None
+
+    _asset_ref = re.compile(r'((?:src|href)=")(/?)(js|css)/([A-Za-z0-9_./-]+)(")')
+
+    def add_versions(html: str) -> str:
+        def sub(m):
+            h = asset_hash(m.group(3), m.group(4))
+            if not h:
+                return m.group(0)
+            return f"{m.group(1)}{m.group(2)}{m.group(3)}/{m.group(4)}?v={h}{m.group(5)}"
+        return _asset_ref.sub(sub, html)
+
+    def read_page(name: str) -> str:
         p = REPO_ROOT / name
-        if not p.is_file():
+        try:
+            st = p.stat()
+            hit = page_cache.get(name)
+            if hit and hit[0] == (st.st_mtime_ns, st.st_size):
+                return hit[1]
+            text = p.read_text(encoding="utf-8")
+        except OSError:
             raise _err(404, f"Chưa có tệp {name}.")
-        return FileResponse(p, media_type="text/html", headers={"Cache-Control": "no-cache"})
+        page_cache[name] = ((st.st_mtime_ns, st.st_size), text)
+        return text
+
+    def html_page(html: str) -> Response:
+        return Response(content=html, media_type="text/html; charset=utf-8",
+                        headers={"Cache-Control": "no-cache"})
+
+    DEFAULT_OG_TITLE = "THƯ MỜI TIỆC CƯỚI"
+    DEFAULT_OG_DESC = "Trân trọng kính mời bạn đến chung vui cùng gia đình chúng tôi"
+    public_re = re.compile(r"^https?://[A-Za-z0-9.-]+(:[0-9]{1,5})?$")
+    og_upload_re = re.compile(r"^/uploads/[A-Za-z0-9_.-]{1,200}$")
+    og_https_re = re.compile(r'^https://[^\s"<>\\]{1,492}$')
+
+    def _clean_public(v) -> str | None:
+        v = (v or "").strip().rstrip("/")
+        return v if v and public_re.fullmatch(v) else None
+
+    public_base = _clean_public(public_url if public_url is not None else os.environ.get("THIEP_PUBLIC_URL"))
+
+    def base_of(request: Request) -> str:
+        if public_base:
+            return public_base
+        b = str(request.base_url).rstrip("/")
+        if trust_cf and (request.headers.get("X-Forwarded-Proto") or "").strip().lower() == "https" \
+                and b.startswith("http://"):
+            b = "https://" + b[len("http://"):]
+        return b
+
+    def share_text(share, key: str, limit: int, default: str) -> str:
+        v = share.get(key) if isinstance(share, dict) else None
+        v = v.strip()[:limit].strip() if isinstance(v, str) else ""
+        return v or default
+
+    def share_image(share) -> str:
+        """Trả '/uploads/...' (gốc), URL https đầy đủ, hoặc ''."""
+        v = share.get("image") if isinstance(share, dict) else None
+        if not isinstance(v, str):
+            return ""
+        v = v.strip()
+        if len(v) > 500:
+            return ""
+        if og_upload_re.fullmatch(v) or og_https_re.fullmatch(v):
+            return v
+        return ""
+
+    CARD_CACHE_MAX = 256
+    card_cache: dict = {}  # slug -> ((mtime_ns, size), (state_json, title, desc, img))
+    card_cache_lock = threading.Lock()
+
+    def card_parts(slug: str):
+        """(state_json, title, desc, img) đã chuẩn hoá, cache theo (slug, mtime_ns, size); None nếu không dùng được."""
+        jp, _ = card_paths(slug)
+        try:
+            st = jp.stat()
+            sig = (st.st_mtime_ns, st.st_size)
+        except OSError:
+            return None
+        with card_cache_lock:
+            hit = card_cache.get(slug)
+            if hit and hit[0] == sig:
+                return hit[1]
+        try:
+            state = json.loads(jp.read_text(encoding="utf-8"))
+        except (OSError, ValueError, RecursionError):
+            return None
+        if not isinstance(state, dict):
+            return None
+        share = state.get("share")
+        parts = (state_json(state),
+                 share_text(share, "title", 120, DEFAULT_OG_TITLE),
+                 share_text(share, "description", 200, DEFAULT_OG_DESC),
+                 share_image(share))
+        with card_cache_lock:
+            card_cache.pop(slug, None)
+            card_cache[slug] = (sig, parts)
+            while len(card_cache) > CARD_CACHE_MAX:
+                card_cache.pop(next(iter(card_cache)))
+        return parts
+
+    def state_json(state: dict) -> str:
+        s = json.dumps(state, ensure_ascii=False, separators=(",", ":"))
+        return (s.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+                .replace("\u2028", "\\u2028").replace("\u2029", "\\u2029"))
+
+    def build_invite(slug: str, request: Request) -> str:
+        html = add_versions(read_page("invite.html"))
+        parts = card_parts(slug)
+        if parts is None:
+            return html
+        sjson, title, desc, img_raw = parts
+        base = base_of(request)
+        img = base + img_raw if img_raw.startswith("/") else img_raw  # og:image tuyệt đối
+        e = lambda s: _html_escape(s, quote=True)  # noqa: E731
+        tags = [
+            '<meta property="og:type" content="website">',
+            '<meta property="og:site_name" content="Thiệp cưới online">',
+            f'<meta property="og:title" content="{e(title)}">',
+            f'<meta property="og:description" content="{e(desc)}">',
+            f'<meta property="og:url" content="{e(base + "/c/" + slug)}">',
+        ]
+        if img:
+            tags.append(f'<meta property="og:image" content="{e(img)}">')
+            tags.append(f'<meta property="og:image:alt" content="{e(title)}">')
+        tags.append(f'<meta name="twitter:card" content="{"summary_large_image" if img else "summary"}">')
+        tags.append(f'<meta name="description" content="{e(desc)}">')
+        if img:
+            tags.append(f'<link rel="preload" as="image" href="{e(img_raw)}" fetchpriority="high">')
+        tags.append(f'<script id="cardState" type="application/json">{sjson}</script>')
+        block = "\n".join(tags) + "\n"
+        i = html.find("</head>")
+        if i >= 0:
+            html = html[:i] + block + html[i:]
+        html = re.sub(r"<title>.*?</title>", lambda m: f"<title>{e(title)}</title>", html,
+                      count=1, flags=re.S)
+        return html
 
     @app.get("/")
     def index():
-        return serve_page("index.html")
+        return html_page(add_versions(read_page("index.html")))
 
     @app.get("/c/{slug}")
-    def invite_page(slug: str):
+    def invite_page(slug: str, request: Request):
         card_paths(slug)
-        return serve_page("invite.html")
+        return html_page(build_invite(slug, request))
 
-    app.mount("/css", _RevalidateStatic(directory=str(REPO_ROOT / "css"), check_dir=False), name="css")
-    app.mount("/js", _RevalidateStatic(directory=str(REPO_ROOT / "js"), check_dir=False), name="js")
+    class _VersionedStatic(_NoSniffStatic):
+        """/js, /css: `v` trùng hash hiện tại -> immutable; còn lại no-cache."""
+
+        kind = ""
+
+        async def get_response(self, path, scope):
+            resp = await super().get_response(path, scope)
+            if resp.status_code in (200, 304):
+                v = parse_qs(scope.get("query_string", b"").decode("latin-1")).get("v", [""])[0]
+                h = asset_hash(self.kind, path.replace("\\", "/")) if v else None
+                resp.headers["Cache-Control"] = (
+                    "public, max-age=31536000, immutable" if h and secrets.compare_digest(
+                        v.encode("utf-8"), h.encode("ascii")) else "no-cache")
+            return resp
+
+    class _CssStatic(_VersionedStatic):
+        kind = "css"
+
+    class _JsStatic(_VersionedStatic):
+        kind = "js"
+
+    app.mount("/css", _CssStatic(directory=str(REPO_ROOT / "css"), check_dir=False), name="css")
+    app.mount("/js", _JsStatic(directory=str(REPO_ROOT / "js"), check_dir=False), name="js")
     app.mount("/uploads", _ImmutableStatic(directory=str(uploads_dir)), name="uploads")
     return app
 
