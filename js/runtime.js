@@ -127,18 +127,57 @@ let countdownInterval = null;
         const audio = byId('weddingAudio');
         const btn = byId('floatingMusicBtn');
         const icon = byId('musicIcon');
-        if (!audio || !btn || !icon) return;
+        if (!audio || !btn || !icon) return null;
         bindAudioError(audio);
-        audio.play().then(function () {
+        // Trả về promise: resolve true khi phát được, false khi bị từ chối
+        return audio.play().then(function () {
             btn.classList.add('spin-music');
             icon.className = 'fa-solid fa-compact-disc text-base';
             if (!silent) showToast('Đang phát nhạc nền thiệp cưới ♫');
+            return true;
         }).catch(function () {
-            if (silent) return;
-            showToast(audio.__loadError
-                ? 'Không tải được nhạc nền này.'
-                : 'Không thể phát nhạc. Hãy thử bấm lại nút nhạc.');
+            if (!silent) {
+                showToast(audio.__loadError
+                    ? 'Không tải được nhạc nền này.'
+                    : 'Không thể phát nhạc. Hãy thử bấm lại nút nhạc.');
+            }
+            return false;
         });
+    }
+
+    // Bản khách/export không có intro: lần chạm đầu (ngoài nút nhạc/intro) phát nhạc.
+    // iOS chỉ cho play() khi gọi đồng bộ trong handler cử chỉ người dùng.
+    function setupFirstTouchMusic() {
+        const audio = byId('weddingAudio');
+        if (!audio || !audio.getAttribute('src')) return;
+        const opts = { capture: true, passive: true };
+        let pending = false;
+        let detached = false;
+        function detach() {
+            if (detached) return;
+            detached = true;
+            document.removeEventListener('touchend', onTouch, opts);
+            document.removeEventListener('click', onTouch, opts);
+        }
+        function onTouch(e) {
+            if (pending || detached) return;
+            const t = e && e.target;
+            if (t && typeof t.closest === 'function') {
+                if (t.closest('#floatingMusicBtn')) { detach(); return; }
+                if (t.closest('.intro-overlay')) return;
+            }
+            if (!audio.paused) { detach(); return; }
+            pending = true;
+            const p = playAudio(true);
+            if (!p) { pending = false; return; }
+            p.then(function (ok) {
+                pending = false;
+                if (ok) detach();
+            });
+        }
+        document.addEventListener('touchend', onTouch, opts);
+        document.addEventListener('click', onTouch, opts);
+        _cleanups.push(detach);
     }
 
     function toggleAudioPlayback() {
@@ -171,13 +210,15 @@ let countdownInterval = null;
         _fallKey = mode;
         const symbols = FALL_SYMBOLS[mode];
         if (!mode || mode === 'none' || !symbols) return;
-        for (let i = 0; i < 12; i++) {
+        const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const count = reduce ? 6 : 12;
+        for (let i = 0; i < count; i++) {
             const span = document.createElement('span');
             span.className = 'petal';
             span.textContent = symbols[i % symbols.length];
             span.style.left = (Math.random() * 92) + '%';
             span.style.fontSize = (14 + Math.random() * 8) + 'px';
-            span.style.animationDuration = (6 + Math.random() * 7) + 's';
+            span.style.animationDuration = (reduce ? 12 + Math.random() * 6 : 6 + Math.random() * 7) + 's';
             span.style.animationDelay = (Math.random() * 5) + 's';
             container.appendChild(span);
         }
@@ -262,10 +303,11 @@ let countdownInterval = null;
         const items = root.querySelectorAll(REVEAL_SEL);
         if (!items.length) return;
         const reduce = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        if (reduce || typeof IntersectionObserver !== 'function') {
+        if (typeof IntersectionObserver !== 'function') {
             items.forEach(function (el) { el.classList.add('is-visible'); });
             return;
         }
+        if (reduce) root.classList.add('reveal-soft');
         root.classList.add('reveal-on');
         _observer = new IntersectionObserver(function (entries) {
             entries.forEach(function (en) {
@@ -576,7 +618,7 @@ let countdownInterval = null;
     function destroy() {
         if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
         if (_observer) { _observer.disconnect(); _observer = null; }
-        if (_root && _root.classList) _root.classList.remove('reveal-on');
+        if (_root && _root.classList) { _root.classList.remove('reveal-on'); _root.classList.remove('reveal-soft'); }
         removeIntro();
         _cleanups.forEach(function (fn) { try { fn(); } catch (e) { /* bỏ qua */ } });
         _cleanups = [];
@@ -590,6 +632,7 @@ let countdownInterval = null;
         removeIntro();
         if (_observer) { _observer.disconnect(); _observer = null; }
         _root.classList.remove('reveal-on');
+        _root.classList.remove('reveal-soft');
         _root.querySelectorAll(REVEAL_SEL).forEach(function (el) { el.classList.remove('is-visible'); });
         const scroller = findScrollParent(frame);
         if (scroller) scroller.scrollTop = 0;
@@ -614,6 +657,13 @@ let countdownInterval = null;
         _ctx = ctx || { appState: state, mode: 'editor', guestName: '', slug: null };
         const mode = _ctx.mode || 'editor';
         const st = getState();
+
+        // Lớp hoa rơi cố định theo màn hình: chỉ bản khách/export
+        const fallEl = byId('fallingContainer');
+        if (fallEl && fallEl.classList) {
+            if (mode === 'invite' || mode === 'export') fallEl.classList.add('fall-layer-fixed');
+            else fallEl.classList.remove('fall-layer-fixed');
+        }
 
         // Section.mount cho từng phần tử [data-section-id]
         const types = window.SECTION_TYPES || {};
@@ -648,7 +698,10 @@ let countdownInterval = null;
             if (g && _fallKey !== g.fallingEffect) buildFalling(g.fallingEffect);
             replaceGuestPlaceholder(_root, _ctx.guestName);
             setupReveal(_root);
-            setupIntro(resolveIntroStyle(g), g, _ctx.guestName, mode === 'preview' ? byId('weddingCardFrame') : null);
+            const introStyle = resolveIntroStyle(g);
+            setupIntro(introStyle, g, _ctx.guestName, mode === 'preview' ? byId('weddingCardFrame') : null);
+            // Không có intro: bắt lần chạm đầu để phát nhạc (iOS chặn autoplay)
+            if ((mode === 'invite' || mode === 'export') && !_introEl) setupFirstTouchMusic();
         } else if (_fallKey === null) {
             // Editor: chỉ dựng hiệu ứng rơi lần đầu; đổi hiệu ứng đã có initFallingEffect()
             initFallingEffect();
