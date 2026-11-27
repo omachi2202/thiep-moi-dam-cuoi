@@ -252,17 +252,28 @@
 .reveal-on .reveal-dur-fast { transition-duration: 0.45s; }
 .reveal-on .reveal-dur-slow { transition-duration: 1.4s; }
 
+/* Giảm chuyển động: vẫn reveal nhưng chỉ mờ dần (runtime thêm .reveal-soft vào gốc .reveal-on khi reduce).
+   Độ ưu tiên cao hơn các quy tắc reveal ở trên (thêm .reveal-soft) nên thắng cả .reveal-dur-fast/slow. */
 @media (prefers-reduced-motion: reduce) {
-    .reveal-on .reveal-fade-up:not(.is-visible),
-    .reveal-on .reveal-zoom:not(.is-visible),
-    .reveal-on .reveal-slide:not(.is-visible),
-    .reveal-on .reveal-fade:not(.is-visible),
-    .reveal-on .reveal-flip:not(.is-visible),
-    .reveal-on .reveal-pop:not(.is-visible) {
-        opacity: 1;
+    .reveal-on.reveal-soft .reveal-fade-up:not(.is-visible),
+    .reveal-on.reveal-soft .reveal-zoom:not(.is-visible),
+    .reveal-on.reveal-soft .reveal-slide:not(.is-visible),
+    .reveal-on.reveal-soft .reveal-fade:not(.is-visible),
+    .reveal-on.reveal-soft .reveal-flip:not(.is-visible),
+    .reveal-on.reveal-soft .reveal-pop:not(.is-visible) {
+        opacity: 0;
         transform: none;
     }
-    .reveal-on .reveal-fade, .reveal-on .reveal-flip, .reveal-on .reveal-pop { transition: none; }
+    .reveal-on.reveal-soft .reveal-fade-up,
+    .reveal-on.reveal-soft .reveal-zoom,
+    .reveal-on.reveal-soft .reveal-slide,
+    .reveal-on.reveal-soft .reveal-fade,
+    .reveal-on.reveal-soft .reveal-flip,
+    .reveal-on.reveal-soft .reveal-pop {
+        transition: opacity 0.8s ease;
+    }
+    .reveal-on.reveal-soft .reveal-dur-fast { transition-duration: 0.45s; }
+    .reveal-on.reveal-soft .reveal-dur-slow { transition-duration: 1.4s; }
 }
 
 /* ===== Hiệu ứng lặp (chạy cả editor) ===== */
@@ -389,6 +400,16 @@
 
 /* Lớp rơi cao 0 (sticky) nhưng phải để tràn để thấy cánh hoa; khung thiệp đã overflow-hidden nên không lọt ra ngoài */
 #weddingCardFrame #fallingContainer { overflow: visible !important; }
+
+/* Trang khách/export: lớp hoa rơi cố định theo màn hình (runtime thêm .fall-layer-fixed); editor không có lớp này nên giữ như cũ.
+   Selector có thêm id khung + lớp để thắng quy tắc overflow: visible !important ở trên (cùng !important, độ đặc hiệu cao hơn). */
+#fallingContainer.fall-layer-fixed,
+#weddingCardFrame #fallingContainer.fall-layer-fixed {
+    position: fixed; top: 0; bottom: 0; left: 50%;
+    width: 100%; max-width: 430px; height: auto;
+    transform: translateX(-50%);
+    overflow: hidden !important; pointer-events: none; z-index: 40;
+}
 
 /* ---------- Intro dùng chung (trang khách, export, editor chế độ Xem thực tế) ---------- */
 .intro-overlay {
