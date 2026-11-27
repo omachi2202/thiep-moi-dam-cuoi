@@ -8,7 +8,7 @@ Web app for customizing wedding invitations (thiệp cưới online), in the spi
 
 ## Running
 
-No build step, no npm, no bundler (Hiến pháp Điều 2). Front-end is plain `<script>` files; libs load from CDN: Font Awesome 6.5.1 and qrcodejs 1.0.0 (with SRI) are pinned; Tailwind Play CDN (`cdn.tailwindcss.com`) is NOT pinned yet (see docs/backlog.md) and will be replaced by prebuilt `css/tailwind.css` per AD-005 (after T7: then run `py tools/build_tailwind.py` after changing Tailwind classes in HTML/JS, never edit the CSS by hand); Google Fonts. Backend is FastAPI. From the repo root:
+No build step, no npm, no bundler (Hiến pháp Điều 2). Front-end is plain `<script>` files; libs load from CDN: Font Awesome 6.5.1 and qrcodejs 1.0.0 (with SRI) are pinned; Tailwind is prebuilt into `css/tailwind.css` (AD-005, no CDN): after changing Tailwind classes in `index.html`/`invite.html`/`js/**`, run `py tools/build_tailwind.py` (Tailwind CLI v3.4.17 in `tools/bin/`, git-ignored; `test_tailwind_fresh` fails if stale), never edit the CSS by hand; Google Fonts. Backend is FastAPI. From the repo root:
 
 ```bash
 py -m pip install -r server/requirements.txt
@@ -30,9 +30,9 @@ py -m pytest server/tests -q
 
 ## Section registry
 
-Each section type is exactly one file `js/sections/<type>.js` calling `registerSection({type, label, icon, defaults, renderCanvas(sec, ctx), renderInspector(sec), mount?(root, sec, ctx), migrate?(data), pageTitle?(sec), calendarEvent?(sec)})`. `ctx = {appState, mode, guestName, slug}`, `mode` is `editor | preview | invite | export` (`preview` = editor's "Xem thực tế": rendered like the guest page; compare `mode === 'editor'` rather than listing other modes). `renderCanvas` is pure (no fetch/side effects, no `contenteditable` outside editor mode).
+Each section type is exactly one file `js/sections/<type>.js` calling `registerSection({type, label, icon, defaults, renderCanvas(sec, ctx), renderInspector(sec), mount?(root, sec, ctx), migrate?(data), pageTitle?(sec), calendarEvent?(sec), shareImage?(sec)})`. `ctx = {appState, mode, guestName, slug}`, `mode` is `editor | preview | invite | export` (`preview` = editor's "Xem thực tế": rendered like the guest page; compare `mode === 'editor'` rather than listing other modes). `renderCanvas` is pure (no fetch/side effects, no `contenteditable` outside editor mode).
 
-Optional hooks: `pageTitle(sec)` gives the page title (page, export, slug suggestion); `calendarEvent(sec)` returns `{title, location, iso}` (calendar buttons). Runtime/editor/invite read them via `cardPageTitle(state)` / `cardCalendarEvent(state)` in `runtime.js` — the correct way to pull info from sections without comparing `type`. Need new per-type info outside a section file? Add another optional hook (see `.agents/rules/domain_sections.md` §1).
+Optional hooks: `pageTitle(sec)` gives the page title (page, export, slug suggestion); `calendarEvent(sec)` returns `{title, location, iso}` (calendar buttons); `shareImage(sec)` returns an image URL or `''` (hero returns `data.heroImage`) for the share/OG image. Runtime/editor/invite read them via `cardPageTitle(state)` / `cardCalendarEvent(state)` / `cardShareInfo(state)` in `runtime.js` — the correct way to pull info from sections without comparing `type`. Need new per-type info outside a section file? Add another optional hook (see `.agents/rules/domain_sections.md` §1).
 
 Image frame shapes: `imageShapeClass()` / `IMAGE_SHAPES` in `state.js` (per-section `data.imageShape`). Animation: `style.animDuration` (`''|fast|slow`), reveal values `fade|flip|pop`, loop classes `loop-swing|pulse|heartbeat` and `img-shape-*` live in `css/app.css`; see `.agents/rules/domain_sections.md`.
 
@@ -40,7 +40,7 @@ Adding a type = create the file + add a `<script>` tag in **both** `index.html` 
 
 ## State, migrate, undo
 
-`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 7; 8 once T2 adds `share`) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
+`appState` = `{schemaVersion, globalStyle, bankInfo, sections[]}`; a section is `{id, type, name, icon, visible, customFont, customTitleSize, customTextColor, style, data}`. Changing a field means updating `DEFAULT_STATE`/section `defaults` **and** `migrate()` (idempotent; bump `SCHEMA_VERSION`, currently 8, includes `share`) so old JSON, drafts and `data/cards/*.json` still open. `migrate` runs on startup, draft restore, JSON import, and in `invite.html` after API load.
 
 Layouts: hero, family, events, album and thanks pick a layout via `data.layout` plus a `<TYPE>_LAYOUTS` list inside the section file (list in `.agents/rules/domain_sections.md`). Envelope/intro customization lives in `globalStyle` (`envFlapColor`, `envBodyColor`, `envCardImage`, `envSeal`, `envMonogram`, `introToText`, `introBtnText`) and is read by `setupIntro` in `runtime.js`. New fonts must have a Google Fonts `vietnamese` subset. The editor (`index.html`) and the export string in `js/editor.js` use the same full Google Fonts URL (identical character by character); the guest page uses `cardFontsUrl(state)` (only fonts the card uses + `CARD_BASE_FONTS`). A new font goes into both the full URL and `GOOGLE_FONT_SPECS` (`js/state.js`).
 
@@ -53,7 +53,7 @@ All mutations go through a mutator ending in `commitState(label)` (undo snapshot
 ## Guest page and export
 
 - Guest page `/c/<slug>?khach=<tên>`: the server builds it from `invite.html` (inserts Open Graph/Twitter meta, preload of the cover image and `<script id="cardState" type="application/json">` before `</head>`; rewrites `<title>`; adds `?v=<hash>` to `/js` and `/css` URLs). `invite.html` reads the embedded `#cardState` (fallback `GET /api/cards/<slug>`), `migrate`, renders `mode:'invite'` without waiting for `/api/health`. `appState.share = {title, description, image}` (schema 8) is derived by the editor on publish via `cardShareInfo(state)` (section hook `shareImage(sec)`); see `docs/og-va-toc-do/dac_ta_og_va_toc_do.md`. Guest name is decoded, cut to 60 chars, escaped, replaces `{khach}`.
-- Export HTML (`openExportModal` in `editor.js`) builds a self-contained file by inlining CSS + `state/api/runtime/sections/render` JS + `window.__CARD_STATE__` + a bootstrap that reuses the same runtime. Sources come from `fetch` over http, or from `window.__EXPORT_SOURCES` in the generated `js/export_bundle.js` when opened via `file://` (AD-003). **After editing any of `css/app.css`, `js/state.js`, `js/api.js`, `js/runtime.js`, `js/render.js`, `js/sections/*.js`, run `py tools/build_export_bundle.py`** — never edit the bundle by hand; `pytest` (`test_export_bundle_fresh`) fails if it is stale. `.gitattributes` forces LF.
+- Export HTML (`openExportModal` in `editor.js`) builds a self-contained file by inlining CSS + `state/api/runtime/sections/render` JS + `window.__CARD_STATE__` + a bootstrap that reuses the same runtime. Sources come from `fetch` over http, or from `window.__EXPORT_SOURCES` in the generated `js/export_bundle.js` when opened via `file://` (AD-003). **After editing any of `css/app.css`, `css/tailwind.css`, `js/state.js`, `js/api.js`, `js/runtime.js`, `js/render.js`, `js/sections/*.js`, run `py tools/build_export_bundle.py`** — never edit the bundle by hand; `pytest` (`test_export_bundle_fresh`) fails if it is stale. `.gitattributes` forces LF.
 - RSVP/wishes post only via `window.api.postRsvp/postWish/getWishes`.
 
 ## Backend

@@ -14,11 +14,12 @@ registerSection({
   mount(rootEl, sec, ctx) {},    // tuỳ chọn: gắn sự kiện, fetch API; chạy sau mỗi lần render
   migrate(data) { return data }, // tuỳ chọn: chuẩn hoá data cũ của riêng loại này
   pageTitle(sec) { return '' },  // tuỳ chọn: tiêu đề trang / export / gợi ý slug (hero)
-  calendarEvent(sec) { return { title, location, iso } } // tuỳ chọn: dữ liệu nút lịch (events, countdown)
+  calendarEvent(sec) { return { title, location, iso } }, // tuỳ chọn: dữ liệu nút lịch (events, countdown)
+  shareImage(sec) { return '' }  // tuỳ chọn: URL ảnh chia sẻ/OG, hoặc '' (hero trả data.heroImage)
 });
 ```
 
-- Code ngoài tệp section cần thông tin "của một loại cụ thể" phải đọc qua hook và helper chung `cardPageTitle(state)` / `cardCalendarEvent(state)` (runtime.js), KHÔNG so sánh `sec.type`/`sec.id` (Hiến pháp Điều 3). Thêm nhu cầu mới thì thêm hook tuỳ chọn mới ở đây.
+- Code ngoài tệp section cần thông tin "của một loại cụ thể" phải đọc qua hook và helper chung `cardPageTitle(state)` / `cardCalendarEvent(state)` / `cardShareInfo(state)` (runtime.js), KHÔNG so sánh `sec.type`/`sec.id` (Hiến pháp Điều 3). Thêm nhu cầu mới thì thêm hook tuỳ chọn mới ở đây.
 
 - `ctx = { appState, mode, guestName, slug }`, `mode ∈ 'editor' | 'preview' | 'invite' | 'export'` ('preview' = editor bật "Xem thực tế": hiển thị như khách, không sửa inline; section nên so sánh `mode === 'editor'` thay vì liệt kê các mode khác).
 - `renderCanvas` thuần (không side-effect, không fetch). Trong `mode !== 'editor'` không sinh `contenteditable`, `onblur`, badge.

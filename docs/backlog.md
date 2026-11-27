@@ -2,7 +2,7 @@
 
 Mỗi dòng: việc — lý do — ưu tiên (Cao / Trung bình / Thấp).
 
-- Thêm CSP cho `/c/` và chuyển script/handler inline (boot của `invite.html`, `onclick`/`onerror` trong các section) sang `addEventListener`; triển khai Report-Only trước; cân nhắc build Tailwind tĩnh để bỏ CDN cho trang khách — giảm rủi ro XSS, review T15 N6 — Cao.
+- Thêm CSP cho `/c/` và chuyển script/handler inline (boot của `invite.html`, `onclick`/`onerror` trong các section) sang `addEventListener`; triển khai Report-Only trước — giảm rủi ro XSS, review T15 N6 — Cao.
 - Tách origin trang khách khỏi editor (hoặc không giữ editKey trong localStorage cùng origin) — một XSS bất kỳ trên `/c/` đọc được mọi editKey — Cao.
 - ~~Thêm ô nhập edit key thủ công cho slug đã tồn tại (đổi máy/mất localStorage)~~ — ĐÃ XONG (T33: "Mở thiệp đã xuất bản để sửa" trong modal Xuất bản).
 - Thay URL nhạc mặc định (hotlink vocaroo) bằng tệp trong dự án — phụ thuộc dịch vụ ngoài, có thể chết link — Trung bình.
@@ -17,7 +17,8 @@ Mỗi dòng: việc — lý do — ưu tiên (Cao / Trung bình / Thấp).
 - Quản lý mã tạo thiệp qua giao diện quản trị (hiện sửa biến môi trường + khởi động lại container) — Thấp.
 - Dọn ảnh upload không còn thiệp nào dùng (quét `uploads/` đối chiếu `data/cards/*.json`) — Trung bình.
 - `GET export.xlsx?key=` — key lọt vào log/lịch sử trình duyệt; chỉ nhận header, front-end tải bằng fetch + blob — Trung bình.
-- Tailwind Play CDN chưa ghim phiên bản (Điều 2) — ghim hoặc build CSS tĩnh (gộp với mục CSP ở trên) — Trung bình.
+- Trang khách: link Google Fonts chèn bằng JS sau migrate nên có thể nháy phông — cân nhắc server chèn sẵn `<link>` theo `cardFontsUrl` — Thấp.
+- Thử tay trên iOS Safari: nhạc nền `preload="none"` vẫn phát được sau lần chạm đầu — Trung bình.
 - Markup khung/modal mừng cưới lặp ở `invite.html` và chuỗi export trong `editor.js` — gộp thành một nguồn — Trung bình.
 - `CLAUDE.md` viết tiếng Anh trong khi Điều 1 yêu cầu tài liệu tiếng Việt — quyết định giữ hay dịch — Thấp.
 
