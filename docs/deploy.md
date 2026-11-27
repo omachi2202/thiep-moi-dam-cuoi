@@ -52,6 +52,7 @@ Thêm vào mục `services:` (không cần `depends_on`):
     environment:
       - THIEP_CREATE_CODES=<ma-tao-thiep-1>,<ma-tao-thiep-2>
       - THIEP_TRUST_CF=1
+      - THIEP_PUBLIC_URL=https://<ten-mien-cua-ban>
       - THIEP_UPLOAD_QUOTA_MB=2048
     restart: unless-stopped
     healthcheck:
@@ -164,6 +165,7 @@ vì sẽ làm gián đoạn mọi dịch vụ trong portal. Đừng sửa hai sc
 | `THIEP_CREATE_CODES` | Danh sách mã tạo thiệp, ngăn bởi dấu phẩy. Rỗng = không yêu cầu mã (ai cũng tạo được thiệp) | rỗng |
 | `THIEP_UPLOAD_QUOTA_MB` | Hạn mức tổng dung lượng `uploads/` (MB, số nguyên > 0) | 2048 |
 | `THIEP_TRUST_CF` | `1` = lấy IP khách từ header `CF-Connecting-IP` (dùng cho giới hạn tần suất) | tắt |
+| `THIEP_PUBLIC_URL` | Địa chỉ gốc công khai (vd `https://<ten-mien-cua-ban>`, không `/` cuối) dùng cho `og:url`/`og:image` khi chia sẻ link. Nên đặt khi chạy sau Tunnel | rỗng = suy từ request |
 
 ## 5. Vận hành
 
@@ -205,5 +207,9 @@ docker compose logs -f --tail 200 thiep_cuoi
 docker compose ps
 docker inspect --format "{{.State.Health.Status}}" <ten-container-thiep_cuoi>
 ```
+
+Làm mới ảnh xem trước (khi đổi ảnh bìa/tiêu đề thiệp đã chia sẻ): xuất bản lại thiệp, rồi
+- Facebook/Messenger: dán link vào Sharing Debugger (`developers.facebook.com/tools/debug/`) và bấm "Scrape Again".
+- Zalo nhớ cache khá lâu: khi gửi lại có thể thêm `?v=2` vào cuối link (`/c/<slug>?v=2`) để Zalo coi là link mới.
 
 Cập nhật phiên bản mới: lấy mã mới về, rồi `docker compose up -d --build thiep_cuoi`. Dữ liệu nằm ở volume nên không mất.

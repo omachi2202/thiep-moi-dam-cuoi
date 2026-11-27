@@ -50,7 +50,7 @@ Server đọc `invite.html` (cache theo mtime), đọc `data/cards/<slug>.json`:
 - `title`/`description` lấy từ `state.share` (chuỗi, strip, cắt 120/200); rỗng → `'THƯ MỜI TIỆC CƯỚI'` / `'Trân trọng kính mời bạn đến chung vui cùng gia đình chúng tôi'`. Escape bằng `html.escape(..., quote=True)`.
 - `image`: chỉ nhận `^/uploads/[A-Za-z0-9_.-]{1,200}$` (→ `{base}` + đường dẫn) hoặc `https://` hợp lệ (≤ 500, không khoảng trắng, không `"<>`); khác → bỏ ảnh.
 - `{base}`: biến môi trường `THIEP_PUBLIC_URL` (vd `https://khanhdu.store`, bỏ `/` cuối; chỉ nhận `http(s)://host[:port]`), tham số `create_app(public_url=None)`. Không đặt → `str(request.base_url)` bỏ `/` cuối; khi `trust_cf` bật và header `X-Forwarded-Proto: https` thì ép scheme `https`.
-- `stateJson` = `json.dumps(state, ensure_ascii=False, separators=(',',':'))` rồi thay `<` → `<`, `>` → `>`, `&` → `&`, ` `/` ` → dạng escape. Không bao giờ chèn chuỗi thô.
+- `stateJson` = `json.dumps(state, ensure_ascii=False, separators=(',',':'))` rồi thay `<`, `>`, `&`, U+2028, U+2029 bằng dạng escape `\uXXXX` (vd `<` thành `\u003c`). Không bao giờ chèn chuỗi thô.
 - `Cache-Control: no-cache` cho trang (như cũ).
 
 ### 2b. Đánh phiên bản JS/CSS — T3
