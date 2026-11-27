@@ -29,15 +29,27 @@ Thư mục dữ liệu lấy từ `THIEP_DATA_DIR` (mặc định `<gốc repo>/
 | POST | `/api/cards/{slug}/wishes` | `{ten, loi_chuc}` |
 | GET | `/api/cards/{slug}/wishes` | Danh sách `{ten, loi_chuc, thoi_gian}` có `hien_thi` = TRUE, mới nhất trước, tối đa 200 |
 | GET | `/api/cards/{slug}/export.xlsx` | Cần `X-Edit-Key` (hoặc `?key=`); tải RSVP + lời chúc của slug |
-| GET | `/c/{slug}` | Trả `invite.html` |
+| GET | `/c/{slug}` | Server dựng từ `invite.html` (cache theo mtime) + `data/cards/<slug>.json`, `Cache-Control: no-cache`; xem "Trang `/c/{slug}`" dưới bảng |
 | GET | `/uploads/*`, `/` và tệp tĩnh | Phục vụ tĩnh; **không** phục vụ `data/`, `server/`, `.agents/`, `.claude/`, `.git/` |
 
 - Header tuỳ chỉnh: `X-Create-Code`, `X-Edit-Key`, `X-Card-Slug`.
 - Lỗi trả `{"detail": "<thông điệp tiếng Việt>"}` với mã HTTP đúng (400, 403, 404, 413, 422, 429 quá tần suất, 507 hết hạn mức lưu trữ).
 - IP client lấy qua hàm `client_ip(request)` dùng chung cho mọi giới hạn; `rate_check` nhận tham số cửa sổ `window` tuỳ chọn (3600 giây cho `create`).
 
+### Trang `/c/{slug}` (ảnh xem trước OG + state nhúng)
+- Thiệp không tồn tại hoặc JSON hỏng: trả `invite.html` nguyên trạng, mã 200 (trang tự báo "Không tìm thấy thiệp").
+- Chèn **ngay trước `</head>`** (chỉ lần đầu): `og:type`, `og:site_name`, `og:title`, `og:description`, `og:url` (`{base}/c/{slug}`), `og:image` + `og:image:alt` (chỉ khi có ảnh), `twitter:card` (`summary_large_image`, hoặc `summary` khi không có ảnh), `meta description`, `<link rel="preload" as="image" ... fetchpriority="high">` (chỉ khi có ảnh) và `<script id="cardState" type="application/json">{stateJson}</script>`. Đồng thời thay nội dung `<title>` bằng tiêu đề.
+- `title`/`description` lấy từ `state.share` (strip, cắt 120/200); rỗng thì dùng mặc định `THƯ MỜI TIỆC CƯỚI` / `Trân trọng kính mời bạn đến chung vui cùng gia đình chúng tôi`. Escape bằng `html.escape(..., quote=True)`.
+- `image` chỉ nhận `^/uploads/[A-Za-z0-9_.-]{1,200}$` (ghép với `{base}`) hoặc `https://` hợp lệ (≤ 500 ký tự, không khoảng trắng, không `"<>`); khác thì bỏ ảnh.
+- `{base}` = `THIEP_PUBLIC_URL` / tham số `public_url` (chỉ nhận `http(s)://host[:port]`, bỏ `/` cuối); không đặt thì `request.base_url`, và khi `trust_cf` bật + `X-Forwarded-Proto: https` thì ép `https`.
+- `stateJson` = `json.dumps(state, ensure_ascii=False, separators=(',',':'))` rồi thay `<`, `>`, `&`, U+2028, U+2029 bằng dạng escape `\uXXXX`. Không bao giờ chèn chuỗi thô.
+
+### Đánh phiên bản JS/CSS (`?v=`)
+- Khi trả `index.html` và `/c/{slug}`: mọi `src="/js/<path>"`, `href="/css/<path>"` chưa có `?` được thêm `?v=<8 ký tự hex đầu của sha256 nội dung tệp>`; tệp không tồn tại thì để nguyên. Hash cache theo (đường dẫn, mtime, size).
+- `/js`, `/css`: request có `v` **trùng** hash hiện tại → `Cache-Control: public, max-age=31536000, immutable`; không có `v` hoặc lệch → `no-cache`. Giữ `X-Content-Type-Options: nosniff`.
+
 ### Cấu hình
-`create_app(data_dir=None, rate_limit=10, rate_window=60.0, create_codes=None, upload_quota_mb=None, trust_cf=None)`; tham số `None` thì đọc biến môi trường:
+`create_app(data_dir=None, rate_limit=10, rate_window=60.0, create_codes=None, upload_quota_mb=None, trust_cf=None, public_url=None)`; tham số `None` thì đọc biến môi trường:
 
 | Biến | Ý nghĩa | Mặc định |
 |---|---|---|
@@ -45,6 +57,7 @@ Thư mục dữ liệu lấy từ `THIEP_DATA_DIR` (mặc định `<gốc repo>/
 | `THIEP_CREATE_CODES` | Danh sách mã tạo thiệp, ngăn bởi dấu phẩy, bỏ khoảng trắng/chuỗi rỗng | rỗng = tắt yêu cầu mã |
 | `THIEP_UPLOAD_QUOTA_MB` | Hạn mức tổng dung lượng `uploads/` (MB, số nguyên > 0) | 2048 |
 | `THIEP_TRUST_CF` | `1` = IP lấy từ header `CF-Connecting-IP` (strip, ≤ 64 ký tự, rỗng thì về `request.client.host`) | tắt |
+| `THIEP_PUBLIC_URL` | Địa chỉ gốc công khai dùng cho `og:url`/`og:image` (vd `https://khanhdu.store`; chỉ nhận `http(s)://host[:port]`, bỏ `/` cuối) | rỗng = suy từ request |
 - Pydantic model cho mọi body; giới hạn độ dài trường (tên ≤ 80, lời nhắn ≤ 500, SĐT ≤ 20, `so_nguoi` 1–20, `tham_du` bool, `ben ∈ {"nha_trai","nha_gai",""}`).
 - State thiệp ≤ 2MB.
 

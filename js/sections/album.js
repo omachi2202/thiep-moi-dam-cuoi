@@ -33,7 +33,7 @@ registerSection({
         const fb = "this.onerror=null;this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Wedding+Photo'";
         const tile = (url, idx, wrapCls, imgCls) => `
                     <div class="${wrapCls}" data-album-idx="${idx}"${zoom ? ` style="cursor: zoom-in;" tabindex="0" role="button" aria-label="Xem ảnh ${idx + 1} phóng to"` : ''}>
-                        <img src="${escapeHtml(safeUrl(url))}" alt="Album ${idx + 1}" class="${imgCls}" onerror="${fb}">
+                        <img src="${escapeHtml(safeUrl(url))}" alt="Album ${idx + 1}" loading="lazy" decoding="async" class="${imgCls}" onerror="${fb}">
                     </div>
                 `;
         let photosGrid;

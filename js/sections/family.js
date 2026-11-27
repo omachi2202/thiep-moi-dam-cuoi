@@ -45,8 +45,8 @@ registerSection({
             const photo = (key, nameKey, role) => `
                         <div class="space-y-2">
                             ${shape
-                                ? `<img src="${escapeHtml(safeUrl(d[key]))}" alt="${role}" class="${shape} block w-full object-cover" onerror="${ph}">`
-                                : `<div class="w-full aspect-[4/5] rounded-t-full overflow-hidden border-4 border-white shadow-lg"><img src="${escapeHtml(safeUrl(d[key]))}" alt="${role}" class="w-full h-full object-cover" onerror="${ph}"></div>`}
+                                ? `<img src="${escapeHtml(safeUrl(d[key]))}" alt="${role}" loading="lazy" decoding="async" class="${shape} block w-full object-cover" onerror="${ph}">`
+                                : `<div class="w-full aspect-[4/5] rounded-t-full overflow-hidden border-4 border-white shadow-lg"><img src="${escapeHtml(safeUrl(d[key]))}" alt="${role}" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="${ph}"></div>`}
                             <p class="text-[11px] font-bold uppercase tracking-wider" style="color: ${v.pc};">${role}</p>
                             <p class="font-bold leading-snug" style="font-family: ${v.secFont}; font-size: calc(${v.titleSize} * 0.8);" ${f(nameKey)}>${t(nameKey)}</p>
                         </div>`;
@@ -139,9 +139,9 @@ registerSection({
 
                     <!-- Ảnh tròn cặp đôi -->
                     ${shape
-                        ? `<img src="${escapeHtml(safeUrl(d.coupleAvatar))}" alt="Couple" class="${shape} block w-48 mx-auto object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Couple'">`
+                        ? `<img src="${escapeHtml(safeUrl(d.coupleAvatar))}" alt="Couple" loading="lazy" decoding="async" class="${shape} block w-48 mx-auto object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Couple'">`
                         : `<div class="w-48 h-60 mx-auto rounded-t-full overflow-hidden border-4 border-white shadow-lg">
-                        <img src="${escapeHtml(safeUrl(d.coupleAvatar))}" alt="Couple" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Couple'">
+                        <img src="${escapeHtml(safeUrl(d.coupleAvatar))}" alt="Couple" loading="lazy" decoding="async" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x500/e2d9d0/5c4938?text=Couple'">
                     </div>`}
                 </div>`;
     },

@@ -19,6 +19,14 @@
 
     // Đọc phản hồi; lỗi -> Error(detail tiếng Việt)
     async function request(url, opts, timeoutMs) {
+        // Kiểm tra sức khoẻ có thể chưa xong (trang khách không chờ health trước khi render)
+        if (!api.available && (location.protocol === 'http:' || location.protocol === 'https:')) {
+            // Chờ health đang chạy; nếu đã xong mà thất bại thì thử lại đúng một lần
+            try { await (api.healthPromise || api.checkHealth()); } catch (e) { /* bỏ qua */ }
+            if (!api.available) {
+                try { await api.checkHealth(); } catch (e) { /* bỏ qua */ }
+            }
+        }
         if (!api.available) throw new Error(NO_BACKEND);
         const ctrl = new AbortController();
         let timedOut = false;
@@ -89,7 +97,18 @@
         available: false,
         needCreateCode: false,
 
-        async checkHealth() {
+        healthPromise: null,
+
+        // Giữ promise để request/form chờ nếu kiểm tra chưa xong
+        checkHealth() {
+            if (api._healthRunning) return api._healthRunning;
+            const p = api._checkHealth().finally(() => { api._healthRunning = null; });
+            api._healthRunning = p;
+            api.healthPromise = p;
+            return p;
+        },
+
+        async _checkHealth() {
             const proto = location.protocol;
             if (proto !== 'http:' && proto !== 'https:') { api.available = false; return false; }
             const ctrl = new AbortController();
@@ -364,7 +383,21 @@
         const useTyped = !!(codeBox && !codeBox.classList.contains('hidden') && typed);
         setBusy(true);
         try {
-            const res = await api.publishCard(slug, appState, useTyped ? typed : '');
+            // Bản sao gửi đi kèm share (không đổi appState, không commitState)
+            const toSend = (typeof window.cardShareInfo === 'function')
+                ? Object.assign({}, appState, { share: window.cardShareInfo(appState) })
+                : appState;
+            const shImg = (toSend.share && toSend.share.image) || '';
+            if (toSend.share && (!shImg || !(shImg.indexOf('/uploads/') === 0 || shImg.indexOf('https://') === 0)) && typeof window.getSectionDef === 'function') {
+                const hasImg = (appState.sections || []).some(sec => {
+                    if (!sec || sec.visible === false) return false;
+                    const def = window.getSectionDef(sec.type);
+                    if (!def || typeof def.shareImage !== 'function') return false;
+                    try { return !!def.shareImage(sec); } catch (e) { return false; }
+                });
+                if (hasImg) toast('Ảnh bìa chưa được tải lên máy chủ nên link chia sẻ sẽ không có ảnh xem trước. Hãy tải ảnh bìa lên rồi xuất bản lại.');
+            }
+            const res = await api.publishCard(slug, toSend, useTyped ? typed : '');
             if (useTyped) lsSet(CODE_KEY, typed); // chỉ lưu sau khi thành công
             forceCodeBox = false;
             showResult(res, slug);

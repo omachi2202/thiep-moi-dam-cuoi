@@ -55,6 +55,8 @@ registerSection({
     },
     // Hook tuỳ chọn: tiêu đề trang = tên cặp đôi
     pageTitle(sec) { return (sec && sec.data && sec.data.coupleShortName) || ''; },
+    // Hook tuỳ chọn: ảnh dùng cho xem trước khi chia sẻ link
+    shareImage(sec) { const u = sec && sec.data && sec.data.heroImage; return typeof u === 'string' ? u : ''; },
     renderCanvas(sec, ctx) {
         const v = sectionVars(sec, ctx);
         const d = sec.data;
@@ -68,7 +70,7 @@ registerSection({
                 <div class="hero-fade hero-bleed text-center pb-8" style="color: ${v.secColor};">
                     <div class="hero-fade-stage">
                         <div class="hero-fade-media">
-                            <img src="${img}" alt="Wedding Banner" onerror="${HERO_PLACEHOLDER}">
+                            <img src="${img}" alt="Wedding Banner" fetchpriority="high" decoding="async" onerror="${HERO_PLACEHOLDER}">
                         </div>
                         <div class="hero-fade-top">
                             <p class="hero-fade-invite" style="font-family: ${v.secFont};" ${f('inviteLine')}>${t('inviteLine')}</p>
@@ -106,7 +108,7 @@ registerSection({
                         <p class="hero-arch-weekday" style="font-family: ${v.secFont};" ${f('weekday')}>${t('weekday')}</p>
                     </div>
                     <div class="hero-arch-photo">
-                        <img src="${img}" alt="Wedding Banner" onerror="${HERO_PLACEHOLDER}">
+                        <img src="${img}" alt="Wedding Banner" fetchpriority="high" decoding="async" onerror="${HERO_PLACEHOLDER}">
                     </div>
                     <p class="hero-arch-note" style="font-family: ${v.secFont};" ${f('subNote')}>${t('subNote')}</p>
                 </div>`;
@@ -115,7 +117,7 @@ registerSection({
         if (layout === 'fullscreen') {
             return `
                 <div class="hero-full hero-bleed">
-                    <img class="hero-full-img" src="${img}" alt="Wedding Banner" onerror="${HERO_PLACEHOLDER}">
+                    <img class="hero-full-img" src="${img}" alt="Wedding Banner" fetchpriority="high" decoding="async" onerror="${HERO_PLACEHOLDER}">
                     <div class="hero-full-shade"></div>
                     <div class="hero-full-body">
                         <p class="hero-full-tag" style="font-family: ${v.secFont};" ${f('tagline')}>${t('tagline')}</p>
@@ -138,7 +140,7 @@ registerSection({
         return `
                 <div class="relative text-center pb-8">
                     <div class="relative h-[470px] overflow-hidden"${classicBoxStyle}>
-                        <img src="${escapeHtml(safeUrl(d.heroImage))}" alt="Wedding Banner" class="${classicImgCls}" onerror="this.src='https://placehold.co/600x800/e2d9d0/5c4938?text=Wedding+Photo'">
+                        <img src="${escapeHtml(safeUrl(d.heroImage))}" alt="Wedding Banner" fetchpriority="high" decoding="async" class="${classicImgCls}" onerror="this.src='https://placehold.co/600x800/e2d9d0/5c4938?text=Wedding+Photo'">
                         <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent"></div>
                         <div class="absolute bottom-8 inset-x-4 text-white">
                             <p class="tracking-[0.28em] text-xs uppercase mb-2 opacity-90" ${fieldAttr(ctx, 'tagline')}>${escapeHtml(d.tagline)}</p>

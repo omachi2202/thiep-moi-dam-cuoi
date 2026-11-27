@@ -29,7 +29,7 @@ registerSection({
         if (layout === 'overlay') {
             return `
                 <div class="relative overflow-hidden text-center" style="min-height: 440px; background: #2a2118;">
-                    ${img ? `<img src="${escapeHtml(img)}" alt="Cảm ơn" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : ''}
+                    ${img ? `<img src="${escapeHtml(img)}" alt="Cảm ơn" loading="lazy" decoding="async" class="absolute inset-0 w-full h-full object-cover" onerror="this.style.display='none'">` : ''}
                     <div class="absolute inset-0" style="background: rgba(0,0,0,0.5);"></div>
                     <div class="relative px-6 py-16 space-y-4 flex flex-col items-center justify-center" style="min-height: 440px; color: #fff;">
                         ${titleH}
@@ -41,7 +41,7 @@ registerSection({
         if (layout === 'curved') {
             return `
                 <div class="pb-10 text-center space-y-4 overflow-hidden" style="color: ${v.secColor};">
-                    ${img ? `<img src="${escapeHtml(img)}" alt="Cảm ơn" class="block w-full object-cover" style="height: 280px; border-radius: 0 0 50% 50% / 0 0 22% 22%;" onerror="this.style.display='none'">` : ''}
+                    ${img ? `<img src="${escapeHtml(img)}" alt="Cảm ơn" loading="lazy" decoding="async" class="block w-full object-cover" style="height: 280px; border-radius: 0 0 50% 50% / 0 0 22% 22%;" onerror="this.style.display='none'">` : ''}
                     <div class="px-6 pt-4 space-y-4">
                         ${titleH}
                         <p class="text-xs leading-relaxed opacity-85" ${fieldAttr(ctx, 'message')}>${escapeHtml(d.message)}</p>
@@ -51,7 +51,7 @@ registerSection({
         }
         return `
                 <div class="py-10 px-6 text-center space-y-4" style="color: ${v.secColor};">
-                    ${img ? `<img src="${escapeHtml(img)}" alt="Cảm ơn" class="${imgCls}" onerror="this.style.display='none'">` : ''}
+                    ${img ? `<img src="${escapeHtml(img)}" alt="Cảm ơn" loading="lazy" decoding="async" class="${imgCls}" onerror="this.style.display='none'">` : ''}
                     <h3 class="font-bold uppercase tracking-wider" style="font-family: ${v.secFont}; font-size: ${v.titleSize}; color: ${v.pc};" ${fieldAttr(ctx, 'title')}>${escapeHtml(d.title)}</h3>
                     <p class="text-xs leading-relaxed opacity-85" ${fieldAttr(ctx, 'message')}>${escapeHtml(d.message)}</p>
                     <p class="text-2xl" style="font-family: ${v.scriptFont}; color: ${v.pc};" ${fieldAttr(ctx, 'signature')}>${escapeHtml(d.signature)}</p>

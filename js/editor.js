@@ -589,7 +589,7 @@ function resetToDefault() {
 }
 
 // 9. TRÌNH XUẤT FILE HTML ĐỘC LẬP (1-CLICK EXPORT STANDALONE WEB PAGE)
-// Export = CDN + inline css/app.css + js/state.js + api.js + runtime.js + sections/*.js + render.js
+// Export = CDN (FA, Google Fonts) + inline css/app.css + css/tailwind.css + js/state.js + api.js + runtime.js + sections/*.js + render.js
 // + window.__CARD_STATE__ + bootstrap (renderCardHtml mode 'export' rồi CardRuntime.init).
 // Suy từ registry: mỗi type [a-z]+ tương ứng js/sections/<type>.js
 function getExportSectionFiles() {
@@ -649,9 +649,10 @@ async function openExportModal() {
         .concat(getExportSectionFiles().map(n => 'js/sections/' + n + '.js'))
         .concat(['js/render.js']);
 
-    let css, scripts;
+    let css, tailwindCss, scripts;
     try {
         css = await getExportSource('css/app.css');
+        tailwindCss = await getExportSource('css/tailwind.css');
         scripts = await Promise.all(jsFiles.map(getExportSource));
     } catch (err) {
         if (err && err.exportSourceMissing) {
@@ -691,11 +692,13 @@ async function openExportModal() {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${_exportEsc(pageTitle)}</title>
-    <script src="https://cdn.tailwindcss.com"><\/script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Slab:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Alex+Brush&family=Allura&family=Beau+Rivage&family=Bonheur+Royale&family=Charm:wght@400;700&family=Corinthia:wght@400;700&family=Ephesis&family=Hurricane&family=Imperial+Script&family=Lobster&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Moon+Dance&family=Pacifico&family=Patrick+Hand&family=Pinyon+Script&family=Playball&family=Prata&family=Rokkitt:wght@400;600;700&family=Spectral:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     <style>
 ${_exportInlineCss(css)}
+    </style>
+    <style>
+${_exportInlineCss(tailwindCss)}
     </style>
     <style>
         body { background-color: #e2e8f0; margin: 0; padding: 0; }
@@ -708,7 +711,7 @@ ${_exportInlineCss(css)}
         <button id="floatingMusicBtn" onclick="toggleAudioPlayback()" class="fixed bottom-5 left-5 z-50 w-11 h-11 rounded-full shadow-lg flex items-center justify-center text-white" style="background-color: ${_exportEsc(g.primaryColor)};" title="Bật/Tắt nhạc cưới">
             <i id="musicIcon" class="fa-solid fa-music text-sm"></i>
         </button>
-        <audio id="weddingAudio" loop preload="auto" src="${_exportEsc(audioSrc)}"></audio>
+        <audio id="weddingAudio" loop preload="none" src="${_exportEsc(audioSrc)}"></audio>
 
         <div id="sectionsViewport"></div>
 

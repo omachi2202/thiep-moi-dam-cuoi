@@ -9,7 +9,11 @@
 - Không đọc DOM editor (sidebar, inspector); chỉ làm việc trong `rootEl`.
 
 ## 2. Trang khách
-- URL: `/c/<slug>?khach=<tên>`. `invite.html` lấy slug từ path, `GET /api/cards/<slug>`, `migrate()`, render `mode: 'invite'`.
+- URL: `/c/<slug>?khach=<tên>`. `invite.html` lấy slug từ path. Boot: nếu có `<script id="cardState" type="application/json">` (server chèn, xem `domain_backend.md` §3) thì `JSON.parse(textContent)` (lỗi coi như không có) và dùng luôn, **không** `fetch`; không có thì `GET /api/cards/<slug>` như cũ. Sau đó `migrate()`, render `mode: 'invite'`.
+- Không chờ `checkHealth()` trước khi render: gọi song song. `window.api` giữ promise health; `postRsvp/postWish/getWishes` và form submit phải **đợi** promise này trước khi kết luận "không có backend" (khách bấm gửi sớm không bị lỗi).
+- Phông trang khách: không có `<link>` Google Fonts cố định; boot chèn `<link rel="stylesheet" href="cardFontsUrl(state)">` vào `<head>` **trước** khi render (chỉ các họ phông thiệp dùng + `CARD_BASE_FONTS`). Giữ 2 `preconnect`.
+- Nhạc: `<audio id="weddingAudio" loop preload="none">` (cả `invite.html` và chuỗi export) để không tranh băng thông với ảnh bìa; chỉ tải khi khách bấm mở/phát.
+- Chia sẻ link: `appState.share = {title, description, image}` (schema 8) là dữ liệu suy ra; editor gán `cardShareInfo(appState)` (`js/runtime.js`) vào **bản sao** gửi đi khi xuất bản (không `commitState`, không tạo bước undo). `cardShareInfo` lấy ảnh từ hook tuỳ chọn `shareImage(sec)` của section hiển thị đầu tiên trả URL hợp lệ, không phải `data:` (hero trả `data.heroImage`); `title`/`description` không escape ở đây, server escape khi chèn HTML.
 - Không tìm thấy thiệp: hiện trang báo lỗi thân thiện tiếng Việt, không lộ chi tiết server.
 - Tên khách: `decodeURIComponent`, cắt tối đa 60 ký tự, `escapeHtml`; thay `{khach}` trong mọi trường văn bản; mặc định "Quý khách". Tự điền vào ô tên RSVP/lời chúc.
 - Intro (`globalStyle.introStyle`: `none|envelope|curtain`): bấm mở → ẩn intro + phát nhạc (để vượt chặn autoplay).

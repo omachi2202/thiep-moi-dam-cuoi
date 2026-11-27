@@ -69,7 +69,7 @@
             const effect = ssPick(d.effect, SS_EFFECTS, 'fade');
             const ratio = ssPick(d.ratio, SS_RATIOS, '3/4');
             const n = photos.length;
-            const img = (url, idx) => `<img src="${escapeHtml(safeUrl(url))}" alt="Ảnh ${idx + 1}" class="w-full h-full object-cover" draggable="false" onerror="this.onerror=null;this.src='${SS_FALLBACK}'">`;
+            const img = (url, idx) => `<img src="${escapeHtml(safeUrl(url))}" alt="Ảnh ${idx + 1}" loading="${idx === 0 ? 'eager' : 'lazy'}" decoding="async" class="w-full h-full object-cover" draggable="false" onerror="this.onerror=null;this.src='${SS_FALLBACK}'">`;
 
             let stage;
             if (!n) {

@@ -5,20 +5,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Thiệp Cưới Online</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Google Fonts (giống editor) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Slab:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Alex+Brush&family=Allura&family=Beau+Rivage&family=Bonheur+Royale&family=Charm:wght@400;700&family=Corinthia:wght@400;700&family=Ephesis&family=Hurricane&family=Imperial+Script&family=Lobster&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Moon+Dance&family=Pacifico&family=Patrick+Hand&family=Pinyon+Script&family=Playball&family=Prata&family=Rokkitt:wght@400;600;700&family=Spectral:ital,wght@0,400;0,600;0,700;1,400&display=swap"
-        rel="stylesheet">
+    <!-- Link phông theo thiệp do script boot chèn (cardFontsUrl) -->
 
     <!-- Đường dẫn tuyệt đối vì URL trang là /c/<slug> -->
     <link rel="stylesheet" href="/css/app.css">
     <link rel="stylesheet" href="/css/invite.css">
+    <!-- Tailwind dựng sẵn; đặt SAU app.css/invite.css để giữ thứ tự như Play CDN cũ -->
+    <link rel="stylesheet" href="/css/tailwind.css">
     <style>
         body { background-color: #e2e8f0; margin: 0; padding: 0; }
     </style>
@@ -48,7 +46,7 @@
             style="background-color: #8c6239;" title="Bật/Tắt nhạc cưới" aria-label="Bật/Tắt nhạc cưới">
             <i id="musicIcon" class="fa-solid fa-music text-sm"></i>
         </button>
-        <audio id="weddingAudio" loop preload="auto"></audio>
+        <audio id="weddingAudio" loop preload="none"></audio>
 
         <div id="sectionsViewport" class="reveal-on"></div>
 
@@ -149,6 +147,20 @@
                 return Array.from(s).slice(0, 60).join('');
             }
 
+            // Dự phòng khi cardFontsUrl chưa có: link đầy đủ như trước
+            var FONTS_FALLBACK = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Dancing+Script:wght@500;700&family=Great+Vibes&family=Montserrat:wght@300;400;500;600;700&family=Noto+Serif:ital,wght@0,400;0,700;1,400&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600&family=Philosopher:ital,wght@0,400;0,700;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Roboto+Slab:wght@400;600&family=Tinos:ital,wght@0,400;0,700;1,400&family=Alex+Brush&family=Allura&family=Beau+Rivage&family=Bonheur+Royale&family=Charm:wght@400;700&family=Corinthia:wght@400;700&family=Ephesis&family=Hurricane&family=Imperial+Script&family=Lobster&family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Moon+Dance&family=Pacifico&family=Patrick+Hand&family=Pinyon+Script&family=Playball&family=Prata&family=Rokkitt:wght@400;600;700&family=Spectral:ital,wght@0,400;0,600;0,700;1,400&display=swap';
+
+            function injectFonts(state) {
+                var href = FONTS_FALLBACK;
+                if (typeof window.cardFontsUrl === 'function') {
+                    try { href = window.cardFontsUrl(state) || FONTS_FALLBACK; } catch (e) { href = FONTS_FALLBACK; }
+                }
+                var l = document.createElement('link');
+                l.rel = 'stylesheet';
+                l.href = href;
+                document.head.appendChild(l);
+            }
+
             function boot() {
                 var slug = getSlug();
                 if (!slug) {
@@ -157,23 +169,29 @@
                 }
                 var guestName = getGuestName();
 
-                fetch('/api/cards/' + encodeURIComponent(slug), { cache: 'no-store' })
-                    .then(function (res) {
-                        if (res.status === 404) { var e = new Error('nf'); e.notFound = true; throw e; }
-                        if (!res.ok) throw new Error('http');
-                        return res.json();
-                    })
+                // Health do js/api.js tự gọi lúc boot (không chặn render; api.request tự chờ khi gửi)
+
+                // Server nhúng sẵn state vào #cardState: dùng luôn, không fetch
+                var embedded = null;
+                var stEl = $('cardState');
+                if (stEl) {
+                    try { embedded = JSON.parse(stEl.textContent); } catch (e) { embedded = null; }
+                    if (!embedded || typeof embedded !== 'object' || !Array.isArray(embedded.sections)) embedded = null;
+                }
+
+                var loadP = embedded ? Promise.resolve(embedded)
+                    : fetch('/api/cards/' + encodeURIComponent(slug), { cache: 'no-store' })
+                        .then(function (res) {
+                            if (res.status === 404) { var e = new Error('nf'); e.notFound = true; throw e; }
+                            if (!res.ok) throw new Error('http');
+                            return res.json();
+                        });
+
+                loadP
                     .then(function (state) {
                         if (!state || typeof state !== 'object' || !Array.isArray(state.sections)) throw new Error('bad');
-
-                        // Xác nhận backend qua api.checkHealth() (đặt api.available); lỗi thì để api tự báo khi gửi
-                        var healthP = (window.api && typeof window.api.checkHealth === 'function')
-                            ? window.api.checkHealth().catch(function () { return false; })
-                            : Promise.resolve(false);
-                        return healthP.then(function () { return state; });
-                    })
-                    .then(function (state) {
                         state = migrate(state);
+                        injectFonts(state);
                         appState = state;   // biến toàn cục của state.js: runtime và section đọc từ đây
                         window.__stateMigrated = true;
 

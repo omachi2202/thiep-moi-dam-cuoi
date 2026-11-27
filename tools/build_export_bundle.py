@@ -12,7 +12,7 @@ HEADER = (
     "/* TỆP SINH TỰ ĐỘNG bởi tools/build_export_bundle.py — KHÔNG SỬA TAY. "
     "Chạy: py tools/build_export_bundle.py */\n"
 )
-FIXED_FILES = ["css/app.css", "js/state.js", "js/api.js", "js/runtime.js", "js/render.js"]
+FIXED_FILES = ["css/app.css", "css/tailwind.css","js/state.js", "js/api.js", "js/runtime.js", "js/render.js"]
 OUTPUT = "js/export_bundle.js"
 
 
