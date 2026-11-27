@@ -18,7 +18,5 @@
 .invite-state p { font-size: 14px; margin: 0; max-width: 320px; line-height: 1.5; }
 .invite-state[hidden] { display: none; }
 
-/* ---------- Giảm chuyển động ---------- */
-@media (prefers-reduced-motion: reduce) {
-    .petal { display: none; }
-}
+/* ---------- Giảm chuyển động ----------
+   Hoa rơi và reveal vẫn chạy nhẹ (runtime giảm số cánh, kéo dài thời gian, thêm .reveal-soft); không ẩn .petal nữa. */

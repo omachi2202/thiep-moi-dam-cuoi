@@ -18,7 +18,7 @@ Mỗi dòng: việc — lý do — ưu tiên (Cao / Trung bình / Thấp).
 - Dọn ảnh upload không còn thiệp nào dùng (quét `uploads/` đối chiếu `data/cards/*.json`) — Trung bình.
 - `GET export.xlsx?key=` — key lọt vào log/lịch sử trình duyệt; chỉ nhận header, front-end tải bằng fetch + blob — Trung bình.
 - Trang khách: link Google Fonts chèn bằng JS sau migrate nên có thể nháy phông — cân nhắc server chèn sẵn `<link>` theo `cardFontsUrl` — Thấp.
-- Thử tay trên iOS Safari: nhạc nền `preload="none"` vẫn phát được sau lần chạm đầu — Trung bình.
+- Kiểm tay trên iPhone (Zalo + Safari) sau deploy `fix/hieu-ung-iphone`: nhạc nền `preload="none"` phát được ở lần chạm đầu (kể cả thiệp không có phong bì/rèm), hoa rơi không trôi khi cuộn, chế độ Giảm chuyển động (6 cánh chậm, reveal chỉ mờ) — gộp mục "nhạc iOS Safari chưa thử tay" — Trung bình.
 - Markup khung/modal mừng cưới lặp ở `invite.html` và chuỗi export trong `editor.js` — gộp thành một nguồn — Trung bình.
 - `CLAUDE.md` viết tiếng Anh trong khi Điều 1 yêu cầu tài liệu tiếng Việt — quyết định giữ hay dịch — Thấp.
 
