@@ -26,7 +26,7 @@ Thứ tự nạp: `state.js` → `api.js` → `runtime.js` → `sections/*.js` �
 - `localStorage` luôn bọc `try/catch`.
 
 ## 3. Giao diện
-- Tailwind + Font Awesome 6.5.1 + Google Fonts. Tailwind hiện là Play CDN; sau T7 chuyển sang `css/tailwind.css` dựng sẵn (AD-005, chạy `py tools/build_tailwind.py` sau khi sửa lớp Tailwind trong HTML/JS, không sửa tay). Font mới phải thêm vào `FONT_OPTIONS`, `GOOGLE_FONT_SPECS` và link Google Fonts đầy đủ của editor + export (xem dưới).
+- Tailwind + Font Awesome 6.5.1 + Google Fonts. Tailwind dùng `css/tailwind.css` dựng sẵn (AD-005, không dùng Play CDN; chạy `py tools/build_tailwind.py` sau khi sửa lớp Tailwind trong HTML/JS, không sửa tay). Font mới phải thêm vào `FONT_OPTIONS`, `GOOGLE_FONT_SPECS` và link Google Fonts đầy đủ của editor + export (xem dưới).
 - Phông mới chỉ lấy phông Google Fonts có subset `vietnamese` (kiểm trước khi thêm). Editor (`index.html`) và export (chuỗi trong `js/editor.js`) dùng link Google Fonts đầy đủ, giống hệt từng ký tự. Trang khách (`invite.html`) không có link cố định mà dùng `cardFontsUrl(state)` (`js/state.js`, chỉ các họ phông thiệp dùng + `CARD_BASE_FONTS`). Phông mới phải thêm vào cả link đầy đủ lẫn `GOOGLE_FONT_SPECS`; họ phông viết cứng trong CSS/JS phải có trong `CARD_BASE_FONTS`. Giá trị `FONT_OPTIONS` dạng `'<Tên>', <generic>` (vd `'Lora', serif`) để `safeFont` nhận.
 - Canvas thiệp rộng như điện thoại (≈ 390–430px); trang khách responsive, kiểm ở 390px.
 - Vùng chạm ≥ 44px trên mobile; tương phản chữ/nền đủ đọc.
