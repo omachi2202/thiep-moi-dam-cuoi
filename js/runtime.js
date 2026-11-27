@@ -699,8 +699,40 @@ let countdownInterval = null;
         return res;
     }
 
+    // Thông tin xem trước khi chia sẻ link (chưa escape; server escape khi chèn HTML)
+    function cardShareInfo(state) {
+        const pt = cardPageTitle(state);
+        const title = ('THƯ MỜI TIỆC CƯỚI' + (pt ? ' · ' + pt : '')).slice(0, 120);
+        const ev = cardCalendarEvent(state);
+        const parts = [];
+        const m = typeof ev.iso === 'string' ? /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/.exec(ev.iso) : null;
+        if (m) {
+            const mo = +m[2], da = +m[3], hh = +m[4], mi = +m[5];
+            if (mo >= 1 && mo <= 12 && da >= 1 && da <= 31 && hh < 24 && mi < 60) {
+                parts.push(m[4] + ':' + m[5]);
+                parts.push(m[3] + '/' + m[2] + '/' + m[1]);
+            }
+        }
+        if (ev.location) parts.push(String(ev.location));
+        const description = (parts.length ? parts.join(' · ') : 'Trân trọng kính mời bạn đến chung vui cùng gia đình chúng tôi').slice(0, 200);
+        let image = '';
+        const list = visibleDefs(state, 'shareImage');
+        for (let i = 0; i < list.length && !image; i++) {
+            try {
+                const u = list[i].def.shareImage(list[i].sec);
+                if (typeof u !== 'string') continue;
+                const s = window.safeUrl(u);
+                if (s && !/^data:/i.test(s.trim())) image = s.length <= 500 ? s : '';
+            } catch (err) {
+                console.warn('shareImage lỗi, bỏ qua section', err);
+            }
+        }
+        return { title: title, description: description, image: image };
+    }
+
     window.cardPageTitle = cardPageTitle;
     window.cardCalendarEvent = cardCalendarEvent;
+    window.cardShareInfo = cardShareInfo;
     window.CardRuntime = { init: init, destroy: destroy, replayIntro: replayIntro };
     window.showToast = showToast;
     window.startCountdownTimer = startCountdownTimer;

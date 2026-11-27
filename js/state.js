@@ -1,6 +1,8 @@
 // 1. DỮ LIỆU GỐC (MÔ PHỎNG CHUẨN ZIUWEDDING.SITE/MM03 - TÙNG & NGỌC)
 const DEFAULT_STATE = {
-    schemaVersion: 7,
+    schemaVersion: 8,
+    // Thông tin xem trước khi chia sẻ link: dữ liệu suy ra, editor tính lại mỗi lần xuất bản
+    share: { title: '', description: '', image: '' },
     selectedSectionId: 'hero',
     isPreviewMode: false,
     globalStyle: {
@@ -312,7 +314,7 @@ const THEME_PRESETS = {
 };
 
 // 2. REGISTRY SECTION, TIỆN ÍCH CHUNG & MIGRATE (giao kèo G2/G4)
-const SCHEMA_VERSION = 7;
+const SCHEMA_VERSION = 8;
 window.SECTION_TYPES = Object.create(null);
 
 // Whitelist giá trị G5 của globalStyle (giá trị đầu tiên không phải mặc định; mặc định lấy từ DEFAULT_STATE)
@@ -498,6 +500,15 @@ function migrate(state) {
         gs[p[0]] = (typeof gs[p[0]] === 'string') ? gs[p[0]].slice(0, p[1]) : '';
     });
 
+    // Thông tin chia sẻ (v8): object gồm 3 chuỗi, cắt độ dài
+    const shareIn = (state.share && typeof state.share === 'object' && !Array.isArray(state.share)) ? state.share : {};
+    state.share = {};
+    [['title', 120], ['description', 200], ['image', 500]].forEach(p => {
+        const sv = (typeof shareIn[p[0]] === 'string') ? shareIn[p[0]] : '';
+        // image: quá dài thì bỏ hẳn (URL cắt dở sẽ thành ảnh 404); title/description cắt như cũ
+        state.share[p[0]] = p[0] === 'image' ? (sv.length <= p[1] ? sv : '') : sv.slice(0, p[1]);
+    });
+
     const bank = state.bankInfo || {};
     state.bankInfo = {
         groom: Object.assign({}, DEFAULT_STATE.bankInfo.groom, bank.groom || {}),
@@ -569,3 +580,56 @@ function migrate(state) {
     }
     return state;
 }
+
+// 3. PHÔNG GOOGLE CHO TRANG KHÁCH (chỉ tải họ phông thiệp dùng)
+// Spec lấy đúng từ link Google Fonts trong invite.html/index.html (thứ tự khoá = thứ tự trong URL).
+const GOOGLE_FONT_SPECS = {
+    'Cormorant Garamond': 'Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400',
+    'Dancing Script': 'Dancing+Script:wght@500;700',
+    'Great Vibes': 'Great+Vibes',
+    'Montserrat': 'Montserrat:wght@300;400;500;600;700',
+    'Noto Serif': 'Noto+Serif:ital,wght@0,400;0,700;1,400',
+    'Open Sans': 'Open+Sans:wght@400;600;700',
+    'Oswald': 'Oswald:wght@400;600',
+    'Philosopher': 'Philosopher:ital,wght@0,400;0,700;1,400',
+    'Playfair Display': 'Playfair+Display:ital,wght@0,400;0,600;0,700;1,400',
+    'Roboto Slab': 'Roboto+Slab:wght@400;600',
+    'Tinos': 'Tinos:ital,wght@0,400;0,700;1,400',
+    'Alex Brush': 'Alex+Brush',
+    'Allura': 'Allura',
+    'Beau Rivage': 'Beau+Rivage',
+    'Bonheur Royale': 'Bonheur+Royale',
+    'Charm': 'Charm:wght@400;700',
+    'Corinthia': 'Corinthia:wght@400;700',
+    'Ephesis': 'Ephesis',
+    'Hurricane': 'Hurricane',
+    'Imperial Script': 'Imperial+Script',
+    'Lobster': 'Lobster',
+    'Lora': 'Lora:ital,wght@0,400;0,600;0,700;1,400',
+    'Moon Dance': 'Moon+Dance',
+    'Pacifico': 'Pacifico',
+    'Patrick Hand': 'Patrick+Hand',
+    'Pinyon Script': 'Pinyon+Script',
+    'Playball': 'Playball',
+    'Prata': 'Prata',
+    'Rokkitt': 'Rokkitt:wght@400;600;700',
+    'Spectral': 'Spectral:ital,wght@0,400;0,600;0,700;1,400'
+};
+// Họ phông viết cứng ngoài state: body trang khách (Montserrat), fallback bodyFont (Noto Serif),
+// mặc định globalStyle (Philosopher), css/app.css:555 (Great Vibes, Dancing Script)
+const CARD_BASE_FONTS = ['Montserrat', 'Noto Serif', 'Philosopher', 'Great Vibes', 'Dancing Script'];
+
+function cardFontsUrl(state) {
+    let json = '';
+    try { json = JSON.stringify(state) || ''; } catch (e) { json = ''; }
+    const parts = [];
+    Object.keys(GOOGLE_FONT_SPECS).forEach(name => {
+        if (CARD_BASE_FONTS.indexOf(name) >= 0 || json.indexOf("'" + name + "'") >= 0) {
+            parts.push('family=' + GOOGLE_FONT_SPECS[name]);
+        }
+    });
+    return 'https://fonts.googleapis.com/css2?' + parts.join('&') + '&display=swap';
+}
+window.GOOGLE_FONT_SPECS = GOOGLE_FONT_SPECS;
+window.CARD_BASE_FONTS = CARD_BASE_FONTS;
+window.cardFontsUrl = cardFontsUrl;
